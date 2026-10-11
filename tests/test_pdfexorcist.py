@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pymupdf
+import pytest
 
 from pdfexorcist import extract, parse_rows, vote
 
@@ -346,3 +347,32 @@ def test_parallel_error(tmp_path):
         on_engine=lambda n, e, d: events.append((n, e)),
     )
     assert ("no_such_engine", "skipped") in events and (res.status == "verified").any()
+
+
+def test_camelot_distinct():
+    from types import SimpleNamespace
+
+    from pdfexorcist._text_engines import _distinct
+
+    small, big, beside = (
+        SimpleNamespace(_bbox=b) for b in [(10, 10, 50, 50), (0, 0, 60, 60), (70, 0, 90, 20)]
+    )
+    assert _distinct([small, big, beside]) == [big, beside]  # reading order kept
+
+
+@pytest.mark.parametrize("engine", ["pypdf", "pdfjs"])
+def test_independent_text_engine(engine):
+    from pdfexorcist.doctor import status
+    from pdfexorcist.extractors import EXTRACTORS
+
+    if not status(engine).installed:
+        pytest.skip(f"{engine} not installed")
+    pdf = Path(__file__).parent / "fixtures" / "nfhs5_state" / "nfhs5_chandigarh_p3-6.pdf"
+
+    def values(name):
+        return {
+            (r["page"], r["row"], r["col"]): r["value"] for r in parse_rows(EXTRACTORS[name](pdf))
+        }
+
+    ref, got = values("pymupdf"), values(engine)
+    assert sum(got.get(k) == v for k, v in ref.items()) >= 0.99 * len(ref)

@@ -384,7 +384,7 @@ def extract(
             try:
                 lines: Iterable[Page]
                 if name in read:
-                    got = read[name]
+                    got = read.pop(name)  # free each engine's pages once parsed
                     if isinstance(got, Exception):
                         raise got
                     lines = got

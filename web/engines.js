@@ -119,7 +119,7 @@ export function programRunner(programs) {
       FS.mkdirTree(cwd);
       FS.chdir(cwd);
     };
-    const [code, out, err, FS] = await programs[name]({ args, env, stage });
+    const [code, out, err, FS] = await programs[name]({ args, env, stage, files, cwd });
     return [code, out, err, walk(FS, cwd)];
   };
 }
@@ -129,6 +129,23 @@ function walk(FS, dir) {
     const path = `${dir}/${n}`.replace(/\/+/g, '/');
     return FS.isDir(FS.stat(path).mode) ? walk(FS, path) : [[path, FS.readFile(path)]];
   });
+}
+
+/** node _pdfjs.mjs <dist> <pdf>, run in this thread; load() gives [pdfjs-dist, _pdfjs.mjs] */
+export function pdfjsProgram(load) {
+  const FS = { readdir: () => [] }; // writes nothing back
+  const fail = (msg) => [1, new Uint8Array(), new TextEncoder().encode(msg), FS];
+  return async ({ args, files }) => {
+    if (!args[0]?.endsWith('/_pdfjs.mjs')) return fail(`node here runs only _pdfjs.mjs, not ${args[0]}`);
+    try {
+      const [pdfjs, { pdfjsLines }] = await load();
+      const out = [];
+      await pdfjsLines(pdfjs, new Map(files).get(args[2]), (line) => out.push(line)); // args[2]: absolute
+      return [0, new TextEncoder().encode(out.join('')), new Uint8Array(), FS];
+    } catch (e) {
+      return fail(String(e?.stack ?? e));
+    }
+  };
 }
 
 /** fresh instance per run: pdftotext keeps state in statics; exit() flushes stdout */

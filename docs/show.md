@@ -76,6 +76,6 @@ pdfexorcist show mccd_2014.pdf --recipe examples/mccd/table4.toml --png
 
 ## Where the boxes come from
 
-Positions come from the engines that report them: pdfplumber, PyMuPDF, PDFium, camelot, Tesseract, PaddleOCR and Apple Vision. pdftotext, Chandra and GLM-OCR give none, so their readings borrow the other engines' box, drawn dashed in Compare engines.
+Positions come from the engines that report them: pdfplumber, PyMuPDF, PDFium, camelot, pdf.js, Tesseract, docTR, PaddleOCR and Apple Vision. pdftotext, pypdf, Chandra and GLM-OCR give none, so their readings borrow the other engines' box, drawn dashed in Compare engines.
 
 A parser need not return positions. pdfexorcist finds each value among its engine's words, in reading order. In Python, `extract(..., return_readings=True)` returns the same positions; see [Where each value sits](library.md#where-each-value-sits).

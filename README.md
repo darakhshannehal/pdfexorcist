@@ -481,8 +481,11 @@ recipe that names a `.py` file runs that code: only use recipes you trust.
 | `pdfplumber` (pdfminer) | text layer | yes |
 | `pymupdf` (MuPDF) | text layer | yes |
 | `pdfium` (PDFium, Chrome's engine) | text layer | yes |
-| `camelot` (stream tables) | text layer | yes |
+| `camelot` (best of lattice, stream, network, hybrid, ml) | text layer | yes; ml flavor `pip install "pdfexorcist[camelot-ml]"` |
+| `pypdf` (pypdf layout text) | text layer | opt-in, `pip install "pdfexorcist[pypdf]"` |
+| `pdfjs` (Mozilla pdf.js) | text layer | opt-in, needs Node and `npm install -g pdfjs-dist` |
 | `tesseract` | rendered page (OCR, CPU) | opt-in |
+| `doctr` (docTR models on onnxruntime, CPU) | rendered page | opt-in, `pip install "pdfexorcist[doctr]"` |
 | `chandra` (Chandra OCR 2 VLM, MPS/CUDA) | rendered page | opt-in, `pip install "pdfexorcist[chandra]"` |
 | `paddleocr` (PP-OCR, Linux/macOS/Windows, CPU) | rendered page | opt-in, `pip install "pdfexorcist[paddleocr]"` |
 | `ocrmac` (Apple Vision, macOS only) | rendered page | opt-in, `pip install "pdfexorcist[ocrmac]"` |

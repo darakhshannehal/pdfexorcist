@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.util import find_spec
 
+from ._text_engines import PDFJS_INSTALL, _pdfjs_dist, camelot_ml
 from .extractors import DEFAULTS, EXTRACTORS
 
 PIP = 'pip install "pdfexorcist[{}]"'
@@ -24,6 +25,7 @@ class EngineInfo:
     extra: str | None = None  # pip extra that installs it
     platforms: Callable[[], bool] | None = None  # None: everywhere
     platform_note: str = ""
+    check: Callable[[], str] | None = None  # extra requirement: its fix, "" when met
 
 
 def _mac() -> bool:
@@ -40,13 +42,27 @@ KNOWN: dict[str, EngineInfo] = {
         EngineInfo("pdftotext", "text layer", "poppler's pdftotext", programs=("pdftotext",)),
         EngineInfo("pdfplumber", "text layer", "pdfminer word boxes", modules=("pdfplumber",)),
         EngineInfo("pymupdf", "text layer", "MuPDF word boxes", modules=("pymupdf",)),
+        EngineInfo("pypdf", "text layer", "pypdf layout text", modules=("pypdf",), extra="pypdf"),
+        EngineInfo(
+            "pdfjs",
+            "text layer",
+            "Mozilla pdf.js through Node",
+            programs=("node",),
+            check=lambda: "" if _pdfjs_dist() else PDFJS_INSTALL,
+        ),
         EngineInfo(
             "pdfium",
             "text layer",
             "PDFium, Chrome's PDF engine",
             modules=("pypdfium2",),
         ),
-        EngineInfo("camelot", "text layer", "camelot table finder", modules=("camelot",)),
+        EngineInfo(
+            "camelot",
+            "text layer",
+            "camelot table finder"
+            + ("" if camelot_ml() else f", ml flavor off: {PIP.format('camelot-ml')}"),
+            modules=("camelot",),
+        ),
         EngineInfo(
             "tabula",
             "text layer",
@@ -62,6 +78,13 @@ KNOWN: dict[str, EngineInfo] = {
             "Chandra OCR 2 model, GPU (CUDA or Apple)",
             modules=("chandra", "torch", "transformers"),
             extra="chandra",
+        ),
+        EngineInfo(
+            "doctr",
+            "pixels (OCR)",
+            "docTR models on onnxruntime, CPU",
+            modules=("onnxtr",),
+            extra="doctr",
         ),
         EngineInfo(
             "paddleocr",
@@ -107,6 +130,7 @@ def _system_install(program: str) -> str:
             "winget install UB-Mannheim.TesseractOCR",
         ),
         "java": ("openjdk", "default-jre", "winget install Microsoft.OpenJDK.21"),
+        "node": ("node", "nodejs", "winget install OpenJS.NodeJS"),
     }
     brew, apt, win = pkg.get(program, (program, program, f"install {program}"))
     if sys.platform == "darwin":
@@ -149,6 +173,8 @@ def status(name: str) -> EngineStatus:
     if missing_mods:
         fixes.append(PIP.format(info.extra) if info.extra else "pip install --upgrade pdfexorcist")
     fixes += [_system_install(p) for p in missing_progs]
+    if info.check and not missing_progs and (fix := info.check()):
+        fixes.append(fix)
     return EngineStatus(
         name,
         not fixes,

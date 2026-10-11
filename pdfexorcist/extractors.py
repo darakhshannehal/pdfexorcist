@@ -7,14 +7,23 @@ from ._ocr_engines import _paddle as _paddle
 from ._ocr_engines import _render as _render
 from ._ocr_engines import _skew as _skew
 from ._ocr_engines import _words as _words
-from ._ocr_engines import ocrmac_, paddleocr_, tesseract_
+from ._ocr_engines import doctr_, ocrmac_, paddleocr_, tesseract_
 from ._registry import DEFAULTS, EXTRACTORS, OCR_DPI, Extractor, register
 from ._text_engines import _join_parens as _join_parens
 from ._text_engines import _n_values as _n_values
 from ._text_engines import _space_ids as _space_ids
 from ._text_engines import _spans as _spans
 from ._text_engines import _split_cells as _split_cells
-from ._text_engines import camelot_, pdfium_, pdfplumber_, pdftotext, pymupdf_, tabula_
+from ._text_engines import (
+    camelot_,
+    pdfium_,
+    pdfjs_,
+    pdfplumber_,
+    pdftotext,
+    pymupdf_,
+    pypdf_,
+    tabula_,
+)
 from ._vlm_engines import GLM_OCR_MLX, chandra_, glmocr_
 from ._vlm_engines import _cache_pages as _cache_pages
 from ._vlm_engines import _chandra_model as _chandra_model
@@ -30,13 +39,16 @@ __all__ = [
     "Extractor",
     "camelot_",
     "chandra_",
+    "doctr_",
     "glmocr_",
     "ocrmac_",
     "paddleocr_",
     "pdfium_",
+    "pdfjs_",
     "pdfplumber_",
     "pdftotext",
     "pymupdf_",
+    "pypdf_",
     "register",
     "tabula_",
     "tesseract_",

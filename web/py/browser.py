@@ -19,7 +19,7 @@ from pyodide.ffi import can_run_sync, run_sync, to_js  # type: ignore[import-not
 from pdfexorcist import cli
 from pdfexorcist.extractors import EXTRACTORS
 
-PROGRAMS = ("pdftotext",)
+PROGRAMS = ("pdftotext", "node")  # node: pdf.js in JavaScript, engines.js pdfjsProgram
 SHARE_CWD = ("python",)  # also gets cwd, as a process on the same disk would
 BIN = Path("/usr/local/bin")
 
@@ -36,6 +36,7 @@ def _install_programs() -> None:
     for name in PROGRAMS:
         (BIN / name).write_text("# runs as wasm through subprocess.run; see browser.py\n")
         (BIN / name).chmod(0o755)
+    os.environ.setdefault("PDFEXORCIST_PDFJS", "/pdfjs-dist")  # the page loads it; nothing on disk
     path = os.environ.get("PATH", "")
     if str(BIN) not in path.split(os.pathsep):
         os.environ["PATH"] = os.pathsep.join(filter(None, [str(BIN), path]))
@@ -103,7 +104,41 @@ def _run(args: Any, *a: Any, **kw: Any) -> Any:
     return _subprocess_run(args, *a, **kw)
 
 
+class _Finished:
+    """Popen for a wasm program: it runs to the end first, so its stdout is buffered."""
+
+    def __init__(self, args: Any, stdout: Any = None, stderr: Any = None, **kw: Any) -> None:
+        res = _run_program(args, capture_output=True, **kw)
+        text = isinstance(res.stdout, str)
+        self.stdout = (io.StringIO if text else io.BytesIO)(res.stdout) if stdout else None
+        if stderr not in (None, subprocess.PIPE):
+            stderr.write(res.stderr.encode() if text else res.stderr)
+        self.returncode = res.returncode
+
+    def wait(self) -> int:
+        return self.returncode
+
+    poll = wait
+
+    def kill(self) -> None:
+        pass
+
+    def __enter__(self) -> "_Finished":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        pass
+
+
+_subprocess_popen = subprocess.Popen
+
+
+def _popen(args: Any, *a: Any, **kw: Any) -> Any:
+    return _Finished(args, *a, **kw) if _program(args) else _subprocess_popen(args, *a, **kw)
+
+
 subprocess.run = _run  # type: ignore[assignment]
+subprocess.Popen = _popen  # type: ignore[assignment,misc]
 _install_programs()
 
 

@@ -85,7 +85,7 @@ def test_unanimous_with_min_unopposed(tmp_path):
 
 def test_families(tmp_path):
     code, s = _extract(tmp_path, "nfhs5_state/nfhs5_chandigarh_p3-6.pdf", "nfhs5/families.toml")
-    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (477, 47)
+    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (480, 44)
     review = pd.read_csv(tmp_path / "doc.review.csv", dtype=str)
     assert "pdfminer" in set(review.sources.str.split("|").explode())
 
@@ -98,8 +98,7 @@ def test_normalize_switch_and_function(tmp_path):
         "nfhs5/numbers.toml",
         out="doc.parquet",
     )
-    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (490, 3)
-    assert (tmp_path / "doc.review.parquet").exists()
+    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (493, 0)
     t = pd.read_parquet(tmp_path / "doc.parquet").fillna("").astype(str)
     t = t.set_index(["geo", "indicator_no"])
     assert t.loc[("Chandigarh", "47")].tolist() == ["state", "5586", "*", "5546", "2357"]

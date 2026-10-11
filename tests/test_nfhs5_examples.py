@@ -34,12 +34,12 @@ def test_example_state_recipe(tmp_path, monkeypatch) -> None:
     assert t.loc[("India", "22"), "nfhs5_total"] == "2.0"  # TFR
 
 
-def test_state_blank(tmp_path, monkeypatch) -> None:
-    """Pin Chandigarh row 68 as unresolved."""
+def test_state_row68(tmp_path, monkeypatch) -> None:
+    """Pin Chandigarh row 68 as resolved."""
     monkeypatch.chdir(tmp_path)
     s, t = _extract(FIXTURES / "nfhs5_state" / "nfhs5_chandigarh_p3-6.pdf", "nfhs5/state.toml")
-    assert (s["cells"]["verified"], s["cells"]["unresolved"]) == (521, 3)
-    assert t.loc[("Chandigarh", "68")].tolist() == ["state", "", "*", "", ""]
+    assert (s["cells"]["verified"], s["cells"]["unresolved"]) == (524, 0)
+    assert t.loc[("Chandigarh", "68")].tolist() == ["state", "(7.2)", "*", "(7.1)", "(6.9)"]
     assert t.loc[("Chandigarh", "67")].tolist() == ["state", "(92.8)", "*", "(92.9)", "(93.1)"]
 
 

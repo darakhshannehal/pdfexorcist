@@ -294,15 +294,15 @@ pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recip
   pdftotext   476 readings  0.0s
   pdfplumber  524 readings  0.4s
   pymupdf     524 readings  0.0s
-  camelot     472 readings  1.0s
+  camelot     524 readings  4.8s
   pdfium      68 readings  0.1s
 
-Agreed          477  91.0% of cells
-Unresolved       47  engines disagreed: left blank, not guessed
+Agreed          480  91.6% of cells
+Unresolved       44  engines disagreed: left blank, not guessed
 Checks      2 rules  all passed
 ```
 
-Most cells lost against the [plain run](nfhs5-factsheets.md#run-it) were read only by pdfplumber, camelot and PyMuPDF: two independent readings, not three. On row 126, pdfplumber and camelot read different values, so the family casts no vote. Families matter most for a PDF whose text layer came from OCR, where every text engine repeats one reading. See [Engines](../engines.md#families).
+Most cells the [plain run](nfhs5-factsheets.md#run-it) verified and this one does not were read only by pdfplumber, camelot and PyMuPDF, which now count as two votes. Families matter most for an OCRed PDF, where every text engine reads the same OCR text. See [Engines](../engines.md#families).
 
 ## Cleaning values
 
@@ -330,12 +330,11 @@ pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recip
 ```
 
 ```
-Agreed          490  99.4% of cells
-Unresolved        3  engines disagreed: left blank, not guessed
+Agreed          493  100.0% of cells
+Unresolved        0
 Checks      2 rules  all passed
 
 Wrote chandigarh.parquet (table layout, 131 rows).
-Cells to review, with the reason and every engine's reading: chandigarh.review.parquet
 ```
 
 Read back with pandas (`pd.read_parquet("chandigarh.parquet")`), rows 3, 6 and 47:

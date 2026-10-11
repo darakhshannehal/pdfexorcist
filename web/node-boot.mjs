@@ -6,7 +6,7 @@ import { createRequire } from 'node:module';
 import { loadPyodide } from 'pyodide';
 
 import { boot, pythonProgram } from './core.js';
-import { emscriptenProgram, pdfiumBridge } from './engines.js';
+import { emscriptenProgram, pdfiumBridge, pdfjsProgram } from './engines.js';
 import Pdftotext from './vendor/pdftotext.js';
 
 const WEB = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +32,12 @@ export async function nodeBoot() {
   const module = await WebAssembly.compile(readFileSync(join(WEB, 'vendor/pdftotext.wasm')));
   const opts = { loadPyodide, files };
   // tests only: it holds every boot file while alive
-  opts.programs = { pdftotext: emscriptenProgram(Pdftotext, module), python: pythonProgram(opts) };
+  const pdfjs = () =>
+    Promise.all([import('pdfjs-dist/legacy/build/pdf.mjs'), import('../pdfexorcist/_pdfjs.mjs')]);
+  opts.programs = {
+    pdftotext: emscriptenProgram(Pdftotext, module),
+    python: pythonProgram(opts),
+    node: pdfjsProgram(pdfjs),
+  };
   return boot(opts);
 }

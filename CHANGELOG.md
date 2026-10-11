@@ -7,15 +7,24 @@ All notable changes to pdfexorcist are listed here. The format follows
 Add each change under [Unreleased] as you make it. The Prepare release
 workflow moves those entries into a dated section.
 
-## [Unreleased]
+## [0.1.2 - 11 Oct 2026]
 
 ### Added
 
 - MMIS example (`examples/mmis_malaria/`): NCVBDC's monthly malaria report
+- Opt-in engines `pypdf` (extra `pypdf`), `pdfjs` (Mozilla pdf.js through Node) and `doctr` (docTR models on onnxruntime, extra `doctr`)
+- camelot tries its network, hybrid and ml flavors too; ml needs extra `camelot-ml`
+- The web version runs `pypdf` and `pdfjs`
+
+### Changed
+
+- camelot needs camelot-py 2 or later
+- camelot drops tables nested in a larger one, so network and hybrid do not count a row twice
 
 ### Fixed
 
 - `is_value` accepts Excel's scientific display of a too-wide number (`2E+05`)
+- `--jobs` frees each engine's pages once parsed
 
 ## [0.1.1 - 4 Oct 2026]
 

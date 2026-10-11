@@ -4,13 +4,9 @@
 
 The WASM version of pdfexorcist through `pyodide`.
 
-Current supports these five default text engines:
-
-- pdftotext
-- pdfplumber
-- pymupdf
-- pdfium
-- camelot
+It runs the five default text engines (pdftotext, pdfplumber, pymupdf, pdfium, camelot) and the
+opt-in `pypdf` and `pdfjs`. pdf.js runs in the page and loads on first use. The OCR engines need
+native libraries Pyodide lacks.
 
 ## Run and check
 

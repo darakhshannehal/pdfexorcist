@@ -36,15 +36,14 @@ recipe examples/nfhs5/state.toml
   pdftotext   476 readings  0.0s
   pdfplumber  524 readings  0.5s
   pymupdf     524 readings  0.0s
-  camelot     472 readings  1.1s
+  camelot     524 readings  4.7s
   pdfium      68 readings  0.1s
 
-Agreed          521  99.4% of cells
-Unresolved        3  engines disagreed: left blank, not guessed
+Agreed          524  100.0% of cells
+Unresolved        0
 Checks      2 rules  all passed
 
 Wrote chandigarh.csv (table layout, 131 rows).
-Cells to review, with the reason and every engine's reading: chandigarh.review.csv
 ```
 
 ```
@@ -54,12 +53,8 @@ Chandigarh,3,state,918,868,917,934
 Chandigarh,6,state,93.6,*,93.6,na
 Chandigarh,47,state,"5,586",*,"5,546","2,357"
 Chandigarh,67,state,(92.8),*,(92.9),(93.1)
-Chandigarh,68,state,,*,,
+Chandigarh,68,state,(7.2),*,(7.1),(6.9)
 ```
-
-Row 68 is left blank: camelot reads it with row 40's numbers, and only
-pdfplumber and PyMuPDF read it as printed (`(7.2)`, `(7.1)`, `(6.9)`). Its
-readings are in `chandigarh.review.csv`.
 
 ### The whole fact sheet
 

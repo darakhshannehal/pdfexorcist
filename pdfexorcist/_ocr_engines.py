@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from ._registry import OCR_DPI, register
-from ._text_engines import _spans
+from ._text_engines import _words
 from .rows import Page, group_words
 
 logger = logging.getLogger(__name__)
@@ -132,11 +132,6 @@ def _images(pdf: Path) -> Iterator[tuple]:
             yield (i, *_render(page))
 
 
-def _words(x0: float, x1: float, y_top: float, y_bottom: float, text: str) -> list:
-    """Split an OCR box into positioned tokens."""
-    return [(a, b, y_bottom, t, y_top) for a, b, t in _spans(x0, x1, text)]
-
-
 @register("ocrmac", default=False)
 def ocrmac_(pdf: Path) -> Iterator[Page]:
     """Run Apple Vision OCR through ocrmac."""
@@ -191,6 +186,30 @@ def paddleocr_(pdf: Path) -> Iterator[Page]:
             x0, y0, x1, y1 = (float(v) * scale for v in box)
             words += _words(x0, x1, y0, y1, text)
         yield i, group_words(words)
+
+
+@register("doctr", default=False)
+def doctr_(pdf: Path) -> Iterator[Page]:
+    """Run docTR's OCR models on onnxruntime (OnnxTR)."""
+    import numpy as np
+
+    ocr = _doctr()
+    for i, img, scale in _images(pdf):
+        w, h = img.width * scale, img.height * scale
+        page = ocr([np.array(img)]).pages[0]
+        words = []
+        for word in (wd for b in page.blocks for ln in b.lines for wd in ln.words):
+            (x0, y0), (x1, y1) = word.geometry  # relative to the page
+            words += _words(x0 * w, x1 * w, y0 * h, y1 * h, word.value)
+        yield i, group_words(words)
+
+
+@functools.lru_cache(maxsize=1)
+def _doctr() -> Any:
+    """Load docTR models once per process."""
+    from onnxtr.models import ocr_predictor
+
+    return ocr_predictor()
 
 
 @functools.lru_cache(maxsize=1)

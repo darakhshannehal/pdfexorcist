@@ -7,8 +7,8 @@ from typing import Any
 from .cells import Box, token_boxes
 
 SHOW_DPI = 200  # display resolution of a text page (photos keep their own)
-PAGE_FRAME = {"pymupdf", "tesseract"}  # boxes in pymupdf page.rect points
-RENDER_FRAME = {"ocrmac", "paddleocr", "chandra", "glmocr"}  # the image render_page made
+PAGE_FRAME = {"pymupdf", "tesseract", "pdfjs"}  # boxes in pymupdf page.rect points
+RENDER_FRAME = {"ocrmac", "paddleocr", "chandra", "glmocr", "doctr"}  # the image render_page made
 USER_FRAME = {"pdfplumber", "pdfium", "camelot"}  # (x, page height - y) in PDF user space
 GEOMETRY_PREFERENCE = ["pymupdf", "pdfplumber", "pdfium", "paddleocr", "ocrmac", "tesseract"]
 

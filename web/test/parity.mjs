@@ -9,7 +9,11 @@ import { nodeBoot, ROOT } from '../node-boot.mjs';
 
 const DUMP = join(ROOT, 'web/test/dump_lines.py');
 const [{ stdout }, { py }] = await Promise.all([
-  promisify(execFile)('uv', ['run', 'python', DUMP, ROOT], { cwd: ROOT, maxBuffer: 1 << 30 }),
+  promisify(execFile)('uv', ['run', 'python', DUMP, ROOT], {
+    cwd: ROOT,
+    maxBuffer: 1 << 30,
+    env: { ...process.env, PDFEXORCIST_PDFJS: join(ROOT, 'web/node_modules/pdfjs-dist') }, // the site's pdf.js
+  }),
   nodeBoot(),
 ]);
 const native = JSON.parse(stdout);

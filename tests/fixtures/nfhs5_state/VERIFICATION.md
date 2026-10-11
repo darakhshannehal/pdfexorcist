@@ -58,10 +58,9 @@ The crops in `evidence/` show each case.
 | Class d (naming, alignment) | 0 cells | 0 cells |
 | Class e (other edition) | 127 | 0 |
 
-The three State cells the vote leaves unresolved are Chandigarh's row 68
-(page 4 of the sheet): camelot reads the row with row 40's numbers and only
-pdfplumber and PyMuPDF read it as printed, `(7.2) * (7.1) (6.9)`, which the
-CSV has too. The CSV's other 8,216 district cells are the NFHS-4 column of 79
+Chandigarh's row 68 (page 4 of the sheet) reads `(7.2) * (7.1) (6.9)`, as the
+CSV has. camelot's lattice and stream flavors read row 40's numbers there.
+The CSV's other 8,216 district cells are the NFHS-4 column of 79
 districts with no comparable NFHS-4 estimate, which their pages do not print; the CSV leaves
 all of them blank.
 

@@ -70,7 +70,8 @@ def fetch_wheels(dest: Path) -> list[Path]:
 
 def python_files() -> list[tuple[str, Path]]:
     """(path in Pyodide's file system, source) for everything boot() installs."""
-    out = [(f"site/{p.relative_to(ROOT)}", p) for p in sorted((ROOT / "pdfexorcist").glob("*.py"))]
+    package = sorted(p for p in (ROOT / "pdfexorcist").iterdir() if p.suffix in (".py", ".mjs"))
+    out = [(f"site/{p.relative_to(ROOT)}", p) for p in package]
     out += [(f"site/{p.name}", p) for p in sorted((WEB / "py").glob("*.py"))]
     for d in ("vendor", "pymupdf"):
         out += [(f"wheel/{p.name}", p) for p in sorted((WEB / d).glob("*.whl"))]

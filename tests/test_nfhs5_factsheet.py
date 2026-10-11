@@ -17,7 +17,6 @@ STATE_COLS = ("nfhs5_urban", "nfhs5_rural", "nfhs5_total", "nfhs4_total")
 DISTRICT_COLS = ("nfhs5_total", "nfhs4_total")
 
 # Slack for one engine's tokenisation change; a lost row or column still fails.
-# Chandigarh's row 68 goes unagreed (camelot reads it with row 40's numbers).
 MIN_COVERAGE = 0.97
 
 

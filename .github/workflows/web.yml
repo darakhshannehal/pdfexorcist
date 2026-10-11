@@ -38,6 +38,6 @@ jobs:
           node-version: "26" # JSPI without a flag
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - run: npm ci
+      - run: npm ci --omit=optional # pdfjs-dist's @napi-rs/canvas: rendering only, text needs none
       # test_fetch.py needs threads, which Pyodide lacks
       - run: node test/pytest.mjs -q -ra --ignore=tests/test_fetch.py

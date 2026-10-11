@@ -22,7 +22,7 @@ const worker = new Client('./worker.js', {
   onStatus: (data) => {
     if (data.type === 'restart') engines = INITIAL;
     else if (data.type === 'status') engines = { ...engines, status: `${data.text}…` };
-    else if (data.type === 'ready') engines = { ...engines, ready: true, jspi: data.jspi };
+    else if (data.type === 'ready') engines = { ...engines, ready: true, jspi: data.jspi, names: data.names, optIn: data.optIn };
     else if (data.type === 'failed') engines = { ...engines, failed: `The engines could not start: ${data.message}` };
     showEngines();
   },
@@ -37,7 +37,7 @@ function showEngines() {
     : engines.ready && !engines.jspi
       ? 'Ready, without pdftotext: it needs Chrome 137, Safari 27 or Firefox 153.'
       : engines.ready
-        ? 'Ready: pdftotext, pdfplumber, PyMuPDF, PDFium, Camelot.'
+        ? `Ready: ${engines.names.join(', ')}${engines.optIn.length ? `; opt-in: ${engines.optIn.join(', ')}` : ''}.`
         : `${engines.status} 60 MB on the first visit, cached after.`;
 }
 showEngines();

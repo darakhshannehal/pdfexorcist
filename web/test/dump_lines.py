@@ -5,14 +5,16 @@ import sys
 from pathlib import Path
 
 from pdfexorcist.extractors import EXTRACTORS
-from pdfexorcist.vote import TEXT_ENGINES
+
+# need native binaries or models Pyodide lacks; every other engine must match native
+NATIVE_ONLY = {"tabula", "tesseract", "doctr", "paddleocr", "ocrmac", "chandra", "glmocr"}
 
 
 def main(root: Path) -> None:
     out = {}
     for pdf in sorted((root / "tests" / "fixtures").rglob("*.pdf")):
         name = str(pdf.relative_to(root))
-        for engine in TEXT_ENGINES:
+        for engine in (e for e in EXTRACTORS if e not in NATIVE_ONLY):
             try:
                 pages = [
                     [p, [[[round(x, 3), t] for x, t in ln] for ln in lines]]

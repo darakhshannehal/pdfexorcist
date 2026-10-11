@@ -26,9 +26,9 @@ CHECKED: dict[tuple[str, int, int, str], tuple[str, str, str]] = {
         for n, vals in ((14, ("72.9", "51.6", "55.0")), (15, ("81.8", "74.9", "76.4")))
         for c, v in zip(STATE_COLUMNS, vals, strict=False)
     },
-    # camelot reads row 68 with row 40's numbers, leaving the vote unresolved
+    # camelot's best lattice or stream read has row 40's numbers in row 68
     **{
-        ("nfhs5_chandigarh_p3-6.pdf", 2, 68, c): (v, "", "unresolved, read on the page")
+        ("nfhs5_chandigarh_p3-6.pdf", 2, 68, c): (v, "", "read on the page")
         for c, v in zip(STATE_COLUMNS, ("(7.2)", "*", "(7.1)", "(6.9)"), strict=True)
     },
 }

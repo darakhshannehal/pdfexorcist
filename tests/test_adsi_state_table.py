@@ -10,6 +10,7 @@ import pytest
 from adsi_state_table import KEY, adsi_checks, make_parser, row_key
 
 from pdfexorcist import extract
+from pdfexorcist.doctor import status
 
 FIXTURES = Path(__file__).parent / "fixtures" / "adsi"
 MANIFEST = list(csv.DictReader((FIXTURES / "manifest.csv").open(encoding="utf-8")))
@@ -121,3 +122,16 @@ def test_scan_tally(m: dict) -> None:
     assert t["wrong"] == {}
     assert t["named_bad"] == {}
     assert t["tallied"] >= SCAN_MIN_COVERAGE * t["expected"]
+
+
+@pytest.mark.skipif(
+    not (os.environ.get("PDFEXORCIST_OCR_TESTS") and status("doctr").installed),
+    reason="slow OCR test; set PDFEXORCIST_OCR_TESTS=1 and install pdfexorcist[doctr]",
+)
+@pytest.mark.parametrize("m", SCANNED, ids=[m["fixture"] for m in SCANNED])
+def test_doctr_alone(m: dict) -> None:
+    """Pin docTR as a usable OCR voter on the ruled scan Tesseract cannot read."""
+    fixture = FIXTURES / m["fixture"]
+    res = extract(fixture, methods=["doctr"], parse=make_parser(m["table"]), key=KEY, min_agree=1)
+    t = _tally(res, m["fixture"])
+    assert t["tallied"] - len(t["wrong"]) >= 0.5 * t["expected"]

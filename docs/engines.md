@@ -16,9 +16,12 @@ An engine reads a page and returns lines of text with their x positions. pdfexor
 | `pdfium` (PDFium, Chrome's engine) | text layer | default | all | yes |
 | `camelot` (table finder) | text layer | default | all | yes |
 | `tabula` (tabula-java) | text layer | `--engines` | needs Java, extra `tabula` | |
+| `pypdf` | text layer | `--engines` | all, extra `pypdf` | no |
+| `pdfjs` (Mozilla pdf.js) | text layer | `--engines` | needs Node and `npm install -g pdfjs-dist` | yes |
 | `tesseract` | pixels | `--ocr` | needs Tesseract | yes |
 | `chandra` (Chandra OCR 2 model) | pixels | `--ocr` | CUDA or Apple GPU, extra `ocr` | no |
 | `paddleocr` (PP-OCR) | pixels | `--ocr` | all, CPU, extra `paddle` | yes |
+| `doctr` (docTR models on onnxruntime) | pixels | `--ocr` | all, CPU, extra `doctr` | yes |
 | `ocrmac` (Apple Vision) | pixels | `--ocr` | macOS, extra `mac` | yes |
 | `glmocr` (GLM-OCR model via MLX) | pixels | `--ocr` | Apple Silicon, extra `mlx` | no |
 
@@ -28,6 +31,8 @@ An engine reads a page and returns lines of text with their x positions. pdfexor
 * Positions: whether the engine says where each word sits. [show](show.md) borrows the other engines' boxes for those that do not.
 
 `pdfexorcist engines` shows which are installed on your machine. An engine that is not installed, or crashes, is skipped with a warning.
+
+`pdfjs` finds pdfjs-dist in the global npm root, or at `$PDFEXORCIST_PDFJS`. pypdf drops rotated text.
 
 `chandra` and `glmocr` cache each page's reading under `$PDFEXORCIST_CACHE` (default `~/.cache/pdfexorcist/<engine>/`), so a second run on the same file is fast.
 
