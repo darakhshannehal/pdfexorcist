@@ -173,8 +173,13 @@ def status(name: str) -> EngineStatus:
     if missing_mods:
         fixes.append(PIP.format(info.extra) if info.extra else "pip install --upgrade pdfexorcist")
     fixes += [_system_install(p) for p in missing_progs]
-    if info.check and not missing_progs and (fix := info.check()):
-        fixes.append(fix)
+    if info.check and not missing_progs:
+        try:
+            fix = info.check()
+        except OSError as e:
+            fix = f"check failed: {e}"
+        if fix:
+            fixes.append(fix)
     return EngineStatus(
         name,
         not fixes,

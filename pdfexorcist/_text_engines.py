@@ -86,9 +86,10 @@ def _pdfjs_dist() -> Path | None:
     """Find pdfjs-dist: $PDFEXORCIST_PDFJS, else the global npm root."""
     if env := os.environ.get("PDFEXORCIST_PDFJS"):
         return Path(env)
-    if not shutil.which("npm"):
+    npm = shutil.which("npm")  # npm.cmd on Windows; a bare name fails there
+    if not npm:
         return None
-    root = subprocess.run(["npm", "root", "-g"], capture_output=True, text=True).stdout.strip()
+    root = subprocess.run([npm, "root", "-g"], capture_output=True, text=True).stdout.strip()
     dist = Path(root) / "pdfjs-dist"
     return dist if dist.is_dir() else None
 

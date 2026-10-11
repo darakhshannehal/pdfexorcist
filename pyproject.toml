@@ -122,6 +122,7 @@ warn_unused_configs = true
 module = [
     "camelot.*", "chandra.*", "mlx_vlm.*", "ocrmac.*", "paddleocr.*", "pdfplumber.*",
     "pypdfium2.*", "tabula.*", "torch.*", "transformers.*",
+    "onnxtr.*", "pypdf.*",  # optional extras; not installed where mypy runs
     "tomli",  # Python 3.10 only; not installed where mypy runs
 ]
 ignore_missing_imports = true
