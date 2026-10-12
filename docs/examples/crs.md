@@ -73,7 +73,7 @@ pdfexorcist extract tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe examples/crs_
   pdfium      648 readings  0.0s
 
 Agreed          648  97.3% of cells
-Unresolved       18  engines disagreed: left blank, not guessed
+Unresolved       18  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 

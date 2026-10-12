@@ -20,7 +20,7 @@ The generic parsers cannot read these pages:
 
 So the recipe points to `nfhs5_factsheet.py`, the parser
 `tests/test_nfhs5_factsheet.py` checks. A row yields values only when it
-holds exactly four, so a value one engine missed cannot shift the others. Two
+holds exactly four. Two
 rules run after the vote: no percentage over 100, and every Total between
 its Urban and Rural (TFR and the three mortality rates left out).
 
@@ -88,8 +88,8 @@ number of columns. The district pages add a few cases:
 
 * A value printed above its row's baseline (Kangra's row 16, NFHS-4 `2.4`) is
   read before the row's label; it is held for the next numbered row.
-* Text outside the page box (stray `na` tokens beside Raigarh's rows 100 and
-  101, never printed) lies right of the table and is dropped.
+* Unprinted text outside the page box (stray `na` tokens beside Raigarh's rows
+  100 and 101) lies right of the table and is dropped.
 * The contents page ("1. North Goa  7") is not an indicator page, and some
   titles use an en dash ("North & Middle Andaman, Andaman & Nicobar Islands –
   Key Indicators") or wrap onto a second line.

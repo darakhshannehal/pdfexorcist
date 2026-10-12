@@ -18,7 +18,7 @@ sample = "../../tests/fixtures/cii/cii_2023_1A.4_p47.pdf"
 type = "rows"
 min_values = 3
 
-# A total column, written as total and parts instead of a rule. The values of
+# A total column, written as total and parts. The values of
 # "col" are numbers; total and parts may be written as numbers or text.
 [[checks]]
 column = "col"

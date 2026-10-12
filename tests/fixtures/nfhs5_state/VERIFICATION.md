@@ -18,8 +18,7 @@ disagreement against the rendered page.
 The download URL of each fixture's source is in `manifest.csv` (here and in
 `../nfhs5_district/`). FR375 is the national report. It prints no fact sheet
 and no district values; its tables "by state/union territory" use the final
-data and their own definitions, so they corroborate some State values but are
-not the fact sheets.
+data and their own definitions, so they corroborate some State values.
 
 ## Method
 
@@ -179,7 +178,7 @@ India and the 36 States/UTs:
 The fact sheets are labelled provisional and the report uses the final data,
 so small differences are expected (death registration differs in most
 States by a few tenths). Literacy is the useful case: the report agrees with
-the 2021 fact sheets, not with the CSV.
+the 2021 fact sheets and differs from the CSV.
 
 pdfexorcist cannot read FR375 as published: each page carries the facing
 page's text outside its media box (an InDesign spread export, at x = -500

@@ -222,7 +222,7 @@ def render_summary(s: dict[str, Any]) -> None:
     t.add_row(
         "Unresolved",
         f"{c['unresolved']:,}",
-        "[yellow]engines disagreed: left blank, not guessed[/]" if c["unresolved"] else "",
+        "[yellow]engines disagreed: left blank[/]" if c["unresolved"] else "",
     )
     if s["checks_run"] and not c["failed_checks"]:
         t.add_row("Checks", plural(len(s["checks_run"]), "rule"), "[green]all passed[/]")

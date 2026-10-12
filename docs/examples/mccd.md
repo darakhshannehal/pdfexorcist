@@ -194,7 +194,7 @@ XII,F,567,569,613,669,592,800,917,890,975,1427,1632,1580
 XII,T,1644,1590,1752,1886,1743,2380,2500,2784,2888,3872,4910,4349
 ```
 
-All five engines read 4910, and the page prints 4910. But M + F is 4510, the 2018 report prints 4510, and ALL CAUSES T for 2018 is 400 below the sum of the chapters. The checks catch a misprint in the report; pdfexorcist keeps the value and lists it for review.
+All five engines read 4910, and the page prints 4910. But M + F is 4510, the 2018 report prints 4510, and ALL CAUSES T for 2018 is 400 below the sum of the chapters. 4910 is a misprint in the report. The cell fails the sex check; pdfexorcist keeps the value and lists it for review.
 
 `pdfexorcist show tests/fixtures/mccd/mccd_2019_t9_p194.pdf --recipe examples/mccd/table9.toml -o page.png` draws what the recipe reads:
 

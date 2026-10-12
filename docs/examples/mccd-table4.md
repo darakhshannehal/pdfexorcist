@@ -28,7 +28,7 @@ examples/mccd/table4.toml
   pdfium      1,596 readings  0.1s
 
 Agreed        1,596  88.5% of cells
-Unresolved      208  engines disagreed: left blank, not guessed
+Unresolved      208  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 
@@ -84,9 +84,9 @@ columns = "state"               # one column per State
 format = "csv"
 ```
 
-* `[pages]` finds the pages by their titles, so the same recipe works on any year's full report.
+* `[pages]` finds the pages by their titles, so the recipe also runs on a full report.
 * The key is the page, ICD code, the code's occurrence on the page (`pocc`), sex, and the column's place in the row.
-* The checks use `>=` rather than `=`, because some reports count transgender deaths in T, and a cell the engines disagreed on is missing from the sum.
+* The checks use `>=`, because some reports count transgender deaths in T, and a cell the engines disagreed on is missing from the sum.
 
 ## The parser
 
@@ -107,7 +107,7 @@ def parse(pages):
                            "col": col, "value": value}
 ```
 
-A row without the page's usual number of values yields nothing, so one missing value can never shift the others into the wrong State.
+A row without the page's usual number of values yields nothing.
 
 ## Naming the States after the vote
 
@@ -119,7 +119,7 @@ def name_states(cells: pd.DataFrame, pdf: Path) -> pd.DataFrame:
     return cells.assign(state=[states.get((int(p), int(c))) for p, c in zip(cells.page, cells.col)])
 ```
 
-`name_states()` reads the States from the header and never assumes them from position: a position-based build once put Maharashtra's 2014 septicaemia deaths (14402) under Lakshadweep, which prints 3. A cell whose State cannot be read keeps `state = None` and is listed for review rather than dropped.
+`name_states()` reads the States from the header; placing them by position put Maharashtra's 2014 septicaemia deaths (14402) under Lakshadweep, which prints 3. A cell whose State cannot be read keeps `state = None` and is listed for review.
 
 ## A page without the total column
 
@@ -131,7 +131,7 @@ pdfexorcist extract tests/fixtures/mccd/mccd_2014.pdf --recipe examples/mccd/tab
 
 ```
 Agreed          693  87.5% of cells
-Unresolved       99  engines disagreed: left blank, not guessed
+Unresolved       99  engines disagreed: left blank
 Checks      2 rules  all passed
 Note: check "state 'All States (Total)' >= the rest, within each page, code, pocc, sex"
 found no state named 'All States (Total)', so it checked nothing there (state values:
@@ -146,7 +146,7 @@ A40-A41,1,F,2390,123,3,966,219,1,49,5864,18,90,63
 A40-A41,1,T,5632,341,4,2410,475,3,113,14402,48,213,148
 ```
 
-A rule that finds nothing to check says so, instead of passing silently. To see this page with a box on every cell, see [See what it extracts](../show.md).
+A rule whose total or parts are missing logs a warning naming them. [See what it extracts](../show.md) draws this page with a box on every cell.
 
 ## Make it your own
 

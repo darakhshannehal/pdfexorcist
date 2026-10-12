@@ -147,8 +147,7 @@ def welcome() -> None:
     body = Text.assemble(
         ("Pull tables out of PDFs and photos. ", "bold"),
         "Several independent engines read every page, and a value is kept only when most of "
-        "them read it identically. Anything they disagree on is left blank for you to review, "
-        "never guessed.",
+        "them read it identically. Anything they disagree on is left blank for you to review.",
     )
     out.print(
         Panel(

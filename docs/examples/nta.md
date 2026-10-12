@@ -49,7 +49,7 @@ pdfexorcist extract https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf32
   glmocr     845 readings  39.2s
 
 Agreed          965  99.9% of cells
-Unresolved        1  engines disagreed: left blank, not guessed
+Unresolved        1  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 

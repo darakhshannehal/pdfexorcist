@@ -40,8 +40,8 @@ def _turn(page: Any) -> tuple[int, int] | None:
         for line in block.get("lines", []):
             d = (round(line["dir"][0]), round(line["dir"][1]))
             count[d] += sum(len("".join(s["text"].split())) for s in line["spans"])
-    d = max(count, key=count.__getitem__, default=None)
-    return d if d in _TURNS else None
+    top = max(count, key=count.__getitem__, default=None)
+    return top if top in _TURNS else None
 
 
 def upright_pages(pdf: Path, out_dir: Path) -> Path:

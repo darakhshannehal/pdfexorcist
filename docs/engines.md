@@ -34,7 +34,7 @@ An engine reads a page and returns lines of text with their x positions. pdfexor
 
 `pdfjs` finds pdfjs-dist in the global npm root, or at `$PDFEXORCIST_PDFJS`. pypdf drops rotated text.
 
-`chandra` and `glmocr` cache each page's reading under `$PDFEXORCIST_CACHE` (default `~/.cache/pdfexorcist/<engine>/`), so a second run on the same file is fast.
+`chandra` and `glmocr` cache each page's reading under `$PDFEXORCIST_CACHE` (default `~/.cache/pdfexorcist/<engine>/`), and a second run on the same file reads that cache.
 
 ## The vote
 
@@ -52,11 +52,10 @@ pdfexorcist extract report.pdf -e pdfplumber,pymupdf,pdfium,camelot
 
 `min_agree` does not drop when an engine is missing. With fewer engines than `min_agree`, `extract` stops with exit code 1.
 
-`min_unopposed` (off by default) also accepts a value that this many engines read when none read anything else. It lowers the bar; leave it off unless you mean to.
-
+`min_unopposed` (off by default) also accepts a value that this many engines read when none read anything else.
 ## Families
 
-Engines that share code or a source share mistakes. A family votes once: its members first settle on their own majority value, and that value counts as one vote. `min_agree` then defaults to a majority of families, at least 2.
+A family groups engines that share code or a source. A family votes once: its members first settle on their own majority value, and that value counts as one vote. `min_agree` then defaults to a majority of families, at least 2.
 
 camelot reads the text layer through pdfminer, as pdfplumber does, so you can put them in one family:
 
@@ -95,7 +94,7 @@ For the same reason, the OCR engines come from different labs. Surya (the Chandr
 
 ## When to use --ocr
 
-`pdfexorcist inspect` tells you.
+`pdfexorcist inspect` prints the command to run.
 
 | The file | Run |
 | --- | --- |
@@ -104,8 +103,8 @@ For the same reason, the OCR engines come from different labs. Surya (the Chandr
 | A scan with an ocrmypdf text layer | `pdfexorcist extract scan.pdf --ocr`, so more than one reading votes. |
 | A photo or screenshot (.png, .jpg) | `pdfexorcist extract photo.jpg` (OCR is on for images) |
 
-On a text PDF, `--ocr` adds slower engines that can only misread what the text layer already holds exactly.
+On a text PDF, `--ocr` adds slower engines that read the same characters from the pixels.
 
-For OCR, place values by position rather than by order: `type = "columns"` in a recipe, or `parse=parse_by_columns` in Python. A value one engine missed then shifts nothing.
+For OCR, place values by position: `type = "columns"` in a recipe, or `parse=parse_by_columns` in Python, so a value one engine missed leaves the others in their columns.
 
 A page that is a single image is read at its own resolution. Tesseract is a weak voter on photos: on a skewed, grainy phone photo it ran the table's columns together.

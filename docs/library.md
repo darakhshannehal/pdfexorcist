@@ -112,7 +112,7 @@ print(cells[cells.label == "TOTAL ALL INDIA"][["label", "col", "value"]].head(3)
 
 `min_values=3` skips titles and footnotes. `where="col <= 2"` limits the sum to the three count columns; the rates in columns 3 to 5 do not add up.
 
-Checks never drop rows. A failing value is kept and named in `failed`, so `cells[cells.failed != ""]` lists them.
+A failing value is kept and named in `failed`, so `cells[cells.failed != ""]` lists them.
 
 `total_check()` options:
 
@@ -122,7 +122,7 @@ Checks never drop rows. A failing value is kept and named in `failed`, so `cells
 | `parts` | The rows that add up to the total. Default: every other row of the group. |
 | `by` | Columns that identify one group, e.g. `["page", "col"]`. |
 | `rel_tol`, `abs_tol` | Allowed relative or absolute gap, for rounded numbers. |
-| `missing` | `"skip"` (default): a group missing a part is not judged. `"fail"`: it fails, so lost data cannot pass. |
+| `missing` | `"skip"` (default): a group missing a part is not judged. `"fail"`: it fails. |
 
 ### Checks that need more columns
 
@@ -147,8 +147,6 @@ print((checked.failed != "").sum(), "rows fail")
 ```
 0 rows fail
 ```
-
-The States and UTs add up to the national total in each year.
 
 ## Write a parser
 
@@ -197,7 +195,7 @@ Engines split a line differently. pdftotext and camelot give `"3 Assam"` as one 
 Two parsers ship with the package:
 
 * `parse_rows` (default): a label, then values in reading order. Key: `page`, `row`, `col`.
-* `parse_by_columns`: places each value in the nearest column by its x position. A value one engine missed then shifts nothing. Use it for OCR.
+* `parse_by_columns`: places each value in the nearest column by its x position, so a value one engine missed leaves the others in their columns. Use it for OCR.
 
 For a larger example, see [MCCD Table 4](examples/mccd-table4.md).
 
@@ -267,7 +265,7 @@ print(cells.status.value_counts().to_dict())
 
 With `extract(..., jobs=N)`, built-in engines read in worker processes; your own engines, and those registered with `in_process=True` (Chandra, GLM-OCR), read in the calling one.
 
-`default=False` keeps it out of the default set; name it in `methods` to use it. This example only shows the interface: a second pdfplumber setup shares pdfplumber's misreads, so it is not an independent voter. A useful engine reads the page by different means.
+`default=False` keeps it out of the default set; name it in `methods` to use it. This example only shows the interface: a second pdfplumber setup shares pdfplumber's misreads, so it is not an independent voter.
 
 The `x` units are the engine's own (points, character columns). Only the column order they give has to agree.
 

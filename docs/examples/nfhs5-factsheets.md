@@ -15,7 +15,7 @@ The parser is the NFHS-6 one adapted (see [NFHS-6 fact sheets](nfhs6-factsheets.
 
 * Placeholders `(45.6)` (small sample), `*` (suppressed) and `na` (not available), and numbers such as `1,037` (sex ratio) and `3,385` (Rs.). All are kept as printed.
 * A value printed above its row's baseline, which engines read before the row's label (Kangra's row 16).
-* Text outside the page box, never printed, right of the table (Raigarh's page 3). The parser drops it.
+* Unprinted text outside the page box, right of the table (Raigarh's page 3). The parser drops it.
 * A contents page with numbered rows ("1. North Goa  7"), and titles with an en dash or wrapped over two lines.
 
 The fixtures are pages of the IIPS PDFs in `tests/fixtures/nfhs5_state/` and `tests/fixtures/nfhs5_district/`.
@@ -85,7 +85,7 @@ geo,indicator_no,level,nfhs5_total,nfhs4_total
 name = "NFHS-5 State fact sheet"
 
 [pages]
-match = '[-–]\s*Key\s+Indicators'  # "Bihar - Key Indicators", not the contents page
+match = '[-–]\s*Key\s+Indicators'  # "Bihar - Key Indicators"
 
 [engines]
 ocr = false  # a text layer: the five default engines, 3 must agree
@@ -108,7 +108,7 @@ format = "csv"
 The district recipe differs only in its name and sample.
 
 * The key is the page, the printed indicator number and the column. The geography (`geo`, from the page title) is an extra column.
-* The checks allow no percentage over 100 (sex ratios, rates per 1,000, TFR and Rs. are not percentages) and require each State Total to lie between its Urban and Rural. TFR and the three child mortality rates are left out of the second rule: they are not ratios of sums, so their Total need not lie between.
+* The checks allow no percentage over 100 (sex ratios, rates per 1,000, TFR and Rs. are not percentages) and require each State Total to lie between its Urban and Rural. TFR and the three child mortality rates are left out of the second rule.
 
 Two district pages (Mahisagar and Wardha) skip the number 10 and print 11-32 for indicators 10-31, so "32." appears on two pages. The vote keeps both, since its key holds the page; the table has one row for them, which it leaves blank and lists for review.
 
@@ -125,7 +125,7 @@ Two district pages (Mahisagar and Wardha) skip the number 10 and print 11-32 for
 | Page misprinted | 0 | 65 (the two misnumbered pages) |
 | CSV from another edition | 127 (literacy, December 2020) | 0 |
 
-The parser handles each case this check caught it on: one-column pages, the raised value, text outside the page box, title variants and the contents page. The case-by-case table, sources and evidence crops are in `tests/fixtures/nfhs5_state/VERIFICATION.md`.
+The parser handles each case this comparison found: one-column pages, the raised value, text outside the page box, title variants and the contents page. The case-by-case table, sources and evidence crops are in `tests/fixtures/nfhs5_state/VERIFICATION.md`.
 
 The NFHS-5 India Report ([FR375](https://dhsprogram.com/pubs/pdf/FR375/FR375.pdf)) prints no fact sheets; its tables by State corroborate the 2021 literacy values. Each of its pages carries the facing page's text outside its box, so read it with `[pages] fit_boxes = false` (or `extract(..., fit_boxes=False)`): growing the box would put two pages' tables side by side. Its tables then need their own parser.
 

@@ -13,7 +13,7 @@ sample = "../../tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf"
 
 [pages]
 # On a whole compendium, only the indicator pages: "Kangra, Himachal Pradesh -
-# Key Indicators" (some titles use an en dash), not the contents page.
+# Key Indicators" (some titles use an en dash).
 match = '[-–]\s*Key\s+Indicators'
 
 [engines]

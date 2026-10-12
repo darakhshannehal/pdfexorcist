@@ -12,9 +12,9 @@ description: "Extract tables from PDFs, scans and photos by majority vote across
 
 `pdfexorcist` pulls tables out of PDFs, scans and photos. Several independent engines read every page, and a value is kept only when most of them read it identically.
 
-A cell the engines disagree on is left blank, never guessed, and listed for review with every engine's reading.
+A cell the engines disagree on is left blank and listed for review with every engine's reading.
 
-To try it without installing anything, [run it in your browser](https://saketkc.github.io/pdfexorcist/): the same five default engines, plus the opt-in `pypdf` and `pdfjs`, on your own computer.
+To try it without installing anything, [run it in your browser](https://pdfexorcist.in/): the same five default engines, plus the opt-in `pypdf` and `pdfjs`, on your own computer.
 
 ## Quick start
 
@@ -34,7 +34,7 @@ Reading report.pdf with 5 engines (a majority must agree)
   pdfium      243 readings  0.0s
 
 Agreed      242  99.6% of cells
-Unresolved    1  engines disagreed: left blank, not guessed
+Unresolved    1  engines disagreed: left blank
 
 Wrote report.csv (table layout, 48 rows).
 Cells to review, with the reason and every engine's reading: report.review.csv

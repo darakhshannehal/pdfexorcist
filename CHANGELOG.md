@@ -12,11 +12,14 @@ workflow moves those entries into a dated section.
 ### Added
 
 - IMI Coverage Evaluation Survey 2018 example (`examples/imi_ces/`), also on the web
+- Examples for NCRB Prison Statistics India (`examples/prison_stats/`), the SRS Statistical Report (`examples/srs_statistical_report/`), the SRS maternal mortality bulletin and Cause of Death report (`examples/srs_maternal_mortality/`), MoRTH Road Accidents in India (`examples/road_accidents/`) and the CBHI National Health Profile's malaria table (`examples/nhp_malaria/`)
+- The web version lets you choose which engines read an uploaded PDF
 - Make web examples RESTful
 
 ### Fixed
 
 - Tables printed sideways on an upright page (no `/Rotate`) are turned upright before feeding into the engines
+- mypy error in `_upright.py`
 
 ## [0.1.2 - 11 Oct 2026]
 
@@ -42,6 +45,6 @@ workflow moves those entries into a dated section.
 ### Added
 
 Initial release:
-- pdfexorcist also runs in the browser (`web/`) with pyodide! at <https://saketkc.github.io/pdfexorcist/>:
-- pdfexorcist is a new package for extracting tables from pdfs (both text and scanned ones) 
+- pdfexorcist also runs in the browser (`web/`) with pyodide at <https://pdfexorcist.in/>
+- pdfexorcist is a new package for extracting tables from pdfs (text and scanned)
 

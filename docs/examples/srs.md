@@ -32,7 +32,7 @@ columns = "col"
 format = "csv"
 ```
 
-The key holds the block and age, not the State. camelot returns the table without the title above it, so a key with the State would leave camelot out of every vote. The parser adds `state` as an extra column, and the output uses it to name rows.
+The key holds the block and age. camelot returns the table without the title above it, so a key with the State would leave camelot out of every vote. The parser adds `state` as an extra column, and the output uses it to name rows.
 
 ## Run it
 
@@ -92,7 +92,7 @@ For each sex and block it compares each age's `lx` with the previous age's `lx *
 
 ## What is unusual
 
-* `survivorship` is a check written in Python: each age's lx must follow from the previous age's lx and nqx. A sum rule in TOML cannot express it.
+* `survivorship` is a check written in Python. A sum rule in TOML cannot express it.
 * The 2010-14 report spells the State "Uttrakhand" and prints one Total row as `80+85`. `parse` names the State Uttarakhand and reads the row as 80-85.
 * West Bengal's urban female e0 is 76.3 in the re-uploaded 2019-23 report (73.5 in the first upload, per its corrigendum).
 

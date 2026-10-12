@@ -139,9 +139,14 @@
     details.options summary { cursor: pointer; width: max-content; }
     .fields { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; }
     .fields label { display: grid; gap: 4px; font-size: .85rem; }
-    .fields select, .fields input, .pick input {
+    .fields select, .fields input:not([type=checkbox]), .pick input {
       background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 220px;
     }
+
+    .picks { border: 0; padding: 0; margin: 0; font-size: .85rem; }
+    .picks legend { padding: 0; margin-bottom: 4px; }
+    #engine-picks { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+    #engine-picks label { display: flex; gap: 6px; align-items: center; }
 
     /* work */
     .bar { display: flex; align-items: center; gap: 16px; padding: 12px 0 24px; flex-wrap: wrap; }
@@ -256,6 +261,10 @@
             <label>Pages
               <input id="pages" placeholder="All, or e.g. 3-5" inputmode="numeric">
             </label>
+            <fieldset class="picks">
+              <legend>Engines</legend>
+              <div id="engine-picks">Listed once the engines load.</div>
+            </fieldset>
           </div>
         </details>
       </div>

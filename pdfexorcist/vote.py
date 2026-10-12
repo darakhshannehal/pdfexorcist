@@ -213,7 +213,7 @@ def _read_all(
     chunks = {1: pdf} if size >= n_pages else _chunks(pdf, n_pages, size, tmp)
     tasks = [(n, first) for n in pooled for first in chunks]
     here = [n for n in known if n not in pooled]
-    local = [tasks.pop()] if tasks and not here else []  # this process reads one rather than wait
+    local = [tasks.pop()] if tasks and not here else []  # this process reads one itself
     for n in known:
         report(n, "start", None)
     parts = _read_tasks(tasks, chunks, workers)

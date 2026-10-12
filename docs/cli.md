@@ -35,7 +35,7 @@ Reading report.pdf with 5 engines (a majority must agree)
   pdfium      243 readings  0.0s
 
 Agreed      242  99.6% of cells
-Unresolved    1  engines disagreed: left blank, not guessed
+Unresolved    1  engines disagreed: left blank
 
 Wrote report.csv (table layout, 48 rows).
 Cells to review, with the reason and every engine's reading: report.review.csv
@@ -51,7 +51,7 @@ reason,page,row,col,label,value,status,failed,n_agree,votes,sources,dissent
 engines disagreed,1,#3,0,,,unresolved,,1,9×1,pdfium,camelot=<missing>|pdfplumber=<missing>|pdftotext=<missing>|pymupdf=<missing>
 ```
 
-`pdfexorcist report.pdf` is short for `pdfexorcist extract report.pdf`. Existing files are never replaced unless you add `--force`.
+`pdfexorcist report.pdf` is short for `pdfexorcist extract report.pdf`. An existing output file stops the run with an error unless you add `--force`.
 
 ### Extract options
 
@@ -287,7 +287,7 @@ Some agreed values break a rule (see the failed column), so the exit code is 1.
 
 Adding `where = "col <= 2"` to the check limits it to the count columns; see [Recipes](recipes.md#checks).
 
-Every error says what went wrong and how to fix it:
+An error prints what went wrong and how to fix it:
 
 ```
 ╭─ Error ────────────────────────────────────────────────────────────────────────────────╮
@@ -302,7 +302,7 @@ Every error says what went wrong and how to fix it:
 
 ## Scripts
 
-`--json --quiet` prints only a JSON summary, and the exit code tells you whether to trust the run:
+`--json --quiet` prints only a JSON summary, with the same [exit codes](#exit-codes):
 
 ```bash
 pdfexorcist extract report.pdf --json --quiet

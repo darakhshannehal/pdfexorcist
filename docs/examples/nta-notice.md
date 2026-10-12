@@ -1,5 +1,5 @@
 ---
-description: "NEET (UG) 2024 result press release: nine tables on five pages read by one recipe into one CSV, with checks that catch a misprint."
+description: "NEET (UG) 2024 result press release: nine tables on five pages read by one recipe into one CSV, with a check that fails on a misprint."
 ---
 
 # NEET (UG) 2024 result press release
@@ -160,7 +160,7 @@ def parse(pages):
 ## What is unusual
 
 * Table 1 prints 2021 Un-Reserved as `46-853`. pdfexorcist reads it as printed and the category check fails on 2021; 460853 makes the categories add up to registered.
-* Table 1's 2023 category column adds up to present candidates (2038596), not registered, so that check is `>=`.
+* Table 1's 2023 category column adds up to present candidates (2038596), so that check is `>=`.
 * The unnumbered summary's 2023 total is 2059006, against 2087462 in Tables 1, 3, 4, 6 and 8, and its gender and category rows do not add up to its total in either year. Nothing there is checked.
 * The 2024 languages add up to 2406003, 76 fewer than registered.
 

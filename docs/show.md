@@ -4,7 +4,7 @@ description: "pdfexorcist show and compare: a page with a box on every extracted
 
 # See what it extracts
 
-`show` draws one page with a box on every cell the vote produced. A shifted column or a skipped row is visible at a glance.
+`show` draws one page with a box on every cell the vote produced. A shifted column or a skipped row shows as boxes out of line or missing.
 
 ```bash
 pdfexorcist show mccd_2014.pdf --recipe examples/mccd/table4.toml

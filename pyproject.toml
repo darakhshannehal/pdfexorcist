@@ -52,10 +52,10 @@ mlx = ["pdfexorcist[glmocr]"]
 
 [project.urls]
 Homepage = "https://github.com/saketkc/pdfexorcist"
-Documentation = "https://saketkc.github.io/pdfexorcist/cli/"
+Documentation = "https://pdfexorcist.in/cli/"
 Repository = "https://github.com/saketkc/pdfexorcist"
 Issues = "https://github.com/saketkc/pdfexorcist/issues"
-Changelog = "https://saketkc.github.io/pdfexorcist/cli/changelog.html"
+Changelog = "https://pdfexorcist.in/cli/changelog.html"
 
 [project.scripts]
 pdfexorcist = "pdfexorcist.cli:main"

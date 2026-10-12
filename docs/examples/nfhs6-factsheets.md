@@ -16,7 +16,7 @@ The generic parsers cannot read these sheets:
 * A row is named by its printed indicator number, and a wrapped label puts the row's values on a line of their own, between its two label lines.
 * Some labels are drawn as graphics, so the text layer holds only the bare number ("76", "85"). A bare number is taken only as the next indicator in sequence.
 * Footnote marks sit in the labels ("source1", "period18"), and some engines split them off as a cell of their own.
-* Placeholders matter: `(45.6)` is a value from a small sample and `*` a suppressed one. Both are kept as printed, and so is a whole number such as `12`.
+* `(45.6)` is a value from a small sample and `*` a suppressed one. Both are kept as printed, and so is a whole number such as `12`.
 
 The fixtures are pages of the IIPS PDFs in `tests/fixtures/nfhs6_state/` and `tests/fixtures/nfhs6_district/`.
 
@@ -109,7 +109,7 @@ format = "csv"
 The district recipe differs only in its name and sample: the parser tells the two layouts apart by the number of value columns.
 
 * The key is the page, the printed indicator number and the column. The geography (`geo`, from the page title) is an extra column, so an engine that misses the title still votes.
-* The checks allow no percentage over 100 (the State sheet's total fertility rate is not one) and require each State Total to lie between its Urban and Rural. The Total is a weighted mean of the two, and rounding keeps the order, so the rule holds for every printed value.
+* The checks allow no percentage over 100 (the State sheet's total fertility rate is not one) and require each State Total to lie between its Urban and Rural.
 
 ## The parser
 
@@ -129,7 +129,7 @@ def parse(pages):
         any other count yields nothing
 ```
 
-A row with too few or too many values yields nothing, so a value one engine missed can never move into its neighbour's column. A row whose number is graphics too (76 and 77 on some States' pages) is not read: guessing it from the row above would let camelot's repeated rows pass as the next indicator.
+A row whose number is graphics too (76 and 77 on some States' pages) is not read.
 
 ## Checked against verified values
 
@@ -139,4 +139,4 @@ A row with too few or too many values yields nothing, so a value one engine miss
 PDFEXORCIST_OCR_TESTS=1 python -m pytest tests/test_nfhs6_factsheet.py -s
 ```
 
-On a few text-layer pages a value's ".0" is drawn as a path while its digits are text, so every text engine reads `71` where the page prints `71.0` (Assam and Goa, not in the fixtures). The engines agree, so the vote cannot catch it: an OCR engine reading the pixels, or a rule on the number of decimals, can.
+On a few text-layer pages a value's ".0" is drawn as a path while its digits are text, so every text engine reads `71` where the page prints `71.0` (Assam and Goa, outside the fixtures). The vote marks `71` as agreed. An OCR engine, which reads the pixels, or a check on the number of decimals can flag it.

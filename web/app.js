@@ -22,7 +22,10 @@ const worker = new Client('./worker.js', {
   onStatus: (data) => {
     if (data.type === 'restart') engines = INITIAL;
     else if (data.type === 'status') engines = { ...engines, status: `${data.text}…` };
-    else if (data.type === 'ready') engines = { ...engines, ready: true, jspi: data.jspi, names: data.names, optIn: data.optIn };
+    else if (data.type === 'ready') {
+      engines = { ...engines, ready: true, jspi: data.jspi, names: data.names, optIn: data.optIn };
+      pickers();
+    }
     else if (data.type === 'failed') engines = { ...engines, failed: `The engines could not start: ${data.message}` };
     showEngines();
   },
@@ -41,6 +44,14 @@ function showEngines() {
         : `${engines.status} 60 MB on the first visit, cached after.`;
 }
 showEngines();
+
+/** one checkbox per engine; unchecks survive a worker restart */
+function pickers() {
+  const off = new Set([...$('engine-picks').querySelectorAll('input:not(:checked)')].map((c) => c.value));
+  fill($('engine-picks'), [...engines.names, ...engines.optIn].map((name) =>
+    el('label', {}, el('input', { type: 'checkbox', value: name, checked: !off.has(name) }), name)));
+}
+const picked = () => [...$('engine-picks').querySelectorAll('input:checked')].map((c) => c.value);
 
 // ---- home
 
@@ -116,6 +127,11 @@ async function openFile(f) {
     $('engine-status').textContent = `${f.name} is ${Math.round(f.size / 1e6)} MB. The limit here is ${MAX_BYTES / 1e6} MB; the command-line tool has none.`;
     return;
   }
+  const chosen = engines.ready ? picked() : undefined;
+  if (chosen?.length === 0) { // an empty --engines would run the defaults
+    $('engine-status').textContent = 'Pick the engines to run under Options.';
+    return;
+  }
   const pdf = new Uint8Array(await f.arrayBuffer());
   run({
     kicker: 'Your PDF',
@@ -124,6 +140,7 @@ async function openFile(f) {
     name: f.name,
     recipe: $('recipe').value || undefined,
     pages: $('pages').value.trim() || undefined,
+    engines: chosen,
   });
   file.value = '';
 }
@@ -213,7 +230,7 @@ async function read(job, pane, signal) {
   };
   try {
     const doc = await job.doc();
-    const res = await worker.ask({ doc, recipe: job.recipe, pages: job.pages }, { signal: AbortSignal.any([signal, stop.signal]), progress });
+    const res = await worker.ask({ doc, recipe: job.recipe, pages: job.pages, engines: job.engines }, { signal: AbortSignal.any([signal, stop.signal]), progress });
     if (res.cancelled) return;
     const pagesRead = res.summary.pages?.length || job.count;
     const again = job.sample
@@ -236,7 +253,7 @@ async function openGrid(job, page) {
   tab.document.title = `Page ${page}`;
   tab.document.body.textContent = `Drawing the grid for page ${page}…`;
   try {
-    const { html } = await worker.ask({ show: await job.doc(), page, recipe: job.recipe });
+    const { html } = await worker.ask({ show: await job.doc(), page, recipe: job.recipe, engines: job.engines });
     tab.location = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   } catch (e) {
     tab.document.body.textContent = e.message;

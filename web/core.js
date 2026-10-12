@@ -153,19 +153,22 @@ async function cli({ py, glue }, cmd, doc, argv, recipe, progress) {
   }
 }
 
+/** engines: names to run, or undefined for the defaults */
+const only = (engines) => (engines ? ['--engines', engines.join(',')] : []);
+
 /** the CLI's show view of one page: every voted cell boxed, as self-contained HTML */
-export async function show(ctx, { doc, page, recipe }) {
+export async function show(ctx, { doc, page, recipe, engines }) {
   const out = '/work/grid.html';
-  const [code, stdout] = await cli(ctx, 'show', doc, ['--page', String(page), '-o', out, '--force', '-q'], recipe);
+  const [code, stdout] = await cli(ctx, 'show', doc, ['--page', String(page), '-o', out, '--force', '-q', ...only(engines)], recipe);
   if (code) throw new Error(stdout.trim() || `pdfexorcist show stopped with exit code ${code}`);
   return { html: ctx.py.FS.readFile(out, { encoding: 'utf8' }) };
 }
 
 /** recipe: a path under /repo; returns the summary, and the table and review as text */
-export async function extract(ctx, { doc, recipe, pages, progress }) {
+export async function extract(ctx, { doc, recipe, pages, engines, progress }) {
   const { py } = ctx;
   for (const f of ls(py.FS, '/work/out')) py.FS.unlink(`/work/out/${f}`);
-  const argv = ['-o', '/work/out/', '--json', '-q', '--force', ...(pages ? ['--pages', pages] : [])];
+  const argv = ['-o', '/work/out/', '--json', '-q', '--force', ...(pages ? ['--pages', pages] : []), ...only(engines)];
   const [, stdout] = await cli(ctx, 'extract', doc, argv, recipe, progress);
   const summary = JSON.parse(stdout);
   const text = (path) => path && py.FS.readFile(path, { encoding: 'utf8' });

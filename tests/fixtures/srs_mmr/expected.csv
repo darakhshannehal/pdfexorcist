@@ -1,0 +1,25 @@
+area,mmr,mmr_lower,mmr_upper,mortality_rate,lifetime_risk_pct
+INDIA,88,79,96,5,0.18
+Assam,110,53,167,6,0.23
+Bihar,104,68,140,10,0.34
+Jharkhand,54,10,98,4,0.13
+Madhya Pradesh,142,100,185,12,0.41
+Chhattisgarh,146,63,229,10,0.37
+Odisha,153,98,208,9,0.31
+Rajasthan,86,49,122,7,0.25
+Uttar Pradesh,141,104,177,12,0.41
+Uttarakhand,91,45,136,5,0.19
+EAG AND ASSAM SUBTOTAL,118,103,133,9,0.31
+Andhra Pradesh,30,3,56,2,0.05
+Telangana,59,14,105,3,0.11
+Karnataka,68,34,103,3,0.12
+Kerala,30,2,58,1,0.05
+Tamil Nadu,35,10,60,2,0.05
+SOUTH SUBTOTAL,42,29,56,2,0.07
+Gujarat,51,23,78,3,0.12
+Haryana,89,43,135,6,0.22
+Maharashtra,36,13,60,2,0.06
+Punjab,90,31,150,5,0.16
+West Bengal,104,64,143,5,0.17
+Other states,86,63,108,4,0.15
+OTHER SUBTOTAL,75,62,88,4,0.14

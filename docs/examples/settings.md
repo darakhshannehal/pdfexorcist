@@ -4,7 +4,7 @@ description: "Small pdfexorcist recipes for the settings the gallery leaves at t
 
 # Other recipe settings
 
-The gallery recipes leave many settings at their defaults. Each recipe here changes a few of them and runs on a gallery fixture. The generic ones are in `examples/settings/`; the others sit next to the recipe they vary, so they can use its Python. `tests/test_recipe_docs_examples.py` runs each one. Every setting is listed in the [format reference](../recipes.md#format-reference).
+The gallery recipes leave many settings at their defaults. Each recipe here changes a few of them and runs on a gallery fixture. The generic ones are in `examples/settings/`; the others sit next to the recipe they vary, so they can use its Python. `tests/test_recipe_docs_examples.py` runs each one. The [format reference](../recipes.md#format-reference) lists every setting.
 
 ## Rows or columns, and a total column
 
@@ -22,7 +22,7 @@ min_values = 3
 
 [[checks]]
 column = "col"
-total = 0          # the total and its parts, instead of a rule
+total = 0          # a total column and its parts
 parts = [3, 6]
 op = "="
 by = ["page", "row"]  # one check per line
@@ -39,7 +39,7 @@ pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe examples/s
 
 ```
 Agreed         352  97.5% of cells
-Unresolved       9  engines disagreed: left blank, not guessed
+Unresolved       9  engines disagreed: left blank
 Failed checks    3  agreed values that break a rule
   x Total I = Hit and Run I + Other I: 3 cells
 
@@ -90,7 +90,7 @@ pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe examples/s
   pdfium      387 readings  0.0s
 
 Agreed         387  97.5% of cells
-Unresolved      10  engines disagreed: left blank, not guessed
+Unresolved      10  engines disagreed: left blank
 Checks      1 rule  all passed
 
 Wrote cii_columns.xlsx (table layout, 40 rows).
@@ -168,7 +168,7 @@ One record:
  }
 ```
 
-Without `tolerance` the rule fails on the 0.2 gap. `abs_tolerance` allows a fixed gap instead, as in the [population projections](census-projections.md).
+Without `tolerance` the rule fails on the 0.2 gap. `abs_tolerance` allows a fixed gap, as in the [population projections](census-projections.md).
 
 ## Pages by number
 
@@ -188,7 +188,7 @@ Reading page 2 of tests/fixtures/crs/crs_2023_t1_t4.pdf with 5 engines (a majori
 recipe examples/crs_state_tables/table4.toml
 ...
 Agreed          324  97.3% of cells
-Unresolved        9  engines disagreed: left blank, not guessed
+Unresolved        9  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 
@@ -221,7 +221,7 @@ pdfexorcist extract tests/fixtures/mccd/mccd_2011.pdf --recipe examples/mccd/unf
   pdfium      1,782 readings  0.1s
 
 Agreed         1,782  50.0% of cells
-Unresolved     1,782  engines disagreed: left blank, not guessed
+Unresolved     1,782  engines disagreed: left blank
 Failed checks    768  agreed values that break a rule
   x state 'All States (Total)' >= the rest, within each page, code, pocc, sex: 768 cells
 Note: 1,044 agreed cells were read with different values in different places (e.g. two pages); left
@@ -257,7 +257,7 @@ recipe examples/nfhs6/state.toml
   pdfium      276 readings  0.0s
 
 Agreed          260  64.4% of cells
-Unresolved      144  engines disagreed: left blank, not guessed
+Unresolved      144  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 
@@ -273,7 +273,7 @@ Unresolved        0
 Checks      2 rules  all passed
 ```
 
-A value two engines read differently still needs all five. `use` names the engines, so one that is not installed is an error instead of a smaller vote.
+A value two engines read differently still needs all five. `use` names the engines, so one that is not installed is an error.
 
 ## Engines that vote once
 
@@ -298,7 +298,7 @@ pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recip
   pdfium      68 readings  0.1s
 
 Agreed          480  91.6% of cells
-Unresolved       44  engines disagreed: left blank, not guessed
+Unresolved       44  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 
@@ -434,7 +434,7 @@ examples/settings/cleaning_ocr.toml
   tesseract read no values on these pages.
 
 Agreed          12  85.7% of cells
-Unresolved       2  engines disagreed: left blank, not guessed
+Unresolved       2  engines disagreed: left blank
 Checks      1 rule  all passed
 ```
 

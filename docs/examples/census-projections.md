@@ -4,7 +4,7 @@ description: "Two population projection reports read with recipes: IIPS district
 
 # Population projections
 
-Two reports that censusindia uses for its projections. Both have a text layer, so the five default engines read them, and both carry misprinted headers that the recipes route around.
+Two reports that censusindia uses for its projections. Both have a text layer, so the five default engines read them. Both print some wrong headers.
 
 ## IIPS district projections
 
@@ -75,7 +75,7 @@ def parse(pages):
                    "district": title or header, "header", "value"}
 ```
 
-The headers are not reliable. Sirohi's first block is headed 2027-2031 but holds 2012-2016, so cells are keyed by the block's place on the page and the year as printed. Prakasam's second block is headed "District: Guntur", and Imphal East's blocks "District: Ukhrul", so the district comes from the table title and the printed header is kept as `header`.
+Sirohi's first block is headed 2027-2031 but holds 2012-2016, so cells are keyed by the block's place on the page and the year as printed. Prakasam's second block is headed "District: Guntur", and Imphal East's blocks "District: Ukhrul", so the district comes from the table title and the printed header is kept as `header`.
 
 `pdfexorcist show tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe examples/census_iips_district/recipe.toml -o page.png` draws what the recipe reads:
 

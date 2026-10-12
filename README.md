@@ -3,11 +3,11 @@
 [![PyPI](https://img.shields.io/pypi/v/pdfexorcist)](https://pypi.org/project/pdfexorcist/)
 [![Python](https://img.shields.io/pypi/pyversions/pdfexorcist)](https://pypi.org/project/pdfexorcist/)
 [![CI](https://github.com/saketkc/pdfexorcist/actions/workflows/ci.yml/badge.svg)](https://github.com/saketkc/pdfexorcist/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-saketkc.github.io-blue)](https://saketkc.github.io/pdfexorcist/cli/)
+[![Docs](https://img.shields.io/badge/docs-pdfexorcist.in-blue)](https://pdfexorcist.in/cli/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/saketkc/pdfexorcist/blob/main/LICENSE)
 
 `pdfexorcist` extracts tables from PDFs, scans and photos. It runs
-severalenginges to read a cell and uses a majority vote to decide its value.
+several engines to read a cell and keeps the value that a majority of them read.
 
 ```bash
 uvx pdfexorcist extract report.pdf      # writes report.csv
@@ -16,9 +16,9 @@ uvx pdfexorcist extract report.pdf      # writes report.csv
 ![pdfexorcist show: agreed cells in green, cells the engines disagree on in orange](https://raw.githubusercontent.com/saketkc/pdfexorcist/main/docs/assets/show-page.png)
 
 
-Try it in your browser, nothing to install: https://saketkc.github.io/pdfexorcist/
+Try it in your browser: https://pdfexorcist.in/
 
-Docs: https://saketkc.github.io/pdfexorcist/cli/
+Docs: https://pdfexorcist.in/cli/
 
 
 ## Install with uv
@@ -120,7 +120,7 @@ Modaksagar,Kokan,Thane,4,02/10/2026,07:33 AM,76.06,128.92,204.98,101.17,177.23,7
 Tansa,Kokan,Thane,5,02/10/2026,07:35 AM,12.08,172.52,184.60,164.83,176.91,95.54,99.55
 ```
 
-Details: [Pravah example](https://saketkc.github.io/pdfexorcist/cli/examples/pravah.html).
+Details: [Pravah example](https://pdfexorcist.in/cli/examples/pravah.html).
 
 ### Several tables in one PDF
 
@@ -150,7 +150,7 @@ state,Total,2087462,2038596,1145976,2406079,2333297,1316268
 ```
 
 The recipe reports the printed `46-853` value as a failed check. Details:
-[NEET 2024 example](https://saketkc.github.io/pdfexorcist/cli/examples/nta-notice.html).
+[NEET 2024 example](https://pdfexorcist.in/cli/examples/nta-notice.html).
 
 ### A scanned list
 
@@ -167,7 +167,7 @@ pdfexorcist extract https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf32
   glmocr     845 readings  5.4s
 
 Agreed          965  99.9% of cells
-Unresolved        1  engines disagreed: left blank, not guessed
+Unresolved        1  engines disagreed: left blank
 Checks      2 rules  all passed
 ```
 
@@ -179,7 +179,7 @@ sr_no,rank,percentile,category,state
 ```
 
 The checks require ranks to rise and percentiles to fall. Details:
-[NEET toppers example](https://saketkc.github.io/pdfexorcist/cli/examples/nta.html).
+[NEET toppers example](https://pdfexorcist.in/cli/examples/nta.html).
 
 `pdfexorcist.extract(url)` accepts file links and downloads into
 `$PDFEXORCIST_CACHE` (default `~/.cache/pdfexorcist`).
@@ -243,7 +243,6 @@ pdfexorcist compare report.pdf --page 3               # opens on the engines sid
 
 `pdfexorcist` has 3 steps that you can replace with a function that you write.
 These steps are the plug-in points.
-The default steps work for most tables.
 Use a plug-in point only when a default step gives incorrect results for your PDF.
 
 | Plug-in point | Use it when | Your function | Give it to `extract()` with |
@@ -269,7 +268,7 @@ To add an extractor, do these steps:
 `@register` also adds the engine to the default engines.
 To prevent this, write `@register("my_ocr", default=False)`.
 
-If you know the box of each cell, yield `pdfexorcist.cells.BoxCell(x, "text", (x0, y0, x1, y1))`. Do not yield `(x, "text")`.
+If you know the box of each cell, yield `pdfexorcist.cells.BoxCell(x, "text", (x0, y0, x1, y1))`.
 `pdfexorcist show` uses the box to mark the cell on the page.
 
 Two engines that use the same OCR model make the same errors.
@@ -290,8 +289,7 @@ To write a parser, do these steps:
 3. Give the function in `parse=`.
 4. Give the names of the key columns in `key=`.
 
-Make sure that a value gets the same key from all the engines.
-If the key changes between engines, the engines cannot agree.
+A value must get the same key from all the engines.
 
 ### 3. Validator
 
@@ -453,17 +451,17 @@ rows = ["code", "sex"]           # the columns that name a grid row (default: th
 format = "csv"                   # csv, xlsx, parquet or json
 ```
 
-**Rules.** `rule` is the total, then `=`, `>=` or `<=`, then its parts joined
+Rules: `rule` is the total, then `=`, `>=` or `<=`, then its parts joined
 by `+`: `"T = M + F"`, `"T >= M + F"` (the total may exceed its parts), or
 `"All India = rest"` for every other row of the group. Values that break a
 rule are kept, named in the `failed` column and listed for review, and the run
-exits with code 1. A rule whose total or parts never appear is reported, so a
-typo cannot pass as "all checks passed". The generic parsers name cells by
+exits with code 1. A rule whose total or parts are missing logs a warning that
+names them. The generic parsers name cells by
 `page`, `row`, `col` (the value's place in its line, from 0) and `label` (the
 line's text): a total row is `column = "label"`, a total column is
 `column = "col"` with `by = ["page", "row"]`.
 
-**Your own Python.** `function = "file.py:name"` loads `name` from a `.py`
+Your own Python: `function = "file.py:name"` loads `name` from a `.py`
 file in the recipe's folder (or below it); that file may import its
 neighbours. The functions have the library's signatures: a parser takes
 `(page_no, lines)` pairs and yields dicts with the key columns and `value`

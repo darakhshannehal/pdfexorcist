@@ -4,7 +4,7 @@ description: "The pdfexorcist recipe format: a TOML file holding the pages, engi
 
 # Recipes
 
-A recipe is a TOML file with everything about one kind of table: its pages, the engines, how numbers are cleaned, how a line becomes cells, and which totals must add up. Make one once and reuse it on next year's report.
+A recipe is a TOML file with everything about one kind of table: its pages, the engines, how numbers are cleaned, how a line becomes cells, and which totals must add up.
 
 Every section is optional. A missing setting keeps the default, as `extract` does without a recipe. Command-line options (`--pages`, `--engines`, ...) override the recipe.
 
@@ -220,8 +220,6 @@ def parse(pages):
         yield {"lake": block name, "year": year, "field": field, "value": value} per value
 ```
 
-A line is never placed by its label, which OCR mangles, and a line with a dropped or extra value yields nothing.
-
 The `chandra` and `glmocr` reads were cached from an earlier run. If an engine reads nothing, `min_agree` does not drop: the others must still reach it. `min_unopposed = 2` also accepts a value two engines read identically where the others read nothing, such as the title date, which Chandra and GLM-OCR do not return. The generic parser with `--ocr` agrees on almost none of this photo's cells, because the engines split its rows differently.
 
 `pdfexorcist show tests/fixtures/bmc/2026-09-28.jpg --recipe examples/lake_photo/recipe.toml -o page.png` draws what the recipe reads:
@@ -400,7 +398,7 @@ The generic parsers name cells by `page`, `row`, `col` (the value's place in its
 
 `total`, `parts` and `op` say the same as `rule`, and suit names that are numbers, like the `col` of a total column: `total = 0` and `parts = [3, 6]` is `rule = "0 = 3 + 6"`. With `missing = "fail"`, a group whose total is there but a listed part is not fails; the default skips it.
 
-Values that break a rule are kept, named in the `failed` column and listed for review, and the run exits with code 1. A rule whose total or parts never appear is reported, so a typo cannot pass as "all checks passed".
+Values that break a rule are kept, named in the `failed` column and listed for review, and the run exits with code 1. When a rule's total or a part matches no cell, the run prints a warning with the missing name and up to eight of the names it found.
 
 ### Your own Python
 

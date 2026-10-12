@@ -23,8 +23,7 @@ The generic parsers cannot read these pages:
 
 So the recipe points to `nfhs6_factsheet.py`, the parser
 `tests/test_nfhs6_factsheet.py` checks against verified values. A row yields
-values only when it holds exactly four, so a value one engine missed cannot
-shift the others. Two rules run after the vote: no percentage over 100 (the
+values only when it holds exactly four. Two rules run after the vote: no percentage over 100 (the
 total fertility rate is not a percentage), and every Total between its Urban
 and Rural.
 
@@ -100,8 +99,8 @@ Checks      2 rules  all passed
 On the geographies with a text layer every agreed value equals the value
 nfhs6 verified but two: on Assam's indicator 20 and Goa's
 21 (Total) the ".0" is drawn as a path while the digits are text, so every
-text engine reads `71` and `39` where the page prints `71.0` and `39.0`. The
-engines agree, so the vote cannot catch it. On some States' pages some of rows
+text engine reads `71` and `39` where the page prints `71.0` and `39.0`, and
+the vote marks both as agreed. On some States' pages some of rows
 76, 77, 85, 86, 88 and 89 are not read: their numbers are graphics too.
 
 ## District compendiums: district.toml

@@ -1,5 +1,5 @@
 ---
-description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, a lake-level photo, NCVBDC's monthly malaria report, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, two NTA NEET documents, and the less common recipe settings."
+description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, a lake-level photo, NCVBDC's monthly malaria report, NCRB prison statistics, the SRS statistical report and maternal mortality bulletin, MoRTH road accidents, the National Health Profile's malaria table, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, two NTA NEET documents, and the less common recipe settings."
 ---
 
 # Examples
@@ -18,8 +18,13 @@ Each example is a recipe in the repository's `examples/` folder and runs on a fi
 | [BMC lake levels](../recipes.md#example-a-photographed-table) | A phone photo: seven lakes, this year and the two before. | OCR engines only, with your own parser. |
 | [NFHS-6 fact sheets](nfhs6-factsheets.md) | Key Indicators by State and district. | `examples/nfhs6/` (`state.toml`, `district.toml`): rows by printed indicator number, placeholders kept as printed, one parser for two layouts. |
 | [NFHS-5 fact sheets](nfhs5-factsheets.md) | Key Indicators by State and district, 2019-21. | `examples/nfhs5/` (`state.toml`, `district.toml`): the NFHS-6 parser adapted, checked against an independent extraction. |
-| [NEET (UG) 2024 press release](nta-notice.md) | Nine tables on five pages: highlights by year, language, gender, category, State. | One recipe for every table: cells keyed by table, row and column; checks catch a misprinted count. |
-| [MMIS monthly malaria situation](mmis.md) | NCVBDC's monthly report: a small table of months under each trend graph, by State and indicator. | Cells keyed by the graph's place on the page; area and indicator from the graph title as extra columns; a TPR check and a check that catches a table under the wrong graph. |
+| [NEET (UG) 2024 press release](nta-notice.md) | Nine tables on five pages: highlights by year, language, gender, category, State. | One recipe for every table: cells keyed by table, row and column; a check fails on a misprinted count. |
+| [MMIS monthly malaria situation](mmis.md) | NCVBDC's monthly report: a small table of months under each trend graph, by State and indicator. | Cells keyed by the graph's place on the page; area and indicator from the graph title as extra columns; a TPR check and a check that fails on a table under the wrong graph. |
+| [Prison Statistics India](prison_stats.md) | NCRB's capacity, inmates and occupancy by State/UT, by sex and by jail type; one table runs over three pages by column. | Cells keyed by printed column number, so the three pages join; totals, Table 1.3 against Table 1.2, and an occupancy check. |
+| [SRS Statistical Report](srs_statistical_report.md) | Table 1: percent distribution of the population by age, sex and residence, one or two State blocks a page. | Keyed by block on the page, the State an extra column; age groups add up to 100 and a total lies between its parts. |
+| [SRS maternal mortality](srs_maternal_mortality.md) | MMR by State with its 95% CI, deaths by age, and the Cause of Death report's top 10 causes. | Intervals split into lower and upper columns, percents made numbers; CI, lifetime-risk and sum-to-100 checks. |
+| [Road Accidents in India](road_accidents.md) | MoRTH's State/UT accidents, killed and injured, printed sideways, with three-level headers and Indian comma grouping. | Pages turned upright, `fit_boxes = false` for a spread, values placed by x; totals, share and rank checks. |
+| [NHP malaria](nhp_malaria.md) | CBHI National Health Profile: State/UT malaria cases and deaths for five years, the last provisional. | Years read from the header; a wrapped name joined; States/UTs add up to India. |
 | [Pravah dam storage](pravah.md) | Maharashtra's daily report: a row per dam, grouped by region and district. | Rows keyed by dam name, wrapped names joined, region and district carried from the headings; capacity and % checks. |
 | [NTA NEET toppers](nta.md) | A scanned list: Sr. No., application number, name, gender, category, percentile, rank, State. | OCR engines only; rows keyed by Sr. No., wrapped cells joined to their row; rank and percentile order checks. |
 | [Other settings](settings.md) | Pages of the documents above. | Small recipes for the settings the others leave at their defaults: the columns parser, column totals, tolerances, page boxes, voting rules, families, a cleaning function, the cells layout and the xlsx, parquet and json formats. |
@@ -43,6 +48,11 @@ Each test pairs a document parser with values checked against the printed page. 
 | `test_mohfw_state_projection.py` | MoHFW population projections by age and sex |
 | `test_iips_district_projection.py` | IIPS district projections by single age and sex |
 | `test_mmis_malaria.py` | NCVBDC Monthly Malaria Situation, Category II (October 2023) |
+| `test_prison_stats.py` | NCRB Prison Statistics India 2023, Tables 1.2 and 1.3 |
+| `test_srs_statistical_report.py` | SRS Statistical Report 2024, Table 1: age distribution by State |
+| `test_srs_maternal_mortality.py` | SRS maternal mortality bulletin 2021-23 and Cause of Death Table 2.3A |
+| `test_road_accidents.py` | MoRTH Road Accidents in India 2022, Annexures 2-4 (sideways) |
+| `test_nhp_malaria.py` | CBHI National Health Profile 2023, Table 3.1.1: malaria by State/UT |
 | `test_pravah_dams.py` | Maharashtra WRD Pravah daily dam storage |
 | `test_nta_toppers.py` | NTA NEET (UG) 2026 toppers list (a scan, OCR) |
 | `test_nta_notice.py` | NTA NEET (UG) 2024 press release: nine tables in one recipe |
@@ -68,6 +78,11 @@ nfhs6-factsheets
 nfhs5-factsheets
 nta-notice
 mmis
+prison_stats
+srs_statistical_report
+srs_maternal_mortality
+road_accidents
+nhp_malaria
 pravah
 nta
 settings
