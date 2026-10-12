@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pymupdf
 import pytest
+from cli_helpers import make_pdf
 
 from pdfexorcist import extract, parse_rows, vote
 
@@ -376,3 +377,18 @@ def test_independent_text_engine(engine):
 
     ref, got = values("pymupdf"), values(engine)
     assert sum(got.get(k) == v for k, v in ref.items()) >= 0.99 * len(ref)
+
+
+@pytest.mark.parametrize("rot", [90, 180, 270])
+def test_sideways_table(tmp_path, rot):
+    """A table printed turned on an upright page, with a running head across the margin."""
+    pdf = tmp_path / "t.pdf"
+    doc = pymupdf.open(make_pdf(tmp_path / "upright.pdf", [ROWS]))
+    page = doc[0]
+    page.insert_text((49, 104), "Survey 2018", rotate=90)  # across the table, box over a label
+    page.set_rotation(rot)  # turn the content itself, no /Rotate, as InDesign does
+    page.remove_rotation()
+    doc.save(pdf)
+    res = extract(pdf, ["pdftotext", "pdfplumber", "pymupdf", "pdfium"], min_agree=4)
+    ok = res[res.status == "verified"]
+    assert ok.groupby("label")["value"].apply(tuple).to_dict() == {r[0]: r[1:] for r in ROWS}

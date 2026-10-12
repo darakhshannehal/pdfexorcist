@@ -10,6 +10,7 @@ from typing import Any, Literal, overload
 import pandas as pd
 
 from ._registry import IN_PROCESS
+from ._upright import upright_pages
 from .checks import Check, validate
 from .extractors import DEFAULTS, EXTRACTORS
 from .pages import IMAGE_SUFFIXES, ocr_layer
@@ -373,6 +374,7 @@ def extract(
         pdf = _pages(Path(pdf), pages, Path(tmp)) if pages else Path(pdf)
         if fit_boxes:
             pdf = fit_page_boxes(pdf, Path(tmp) / "fit")
+        pdf = upright_pages(pdf, Path(tmp) / "upright")
         if return_readings:
             kept.pdf = pdf.read_bytes()
         if not families and ocr_layer(pdf):

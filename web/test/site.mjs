@@ -108,6 +108,7 @@ try {
     const csv = await downloaded(page, 'text=Download CSV');
     console.log(`  browser ${JSON.stringify(web)}\n  native  ${JSON.stringify(want.cells)}`);
     console.log(`  CSV ${csv === want.csv ? 'identical to' : 'DIFFERS from'} the CLI's (${csv.length} bytes)`);
+    if (new URL(page.url()).hash !== `#${examples[i].id}`) failures.push(`example ${i}: URL is ${page.url()}`);
     if (voters !== 5) failures.push(`example ${i}: ${voters} engines ran`);
     if (!rows) failures.push(`example ${i}: the table is empty`);
     if (JSON.stringify(web) !== JSON.stringify(want.cells)) failures.push(`example ${i}: counts differ from the CLI`);
@@ -116,6 +117,12 @@ try {
     await page.locator('#back').click();
   }
   await longPdf(page);
+  const shared = examples.at(-1); // a shared link opens its example in a fresh tab
+  const tab = await browser.newPage();
+  await tab.goto(`${url}#${shared.id}`);
+  await tab.waitForSelector(`#doc-title >> text=${shared.title}`, { timeout: 60_000 }).catch(() => failures.push(`link #${shared.id} did not open its example`));
+  console.log(`link #${shared.id}: ${await tab.locator('#doc-title').innerText()}`);
+  await tab.close();
   if (shots) {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.screenshot({ path: `${shots}/home-dark.png`, fullPage: true });

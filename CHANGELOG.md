@@ -7,6 +7,17 @@ All notable changes to pdfexorcist are listed here. The format follows
 Add each change under [Unreleased] as you make it. The Prepare release
 workflow moves those entries into a dated section.
 
+## [Unreleased]
+
+### Added
+
+- IMI Coverage Evaluation Survey 2018 example (`examples/imi_ces/`), also on the web
+- Make web examples RESTful
+
+### Fixed
+
+- Tables printed sideways on an upright page (no `/Rotate`) are turned upright before feeding into the engines
+
 ## [0.1.2 - 11 Oct 2026]
 
 ### Added

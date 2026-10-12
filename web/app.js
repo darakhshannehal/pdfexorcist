@@ -58,7 +58,8 @@ function addExample(ex) {
   const name = ex.pdf.split('/').pop();
   const pdf = bytes(`samples/${name}`);
   const thumb = el('span', { className: 'thumb' });
-  const open = async () => run({ kicker: ex.kicker, title: ex.title, pdf: await pdf, name, recipe: ex.recipe });
+  const open = async () => run({ id: ex.id, kicker: ex.kicker, title: ex.title, pdf: await pdf, name, recipe: ex.recipe });
+  openers.set(ex.id, open);
   $('examples').append(el('li', {}, button('example', open,
     thumb,
     el('span', {},
@@ -69,9 +70,21 @@ function addExample(ex) {
   pdf.then((p) => firstPage(p, 224)).then((canvas) => thumb.append(canvas)).catch(() => {});
 }
 
+// each example has its own link, #<id>; any other hash is the home page
+const openers = new Map();
+let shown; // id of the example whose result is on the work view
+function route() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (id && id === shown) return show('work'); // back to it: no second read
+  const open = openers.get(id);
+  if (open) return open();
+  show('home');
+}
+
 get('examples.json')
   .then((r) => r.json())
-  .then((list) => list.forEach(addExample));
+  .then((list) => list.forEach(addExample))
+  .then(route);
 
 get('files.json')
   .then((r) => r.json())
@@ -129,14 +142,16 @@ $('back').onclick = () => {
   history.pushState(null, '', './');
   show('home');
 };
-window.onpopstate = () => show('home');
+window.onpopstate = route;
 
 let active = null; // the run on screen; a new one aborts it
 
 async function run(job) {
   active?.abort();
   const { signal } = (active = new AbortController());
-  history.pushState(null, '', '#result');
+  const hash = job.id ? `#${encodeURIComponent(job.id)}` : '#result';
+  if (location.hash !== hash) history.pushState(null, '', hash);
+  shown = job.id;
   show('work');
   $('doc-kicker').textContent = job.kicker;
   $('doc-title').textContent = job.title;
