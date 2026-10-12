@@ -9,7 +9,6 @@ from ._ocr_engines import _skew as _skew
 from ._ocr_engines import _words as _words
 from ._ocr_engines import doctr_, ocrmac_, paddleocr_, tesseract_
 from ._registry import DEFAULTS, EXTRACTORS, OCR_DPI, Extractor, register
-from ._text_engines import _join_parens as _join_parens
 from ._text_engines import _n_values as _n_values
 from ._text_engines import _space_ids as _space_ids
 from ._text_engines import _spans as _spans

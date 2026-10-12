@@ -204,18 +204,6 @@ def test_markdown_text():
     ]
 
 
-def test_pdfium_brackets_are_rejoined():
-    from pdfexorcist.extractors import _join_parens
-
-    words = [
-        (10, 13, 20, "(", 10),
-        (13, 18, 20, "5", 10),
-        (18, 21, 20, ")", 10),
-        (40, 60, 20, "State", 10),
-    ]
-    assert [w[3] for w in _join_parens(words)] == ["(5)", "State"]
-
-
 def test_page_cuts(tmp_path):
     import hashlib
     from pathlib import Path

@@ -150,7 +150,9 @@ def pymupdf_(pdf: Path) -> Iterator[Page]:
             words = page.get_text(
                 "words", flags=pymupdf.TEXTFLAGS_WORDS & ~pymupdf.TEXT_MEDIABOX_CLIP
             )
-            yield i, group_words([(w[0], w[2], w[3], w[4], w[1]) for w in words])
+            turn = page.rotation_matrix  # words come unrotated
+            rects = [(pymupdf.Rect(w[:4]) * turn, w[4]) for w in words]
+            yield i, group_words([(r.x0, r.x1, r.y1, t, r.y0) for r, t in rects])
 
 
 def _n_values(lines: list) -> int:
@@ -296,51 +298,69 @@ def tabula_(pdf: Path) -> Iterator[Page]:
 
 @register("pdfium")
 def pdfium_(pdf: Path) -> Iterator[Page]:
-    """Extract PDFium text runs grouped into lines."""
+    """Extract PDFium glyphs grouped into words by gap, then into lines."""
     import pypdfium2 as pdfium
 
     doc = pdfium.PdfDocument(str(pdf))
     try:
         for i, page in enumerate(doc, start=1):
-            height = page.get_height()
-            box = page.get_bbox()
             tp = page.get_textpage()
-            words = []
-            for j in range(tp.count_rects()):
-                left, b, r, t = tp.get_rect(j)
-                if not _inside(box, left, b, r, t):
-                    continue  # drawn outside the page box, which poppler doesn't read
-                text = tp.get_text_bounded(left, b, r, t).strip()
-                # PDFium keeps stray spaces inside numbers: "32 .0", "( 5 )"
-                text = re.sub(r"(?<=\d) (?=[.,]\d)|(?<=\() | (?=\))", "", text)
-                if text:
-                    words.append((left, r, height - b, text, height - t))  # y from the top
-            yield i, group_words(_join_parens(words))
+            yield i, group_words(_pdfium_words(page, tp))
             tp.close()
             page.close()
     finally:
         doc.close()
 
 
-def _join_parens(words: list) -> list:
-    """Rejoin PDFium-split parenthesized column numbers."""
-    out: list = []
-    for w in words:
-        if (
-            len(out) >= 2
-            and w[3] == ")"
-            and out[-2][3] == "("
-            and out[-1][3].isdigit()
-            and w[0] - out[-2][1] < 2 * (w[2] - w[4])
-        ):  # within a few character widths
-            o, d = out[-2], out.pop()
-            out[-1] = (
-                o[0],
-                w[1],
-                max(o[2], d[2], w[2]),
-                f"({d[3]})",
-                min(o[4], d[4], w[4]),
-            )
-        else:
-            out.append(w)
-    return out
+def _pdfium_words(page: Any, tp: Any) -> list:
+    """Group PDFium glyphs into words by gap; PDFium's own text runs span empty columns."""
+    from pdfplumber.utils.text import WordExtractor
+
+    rot = page.get_rotation()
+    w, h = page.get_size()  # displayed; glyph boxes are unrotated
+    box = page.get_bbox()
+    chars: list[dict] = []
+    seen: dict[tuple, list[dict]] = {}  # (text, x, y) on a 1 pt grid
+    for j, ch in enumerate(tp.get_text_range()):
+        # tight boxes gap around "."
+        left, b, r, t = tp.get_charbox(j, loose=True)
+        if r <= left or not _inside(box, left, b, r, t):
+            continue  # generated (zero-width) glyph, or outside the page box
+        x0, top, x1, bottom = _displayed(left, b, r, t, rot, w, h)
+        gx, gy = int(x0), int(top)
+        near = (
+            k
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+            for k in seen.get((ch, gx + dx, gy + dy), ())
+        )
+        # fake bold redraws a glyph a fraction of a point off; ligature letters are neighbours
+        if any(abs(k["x0"] - x0) < 1 and abs(k["top"] - top) < 1 and j - k["j"] != 1 for k in near):
+            continue
+        c = {
+            "text": ch,
+            "x0": x0,
+            "x1": x1,
+            "top": top,
+            "bottom": bottom,
+            "doctop": top,
+            "upright": True,
+            "j": j,
+        }
+        seen.setdefault((ch, gx, gy), []).append(c)
+        chars.append(c)
+    words = WordExtractor().iter_extract_tuples(chars)
+    return [(wd["x0"], wd["x1"], wd["bottom"], wd["text"], wd["top"]) for wd, _ in words]
+
+
+def _displayed(
+    left: float, b: float, r: float, t: float, rot: int, w: float, h: float
+) -> tuple[float, float, float, float]:
+    """Map an unrotated PDF box (y up) to a displayed w x h page: x0, top, x1, bottom."""
+    if rot == 90:
+        return b, left, t, r
+    if rot == 180:
+        return w - r, b, w - left, t
+    if rot == 270:
+        return w - t, h - r, w - b, h - left
+    return left, h - t, r, h - b

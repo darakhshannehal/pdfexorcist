@@ -66,23 +66,22 @@ export function pdfiumBridge(m) {
       return tp;
     },
     closeTextPage: (tp) => m._FPDFText_ClosePage(tp),
-    countRects: (tp) => m._FPDFText_CountRects(tp, 0, -1),
-    rect: (tp, i) =>
-      scratch(32, (ptr) => {
-        if (!m._FPDFText_GetRect(tp, i, ptr, ptr + 8, ptr + 16, ptr + 24)) {
-          throw new Error('Failed to get rectangle.');
-        }
-        const [l, t, r, b] = m.HEAPF64.slice(ptr / 8, ptr / 8 + 4);
-        return [l, b, r, t];
-      }),
-    boundedText(tp, left, top, right, bottom) {
-      const n = m._FPDFText_GetBoundedText(tp, left, top, right, bottom, 0, 0);
+    rotation: (page) => m._FPDFPage_GetRotation(page),
+    text(tp) {
+      const n = m._FPDFText_CountChars(tp);
       if (n <= 0) return '';
-      return scratch(2 * n, (ptr) => {
-        m._FPDFText_GetBoundedText(tp, left, top, right, bottom, ptr, n);
+      return scratch(2 * (n + 1), (ptr) => {
+        m._FPDFText_GetText(tp, 0, n, ptr);
         return utf16Ignore(m.HEAPU16.slice(ptr / 2, ptr / 2 + n));
       });
     },
+    /** pypdfium2's (l, b, r, t) */
+    looseCharBox: (tp, i) =>
+      scratch(16, (ptr) => {
+        m._FPDFText_GetLooseCharBox(tp, i, ptr); // FS_RECTF (l, t, r, b)
+        const [l, t, r, b] = m.HEAPF32.slice(ptr / 4, ptr / 4 + 4);
+        return [l, b, r, t];
+      }),
   };
 }
 

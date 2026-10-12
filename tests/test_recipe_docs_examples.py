@@ -77,17 +77,18 @@ def test_relative_tolerance_is_needed(tmp_path):
 def test_unanimous_with_min_unopposed(tmp_path):
     fixture = "nfhs6_state/nfhs6_chandigarh_p145-147.pdf"
     code, s = _extract(tmp_path, fixture, "nfhs6/state.toml", "-k", "5", "--force")
-    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (260, 144)
+    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (384, 20)
     code, s = _extract(tmp_path, fixture, "nfhs6/unanimous.toml", "--force")
     assert code == 0 and s["min_agree"] == 5
     assert (s["cells"]["verified"], s["cells"]["unresolved"]) == (404, 0)
 
 
 def test_families(tmp_path):
-    code, s = _extract(tmp_path, "nfhs5_state/nfhs5_chandigarh_p3-6.pdf", "nfhs5/families.toml")
-    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (480, 44)
-    review = pd.read_csv(tmp_path / "doc.review.csv", dtype=str)
-    assert "pdfminer" in set(review.sources.str.split("|").explode())
+    fixture = "nfhs5_state/nfhs5_chandigarh_p3-6.pdf"
+    code, s = _extract(tmp_path, fixture, "nfhs5/families.toml", "--layout", "cells")
+    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (524, 0)
+    cells = pd.read_csv(tmp_path / "doc.csv", dtype=str)
+    assert "pdfminer" in set(cells.sources.str.split("|").explode())
 
 
 def test_normalize_switch_and_function(tmp_path):

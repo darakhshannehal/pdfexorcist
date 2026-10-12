@@ -81,6 +81,12 @@ class PdfPage(_Handle):
     def get_height(self) -> float:
         return float(_js.pageHeight(self.raw))
 
+    def get_size(self) -> tuple[float, float]:
+        return self.get_width(), self.get_height()
+
+    def get_rotation(self) -> int:
+        return int(_js.rotation(self.raw)) * 90
+
     def get_bbox(self) -> tuple:
         return tuple(_js.bbox(self.raw).to_py())
 
@@ -108,11 +114,10 @@ class PdfTextPage(_Handle):
     def __init__(self, h: int) -> None:
         super().__init__(h, _js.closeTextPage)
 
-    def count_rects(self) -> int:
-        return int(_js.countRects(self.raw))
+    def get_text_range(self) -> str:
+        return str(_js.text(self.raw))
 
-    def get_rect(self, i: int) -> tuple:
-        return tuple(_js.rect(self.raw, i).to_py())
-
-    def get_text_bounded(self, left: float, bottom: float, right: float, top: float) -> str:
-        return str(_js.boundedText(self.raw, left, top, right, bottom))
+    def get_charbox(self, i: int, loose: bool = False) -> tuple:
+        if not loose:
+            raise NotImplementedError("only loose char boxes")
+        return tuple(_js.looseCharBox(self.raw, i).to_py())

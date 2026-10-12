@@ -281,9 +281,13 @@ def test_table_leaves_out_rows_and_columns_with_no_agreed_value(tmp_path):
     shutil.copy(FIXTURES / "cwc" / "cwc_2018-02-01_p4.pdf", pdf)
     r = run(["extract", str(pdf), "--json", "-q"])
     s = json.loads(r.stdout)
-    assert r.exit_code == 0 and s["cells"]["unresolved"] > 0
+    assert r.exit_code == 0
     t = pd.read_csv(tmp_path / "bull.csv", dtype=str).set_index("label")
-    assert len(t) == 14 and list(t.columns) == ["page", *map(str, range(8))]
+    assert (
+        len(t) == 15
+        and t.loc["Pg", "0"] == "4"
+        and list(t.columns) == ["page", *map(str, range(8))]
+    )
     assert t.loc["GANGA"].tolist() == [
         "1",
         "28.096",
@@ -297,5 +301,4 @@ def test_table_leaves_out_rows_and_columns_with_no_agreed_value(tmp_path):
     ]
     assert t.loc["TOTAL", "1"] == "69.887"
     assert not t.drop(columns="page").isna().all(axis=1).any()  # no all-blank row
-    review = pd.read_csv(tmp_path / "bull.review.csv", dtype=str)
-    assert len(review) == s["cells"]["unresolved"]
+    assert s["cells"]["unresolved"] == 0 and not (tmp_path / "bull.review.csv").exists()
