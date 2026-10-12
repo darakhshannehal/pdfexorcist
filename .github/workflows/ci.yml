@@ -55,7 +55,7 @@ jobs:
   test:
     name: Test ${{ matrix.os }} py${{ matrix.python }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: ${{ matrix.os == 'macos-15-intel' && 50 || 30 }} # intel runners run pytest ~2x slower
     strategy:
       fail-fast: false
       matrix:
