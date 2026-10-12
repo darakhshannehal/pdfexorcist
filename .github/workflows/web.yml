@@ -23,9 +23,13 @@ concurrency:
 
 jobs:
   pytest:
-    name: pytest in Pyodide
+    name: pytest in Pyodide ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4] # Pyodide is single-threaded; the suite takes ~50 min in one job
     defaults:
       run:
         working-directory: web
@@ -41,3 +45,5 @@ jobs:
       - run: npm ci --omit=optional # pdfjs-dist's @napi-rs/canvas: rendering only, text needs none
       # test_fetch.py needs threads, which Pyodide lacks
       - run: node test/pytest.mjs -q -ra --ignore=tests/test_fetch.py
+        env:
+          SHARD: ${{ matrix.shard }}/4
