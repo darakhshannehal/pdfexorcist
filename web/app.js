@@ -12,7 +12,7 @@ const SECONDS_PER_PAGE = 1.8; // all five engines, measured on a fact sheet
 
 // ---- the workers
 
-const INITIAL = { ready: false, failed: null, jspi: true, status: 'Loading the engines…' };
+const INITIAL = { ready: false, failed: null, pause: true, status: 'Loading the engines…' };
 let engines = INITIAL;
 const pdfium = wasm('vendor/pdfium.wasm'); // compiled once, shared by both workers
 const init = () => pdfium.then((m) => ({ pdfium: m }));
@@ -23,7 +23,7 @@ const worker = new Client('./worker.js', {
     if (data.type === 'restart') engines = INITIAL;
     else if (data.type === 'status') engines = { ...engines, status: `${data.text}…` };
     else if (data.type === 'ready') {
-      engines = { ...engines, ready: true, jspi: data.jspi, names: data.names, optIn: data.optIn };
+      engines = { ...engines, ready: true, pause: data.pause, names: data.names, optIn: data.optIn };
       pickers();
     }
     else if (data.type === 'failed') engines = { ...engines, failed: `The engines could not start: ${data.message}` };
@@ -37,8 +37,8 @@ function showEngines() {
   dots.className = `dots ${engines.ready ? 'ready' : engines.failed ? '' : 'busy'}`;
   $('engine-status').textContent = engines.failed
     ? engines.failed
-    : engines.ready && !engines.jspi
-      ? 'Ready, without pdftotext: it needs Chrome 137, Safari 27 or Firefox 153.'
+    : engines.ready && !engines.pause
+      ? 'Ready, without pdftotext: it needs Chrome 137, Safari 27 or Firefox 153, and does not run on iPhone or iPad.'
       : engines.ready
         ? `Ready: ${engines.names.join(', ')}${engines.optIn.length ? `; opt-in: ${engines.optIn.join(', ')}` : ''}.`
         : `${engines.status} 60 MB on the first visit, cached after.`;

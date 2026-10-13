@@ -113,6 +113,13 @@ export const withModule = (module) => (imports, ready) => {
   return {};
 };
 
+/** whether Python can run_sync; iOS Pyodide enters Python via a JS trampoline JSPI cannot suspend */
+export function canPause() {
+  const nav = globalThis.navigator;
+  const ios = nav && (/iPad|iPhone|iPod/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1));
+  return 'Suspending' in WebAssembly && !ios;
+}
+
 /** program({args, env, stage}) -> [code, out, err, FS]; files left in cwd come back */
 export function programRunner(programs) {
   return async (name, args, files, cwd, env) => {

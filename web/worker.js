@@ -1,7 +1,7 @@
 // in: {open: pdf, name} -> {doc}; {doc, recipe, pages} -> extract(); {show: doc, page} -> {html}; {close: doc}
 
 import { boot, close, extract, open, show } from './core.js';
-import { emscriptenProgram, pdfjsProgram } from './engines.js';
+import { canPause, emscriptenProgram, pdfjsProgram } from './engines.js';
 import { bytes, get, wasm } from './net.js';
 import { serve } from './pdfium.js';
 import Pdftotext from './vendor/pdftotext.js';
@@ -42,7 +42,7 @@ const env = start();
 env.then(
   ({ py }) => {
     const [names, optIn] = py.runPython(ENGINES).toJs();
-    postMessage({ type: 'ready', jspi: 'Suspending' in WebAssembly, names, optIn });
+    postMessage({ type: 'ready', pause: canPause(), names, optIn });
   },
   (e) => postMessage({ type: 'failed', message: String(e?.message ?? e) }),
 );

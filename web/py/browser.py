@@ -13,7 +13,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
 
-from js import runProgram  # type: ignore[import-not-found]  # set by core.js
+from js import canPause, runProgram  # type: ignore[import-not-found]  # set by core.js
 from pyodide.ffi import can_run_sync, run_sync, to_js  # type: ignore[import-not-found]
 
 from pdfexorcist import cli
@@ -33,7 +33,7 @@ def _pause(promise: Any) -> Any:
 def _install_programs() -> None:
     """Marker files on PATH, for shutil.which."""
     BIN.mkdir(parents=True, exist_ok=True)
-    for name in PROGRAMS:
+    for name in PROGRAMS if canPause() else ():  # unlisted programs report as not installed
         (BIN / name).write_text("# runs as wasm through subprocess.run; see browser.py\n")
         (BIN / name).chmod(0o755)
     os.environ.setdefault("PDFEXORCIST_PDFJS", "/pdfjs-dist")  # the page loads it; nothing on disk

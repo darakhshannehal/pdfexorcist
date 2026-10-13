@@ -1,6 +1,6 @@
 // callers set globalThis.pdfium (engines.js pdfiumBridge) before boot
 
-import { ls, programRunner } from './engines.js';
+import { canPause, ls, programRunner } from './engines.js';
 
 // hash-checked by Pyodide's lock; every other package is a pinned wheel in files
 const PACKAGES = [
@@ -18,6 +18,7 @@ const PACKAGES = [
 /** programs: {name: program} for engines.js programRunner */
 export async function boot(opts) {
   globalThis.runProgram ??= programRunner(opts.programs);
+  globalThis.canPause = canPause;
   const py = await interpreter(opts);
   return { py, glue: py.pyimport('browser') };
 }
