@@ -38,5 +38,117 @@
     "blurb": "A table printed sideways, read upright. One drop-out rate is misprinted, and the checks flag it.",
     "pdf": "tests/fixtures/imi_ces/imi_ces_2018_annexure_p38-44.pdf",
     "recipe": "examples/imi_ces/recipe.toml"
+  },
+  {
+    "id": "imd-abu",
+    "kicker": "IMD Climatological Normals 1961-1990",
+    "title": "Abu, in Hindi and English",
+    "blurb": "Pages stored rotated, Hindi in a legacy font beside English. Each value placed by its column, with checks on rainfall totals and wind directions.",
+    "pdf": "tests/fixtures/imd/imd_1961_1990_abu_p106-107.pdf",
+    "recipe": "examples/imd_climatological_tables/recipe_1961_1990.toml"
+  },
+  {
+    "id": "nhp-malaria",
+    "kicker": "CBHI National Health Profile 2023 · Table 3.1.1",
+    "title": "Malaria cases and deaths by State",
+    "blurb": "2018 to 2022, the provisional year marked in the column names, with a check that the States and UTs add up to India.",
+    "pdf": "tests/fixtures/nhp/nhp_2023_p120.pdf",
+    "recipe": "examples/nhp_malaria/recipe.toml"
+  },
+  {
+    "id": "prison-stats",
+    "kicker": "NCRB Prison Statistics India 2023",
+    "title": "Jail capacity and occupancy",
+    "blurb": "Capacity, inmates and occupancy rate by State/UT, sex and jail type. One table runs over three pages, joined by its printed column numbers.",
+    "pdf": "tests/fixtures/prison_stats/psi_2023_p58-61.pdf",
+    "recipe": "examples/prison_stats/recipe.toml"
+  },
+  {
+    "id": "road-accidents",
+    "kicker": "MoRTH Road Accidents in India 2022",
+    "title": "Accidents by State, printed sideways",
+    "blurb": "Three-level headers and Indian comma grouping. One share is misprinted, and the checks flag it.",
+    "pdf": "tests/fixtures/road_accidents/morth_ra_2022_annexure_p136-138.pdf",
+    "recipe": "examples/road_accidents/recipe.toml"
+  },
+  {
+    "id": "crs-2023",
+    "kicker": "CRS 2023 · State Tables 1 and 4",
+    "title": "Registered births and still births",
+    "blurb": "By State, sex and residence, checked by the tables' own arithmetic. The India row is printed in fake bold.",
+    "pdf": "tests/fixtures/crs/crs_2023_t1_t4.pdf",
+    "recipe": "examples/crs_state_tables/recipe.toml"
+  },
+  {
+    "id": "srs-life-tables",
+    "kicker": "SRS abridged life tables 2019-23",
+    "title": "One State a page",
+    "blurb": "Total, rural and urban blocks of 19 age rows, with a survivorship check.",
+    "pdf": "tests/fixtures/srs/srs_2019-23.pdf",
+    "recipe": "examples/srs_life_table/recipe.toml"
+  },
+  {
+    "id": "srs-mmr",
+    "kicker": "SRS Special Bulletin 2021-23",
+    "title": "Maternal mortality by State",
+    "blurb": "MMR with its 95% confidence interval split into two columns, and lifetime risk as a number.",
+    "pdf": "tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf",
+    "recipe": "examples/srs_maternal_mortality/recipe.toml"
+  },
+  {
+    "id": "srs-age",
+    "kicker": "SRS Statistical Report 2024 · Table 1",
+    "title": "Population by age, sex and residence",
+    "blurb": "Percent distributions, each value tied to its State, with checks that each column adds up to 100.",
+    "pdf": "tests/fixtures/srs_stat/srs_stat_2024_table1_p222-224.pdf",
+    "recipe": "examples/srs_statistical_report/recipe.toml"
+  },
+  {
+    "id": "neet-2024",
+    "kicker": "NTA · NEET (UG) 2024 press release",
+    "title": "Nine tables on five pages",
+    "blurb": "One recipe, one CSV. A 2021 count is misprinted, and the checks flag it.",
+    "pdf": "tests/fixtures/nta_notice/nta_notice_2024_p2-6.pdf",
+    "recipe": "examples/nta_notice/recipe.toml"
+  },
+  {
+    "id": "pravah",
+    "kicker": "Maharashtra WRD · Pravah, 3 October 2026",
+    "title": "Daily dam storage",
+    "blurb": "Rows keyed by dam name, wrapped names joined, region and district from the headings, with two storage checks.",
+    "pdf": "tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf",
+    "recipe": "examples/pravah_dams/recipe.toml"
+  },
+  {
+    "id": "iips-sirohi",
+    "kicker": "IIPS district population projections",
+    "title": "Sirohi, Rajasthan",
+    "blurb": "Males and females by age, five years to a block.",
+    "pdf": "tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf",
+    "recipe": "examples/census_iips_district/recipe.toml"
+  },
+  {
+    "id": "mohfw-uttarakhand",
+    "kicker": "MoHFW population projections 2011-2036 · Table 18",
+    "title": "Uttarakhand",
+    "blurb": "Persons, males and females by age for six years, in thousands with Indian digit grouping.",
+    "pdf": "tests/fixtures/mohfw/mohfw_uttarakhand_p182.pdf",
+    "recipe": "examples/census_mohfw_state/recipe.toml"
+  },
+  {
+    "id": "nfhs5-india",
+    "kicker": "NFHS-5 · State fact sheet",
+    "title": "India",
+    "blurb": "131 indicators, urban, rural and total, with NFHS-4 for comparison.",
+    "pdf": "tests/fixtures/nfhs5_state/nfhs5_india_p3-6.pdf",
+    "recipe": "examples/nfhs5/state.toml"
+  },
+  {
+    "id": "mccd-table4",
+    "kicker": "MCCD 2014 · Table 4",
+    "title": "Deaths by cause, sex and State",
+    "blurb": "M, F and T rows per cause, under State names printed sideways.",
+    "pdf": "tests/fixtures/mccd/mccd_2014.pdf",
+    "recipe": "examples/mccd/table4.toml"
   }
 ]

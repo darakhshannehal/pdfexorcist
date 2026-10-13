@@ -21,7 +21,7 @@ def main(root: Path) -> None:
                     for p, lines in EXTRACTORS[engine](pdf)
                 ]
             except Exception as e:  # noqa: BLE001 - compared like any output
-                pages = f"{type(e).__name__}: {e}"
+                pages = type(e).__name__  # messages differ between CPython and Pyodide
             out[f"{engine} {name}"] = pages
     json.dump(out, sys.stdout, sort_keys=True)
 

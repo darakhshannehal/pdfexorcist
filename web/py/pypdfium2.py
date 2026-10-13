@@ -7,6 +7,7 @@ import math
 import weakref
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from js import pdfium as _js  # type: ignore[import-not-found]  # set by the worker
@@ -121,3 +122,15 @@ class PdfTextPage(_Handle):
         if not loose:
             raise NotImplementedError("only loose char boxes")
         return tuple(_js.looseCharBox(self.raw, i).to_py())
+
+
+def _char_angle(tp: PdfTextPage, i: int) -> float:
+    return _js.charAngle(tp.raw, i)
+
+
+def _char_origin(tp: PdfTextPage, i: int, x: Any, y: Any) -> None:
+    x.value, y.value = _js.charOrigin(tp.raw, i).to_py()
+
+
+# the pypdfium2.raw calls pdfexorcist makes
+raw = SimpleNamespace(FPDFText_GetCharAngle=_char_angle, FPDFText_GetCharOrigin=_char_origin)

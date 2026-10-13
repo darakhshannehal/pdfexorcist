@@ -29,6 +29,7 @@ buf.getvalue()`),
 );
 // x may drift for non-embedded fonts: native PDFium uses system fonts
 const texts = (v) => (Array.isArray(v) ? v.map(([p, ls]) => [p, ls.map((l) => l.map(([, t]) => t))]) : v);
+const lines = (v) => (Array.isArray(v) ? texts(v).flatMap(([p, ls]) => ls.map((l) => `${p} ${JSON.stringify(l)}`)) : [String(v)]);
 let bad = 0;
 let drifted = 0;
 let drift = 0;
@@ -37,7 +38,7 @@ for (const k of Object.keys(native)) {
   if (JSON.stringify(texts(native[k])) !== JSON.stringify(texts(web[k]))) {
     bad++;
     console.log('TEXT DIFFERS', k);
-    const [a, b] = [native[k], web[k]].map((v) => texts(v).flatMap(([p, ls]) => ls.map((l) => `${p} ${JSON.stringify(l)}`)));
+    const [a, b] = [native[k], web[k]].map(lines);
     const i = a.findIndex((l, j) => l !== b[j]);
     console.log('  native', a[i]?.slice(0, 150));
     console.log('  web   ', b[i]?.slice(0, 150));

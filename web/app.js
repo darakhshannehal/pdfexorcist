@@ -65,20 +65,34 @@ async function firstPage(pdf, width) {
   }
 }
 
+// a sample loads when its card nears the screen, or when it is opened
+const thumbs = new Map();
+const nearScreen = new IntersectionObserver(
+  (entries) => entries.forEach((e) => {
+    if (!e.isIntersecting) return;
+    nearScreen.unobserve(e.target);
+    thumbs.get(e.target)();
+  }),
+  { rootMargin: '400px 0px' },
+);
+
 function addExample(ex) {
   const name = ex.pdf.split('/').pop();
-  const pdf = bytes(`samples/${name}`);
+  let pdf;
+  const load = () => (pdf ??= bytes(`samples/${name}`));
   const thumb = el('span', { className: 'thumb' });
-  const open = async () => run({ id: ex.id, kicker: ex.kicker, title: ex.title, pdf: await pdf, name, recipe: ex.recipe });
+  const open = async () => run({ id: ex.id, kicker: ex.kicker, title: ex.title, pdf: await load(), name, recipe: ex.recipe });
   openers.set(ex.id, open);
-  $('examples').append(el('li', {}, button('example', open,
+  const card = el('li', {}, button('example', open,
     thumb,
     el('span', {},
       el('span', { className: 'kicker' }, ex.kicker),
       el('span', { className: 'title' }, ex.title),
       el('span', { className: 'blurb' }, ex.blurb)),
-    el('span', { className: 'go', ariaHidden: 'true' }, '→'))));
-  pdf.then((p) => firstPage(p, 224)).then((canvas) => thumb.append(canvas)).catch(() => {});
+    el('span', { className: 'go', ariaHidden: 'true' }, '→')));
+  $('examples').append(card);
+  thumbs.set(card, () => load().then((p) => firstPage(p, 224)).then((canvas) => thumb.append(canvas)).catch(() => {}));
+  nearScreen.observe(card);
 }
 
 // each example has its own link, #<id>; any other hash is the home page

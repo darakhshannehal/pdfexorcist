@@ -67,6 +67,12 @@ export function pdfiumBridge(m) {
     },
     closeTextPage: (tp) => m._FPDFText_ClosePage(tp),
     rotation: (page) => m._FPDFPage_GetRotation(page),
+    charAngle: (tp, i) => m._FPDFText_GetCharAngle(tp, i),
+    charOrigin: (tp, i) =>
+      scratch(16, (ptr) => {
+        m._FPDFText_GetCharOrigin(tp, i, ptr, ptr + 8);
+        return [...m.HEAPF64.slice(ptr / 8, ptr / 8 + 2)];
+      }),
     text(tp) {
       const n = m._FPDFText_CountChars(tp);
       if (n <= 0) return '';

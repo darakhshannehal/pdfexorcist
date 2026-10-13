@@ -1,0 +1,29 @@
+# pdfexorcist recipe: IMD Climatological Tables of Observatories in India 1961-1990
+#
+# Station pages (left/right) plus the English List of Observatories. Try it:
+#
+#   pdfexorcist extract tests/fixtures/imd/imd_1961_1990_abu_p106-107.pdf --recipe examples/imd_climatological_tables/recipe_1961_1990.toml
+
+name = "IMD climatological tables 1961-1990"
+description = "Station normals, extremes and phenomena for IMD observatories, 1961-1990"
+sample = "../../tests/fixtures/imd/imd_1961_1990_abu_p106-107.pdf"
+
+[engines]
+ocr = false
+# list rows whose names wrap are read by only some engines; data-cell disputes are single reads
+min_unopposed = 2
+
+[parser]
+type = "custom"
+function = "imd_1961_1990.py:parse"
+key = ["page", "table", "month", "obs", "col"]
+
+[[checks]]
+function = "imd_layout.py:rain_total"
+
+[[checks]]
+function = "imd_layout.py:wind_pct"
+
+[output]
+layout = "cells"
+format = "csv"

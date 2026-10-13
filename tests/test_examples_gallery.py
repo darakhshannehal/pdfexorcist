@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from cli_helpers import run
+from imd_layout import KEY
 
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -106,3 +107,26 @@ def test_crs_state_tables(tmp_path):
     assert t.loc[("1", "Dadra and Nagar Haveli and Daman and Diu"), "Total_Person"] == "12948"
     assert t.loc[("1", "Lakshadweep"), "Urban_Person"] == "-"
     assert t.loc[("2", "Rajasthan"), "Total_Person"] == "19804"
+
+
+def test_imd_1961_1990_abu(tmp_path):
+    """Pin Abu's pages, stored with /Rotate 90 and Hindi in a legacy font."""
+    fixture = "imd/imd_1961_1990_abu_p106-107.pdf"
+    code, s, t = _extract(tmp_path, fixture, "imd_climatological_tables/recipe_1961_1990.toml")
+    assert code == 0 and (s["cells"]["verified"], s["cells"]["unresolved"]) == (1297, 0)
+    t = t.fillna("").set_index(KEY)
+    jan_i = t.loc[("1", "left", "1", "I", "stn_level_pressure_hpa")]
+    assert (jan_i.value, jan_i.n_agree) == ("883.9", "5")  # every engine reads the rotated page
+    assert {t.loc[(p, "meta", "0", "", "station"), "value"] for p in ("1", "2")} == {"Abu"}
+
+
+# examples the home page leaves out: OCR does not run in the browser; settings shows options
+HIDDEN = {"lake_photo", "nta_toppers", "settings"}
+
+
+def test_home_page_lists_every_example():
+    listed = json.loads((ROOT / "web" / "examples.json").read_text())
+    for ex in listed:
+        assert (ROOT / ex["pdf"]).exists() and (ROOT / ex["recipe"]).exists(), ex["id"]
+    dirs = {p.name for p in EXAMPLES.iterdir() if p.is_dir() and p.name != "__pycache__"}
+    assert dirs - HIDDEN == {ex["recipe"].split("/")[1] for ex in listed}

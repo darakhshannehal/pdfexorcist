@@ -1,8 +1,10 @@
 """Text-layer engines."""
 
+import ctypes
 import functools
 import gc
 import logging
+import math
 import os
 import re
 import shutil
@@ -314,13 +316,17 @@ def pdfium_(pdf: Path) -> Iterator[Page]:
 
 def _pdfium_words(page: Any, tp: Any) -> list:
     """Group PDFium glyphs into words by gap; PDFium's own text runs span empty columns."""
+    import pypdfium2 as pdfium
     from pdfplumber.utils.text import WordExtractor
 
     rot = page.get_rotation()
     w, h = page.get_size()  # displayed; glyph boxes are unrotated
     box = page.get_bbox()
     chars: list[dict] = []
-    seen: dict[tuple, list[dict]] = {}  # (text, x, y) on a 1 pt grid
+    runs: list[list[tuple]] = []  # sideways glyphs (j, x0, x1, top, bottom, text) per run
+    seen: dict[tuple, list[tuple]] = {}  # (text, x, y) on a 1 pt grid -> (x0, top, j)
+    ox, oy = ctypes.c_double(), ctypes.c_double()
+    char_angle = pdfium.raw.FPDFText_GetCharAngle
     for j, ch in enumerate(tp.get_text_range()):
         # tight boxes gap around "."
         left, b, r, t = tp.get_charbox(j, loose=True)
@@ -335,22 +341,42 @@ def _pdfium_words(page: Any, tp: Any) -> list:
             for k in seen.get((ch, gx + dx, gy + dy), ())
         )
         # fake bold redraws a glyph a fraction of a point off; ligature letters are neighbours
-        if any(abs(k["x0"] - x0) < 1 and abs(k["top"] - top) < 1 and j - k["j"] != 1 for k in near):
+        if any(abs(kx - x0) < 1 and abs(kt - top) < 1 and j - kj != 1 for kx, kt, kj in near):
             continue
-        c = {
-            "text": ch,
-            "x0": x0,
-            "x1": x1,
-            "top": top,
-            "bottom": bottom,
-            "doctop": top,
-            "upright": True,
-            "j": j,
-        }
-        seen.setdefault((ch, gx, gy), []).append(c)
-        chars.append(c)
-    words = WordExtractor().iter_extract_tuples(chars)
-    return [(wd["x0"], wd["x1"], wd["bottom"], wd["text"], wd["top"]) for wd, _ in words]
+        seen.setdefault((ch, gx, gy), []).append((x0, top, j))
+        # pdfium char angles ignore /Rotate
+        angle = round(math.degrees(char_angle(tp, j)) + rot) % 360
+        if angle == 0:
+            chars.append(
+                {
+                    "text": ch,
+                    "x0": x0,
+                    "x1": x1,
+                    "top": top,
+                    "bottom": bottom,
+                    "doctop": top,
+                    "upright": True,
+                }
+            )
+            continue
+        # vertical runs use the baseline; glyph extents across them differ by pdfium build
+        if angle in (90, 270):
+            pdfium.raw.FPDFText_GetCharOrigin(tp, j, ox, oy)
+            x0 = x1 = _displayed(ox.value, oy.value, ox.value, oy.value, rot, w, h)[0]
+        glyph = (j, x0, x1, top, bottom, ch)
+        if runs and runs[-1][-1][0] == j - 1:
+            runs[-1].append(glyph)
+        else:
+            runs.append([glyph])
+    out = [
+        (wd["x0"], wd["x1"], wd["bottom"], wd["text"], wd["top"])
+        for wd, _ in WordExtractor().iter_extract_tuples(chars)
+    ]
+    for run in runs:
+        _, x0s, x1s, tops, bottoms, text = zip(*run, strict=True)
+        if word := "".join(text).strip():
+            out.append((min(x0s), max(x1s), max(bottoms), word, min(tops)))
+    return out
 
 
 def _displayed(

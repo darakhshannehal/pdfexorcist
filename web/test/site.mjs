@@ -85,7 +85,11 @@ try {
     { timeout: 600_000 },
   );
   if (!(await page.locator('#dots.ready').count())) throw new Error(await page.locator('#engine-status').innerText());
-  await page.waitForFunction((n) => document.querySelectorAll('.thumb canvas').length === n, examples.length);
+  for (const card of await page.locator('#examples li').all()) { // thumbnails load as cards scroll near
+    await card.scrollIntoViewIfNeeded();
+    await card.locator('.thumb canvas').waitFor();
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
   if (shots) await page.screenshot({ path: `${shots}/home-light.png`, fullPage: true });
   for (let i = 0; i < examples.length; i++) {
     await page.locator('.example').nth(i).click();
