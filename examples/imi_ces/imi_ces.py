@@ -6,7 +6,7 @@ from collections.abc import Iterable, Iterator
 import pandas as pd
 
 from pdfexorcist import check
-from pdfexorcist.rows import Page, label_key, split_values
+from pdfexorcist.rows import Cell, Page, label_key, split_values
 
 COLUMNS = [
     "fic_nfhs4",
@@ -24,26 +24,45 @@ COLUMNS = [
 KEY = ["page", "row", "column"]
 
 
+def _label_cells(cells: list[Cell], n_values: int) -> list[str]:
+    """Return the text of the cells before a line's n_values trailing values."""
+    texts = [text for _, text in cells]
+    while n_values and texts:
+        n_values -= len(texts.pop().split())
+    return texts
+
+
 def parse(pages: Iterable[Page]) -> Iterator[dict]:
     """Yield the 11 values of each district row.
 
+    State and District are separate cells; the first label cell is the state.
     A wrapped name leaves the values' line unlabelled; it takes the label lines either side.
     """
     for page_no, lines in pages:
-        rows = [split_values(cells) for cells in lines]
+        vals_of = [split_values(cells)[1] for cells in lines]
+        rows = [(_label_cells(c, len(v)), v) for c, v in zip(lines, vals_of, strict=True)]
         seen: Counter = Counter()
-        for i, (label, vals) in enumerate(rows):
+        for i, (names, vals) in enumerate(rows):
             if len(vals) != len(COLUMNS):
                 continue
-            if not label:
-                above = rows[i - 1][0] if i and not rows[i - 1][1] else ""
-                below = rows[i + 1][0] if i + 1 < len(rows) and not rows[i + 1][1] else ""
-                label = f"{above} {below}".strip()
-            key = label_key(label)
+            if not names:
+                for j in (i - 1, i + 1):
+                    if 0 <= j < len(rows) and not rows[j][1]:
+                        names = names + rows[j][0]
+            state, rest = (names[0], names[1:]) if len(names) > 1 else ("", names)
+            district = " ".join(rest)
+            key = label_key(f"{state} {district}")
             seen[key] += 1
             row = f"{key}#{seen[key]}"
             for col, v in zip(COLUMNS, vals, strict=True):
-                yield {"page": page_no, "row": row, "district": label, "column": col, "value": v}
+                yield {
+                    "page": page_no,
+                    "row": row,
+                    "state": state,
+                    "district": district,
+                    "column": col,
+                    "value": v,
+                }
 
 
 @check("drop-out BCG to MCV-1 is not (BCG - MCV-1) / BCG")

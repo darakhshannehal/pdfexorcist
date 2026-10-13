@@ -3,8 +3,8 @@
 # Coverage of full immunization (FIC) and each vaccine by Intensified Mission
 # Indradhanush district (MoHFW/UNDP, 2018). The table is printed sideways on
 # portrait pages; pdfexorcist turns those pages upright before the engines read
-# them. imi_ces.py names the 11 columns and joins district names that wrap onto
-# two lines. Try it:
+# them. imi_ces.py names the 11 columns, splits State from District and joins
+# district names that wrap onto two lines. Try it:
 #
 #   pdfexorcist extract tests/fixtures/imi_ces/imi_ces_2018_annexure_p38-44.pdf --recipe examples/imi_ces/recipe.toml
 
@@ -30,6 +30,6 @@ function = "imi_ces.py:dropout"
 
 [output]
 layout = "table"
-rows = ["district"]
+rows = ["state", "district"]
 columns = "column"
 format = "csv"
