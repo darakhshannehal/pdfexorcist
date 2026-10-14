@@ -6,14 +6,18 @@ import { outcome } from './results.js';
 import { button, draw, el, failure, fill, fmt, minutes, plural } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
-const MAX_BYTES = 200e6; // Pyodide copies the PDF several times within 4 GB
-const LONG = 20; // pages; past this, offer a sample first
-const SECONDS_PER_PAGE = 1.8; // all five engines, measured on a fact sheet
+const MAX_BYTES = 200e6; 
+const LONG = 20; 
+const SECONDS_PER_PAGE = 1.8; 
 
-// ---- the workers
 
-const INITIAL = { ready: false, failed: null, pause: true, status: 'Loading the engines…' };
-let engines = INITIAL;
+const starting = () => ({ ready: false, failed: null, pause: true, status: 'Loading the engines…', since: performance.now() });
+let engines = starting();
+const BOOT = 'boot-seconds'; // last start-up from the cache
+let lastBoot = 0;
+try {
+  lastBoot = Number(localStorage.getItem(BOOT)) || 0;
+} catch {}
 const files = manifest();
 // The page compiles pdfium one time for the two workers.
 // The page gets pdfium first, so that the previews do not wait for the engine download.
@@ -26,12 +30,18 @@ const init = () => pdfium.then(([m, script]) => ({ pdfium: m, script }));
 const worker = new Client('./worker.js', {
   init,
   onStatus: (data) => {
-    if (data.type === 'restart') engines = INITIAL;
+    if (data.type === 'restart') engines = starting();
+    else if (data.type === 'download') engines = { ...engines, download: data };
     else if (data.type === 'status') {
       // true when the cache did not have the engines at the start of this visit
       engines = { ...engines, status: `${data.text}…`, downloading: engines.downloading || data.downloading };
     }
     else if (data.type === 'ready') {
+      if (!engines.downloading) {
+        try {
+          localStorage.setItem(BOOT, Math.round((performance.now() - engines.since) / 1000));
+        } catch {}
+      }
       engines = { ...engines, ready: true, pause: data.pause, names: data.names, later: data.later, optIn: data.optIn };
       pickers();
     }
@@ -50,29 +60,38 @@ function showEngines() {
       ? 'Ready, without pdftotext: it needs Chrome 137, Safari 27 or Firefox 153, and does not run on iPhone or iPad.'
       : engines.ready
         ? `Ready: ${engines.names.join(', ')}${more().length ? `; under Options: ${more().join(', ')}` : ''}.`
-        : engines.downloading
-          ? `${engines.status} About 50 MB, once: this browser keeps them for later visits.`
-          : engines.status;
+        : engineStatus();
 }
 showEngines();
+// download messages redraw on their own
+const ticker = lastBoot && setInterval(() => (engines.ready || engines.failed ? clearInterval(ticker) : showEngines()), 1000);
+
+const mb = (n) => Math.round(n / 1e6);
+
+function engineStatus() {
+  const d = engines.download;
+  if (d && d.loaded < d.total) {
+    const left = d.eta === null ? '' : `, about ${took(d.eta * 1000)} left`;
+    return `Downloading the engines: ${mb(d.loaded)} of ${mb(d.total)} MB${left}. This browser keeps them for later visits.`;
+  }
+  const left = lastBoot - (performance.now() - engines.since) / 1000;
+  return engines.downloading || left < 1 ? engines.status : `${engines.status} About ${took(left * 1000)} left.`;
+}
 
 const more = () => [...engines.later, ...engines.optIn];
 
-/** Makes one checkbox for each engine. The default engines are checked. The choices stay after a worker restart. */
 function pickers() {
   const was = new Map([...$('engine-picks').querySelectorAll('input')].map((c) => [c.value, c.checked]));
   fill($('engine-picks'), engineBoxes((name) => was.get(name) ?? engines.names.includes(name)));
 }
 const picked = (box = $('engine-picks')) => [...box.querySelectorAll('input:checked')].map((c) => c.value);
 
-/** Makes a checkbox for each engine that this build can run. An engine that is not in the first download shows "(downloads once)". */
 function engineBoxes(checked) {
   return [...engines.names, ...more()].map((name) =>
     el('label', {}, el('input', { type: 'checkbox', value: name, checked: checked(name) }), name,
       engines.later.includes(name) ? el('small', {}, ' (downloads once)') : ''));
 }
 
-// ---- home
 
 async function firstPage(pdf, width) {
   const { doc } = await previewer.ask({ open: pdf });
@@ -156,7 +175,7 @@ drop.ondrop = (e) => {
 
 async function openFile(f) {
   if (f.size > MAX_BYTES) {
-    $('engine-status').textContent = `${f.name} is ${Math.round(f.size / 1e6)} MB. The limit here is ${MAX_BYTES / 1e6} MB; the command-line tool has none.`;
+    $('engine-status').textContent = `${f.name} is ${mb(f.size)} MB. The limit here is ${mb(MAX_BYTES)} MB; the command-line tool has none.`;
     return;
   }
   const chosen = engines.ready ? picked() : undefined;
@@ -382,7 +401,7 @@ function progressView(onStop) {
   const tick = () => {
     const s = Math.round((performance.now() - started) / 1000);
     clock.textContent = mmss(s);
-    status.textContent = engines.ready ? '' : `${engines.status} Reading starts when they are ready.`;
+    status.textContent = engines.ready ? '' : `${engineStatus()} Reading starts when they are ready.`;
   };
   tick();
   const timer = setInterval(tick, 1000);

@@ -4,7 +4,7 @@
 
 import { add, boot, close, extract, LATER, laterEngine, open, show } from './core.js';
 import { canPause, emscriptenProgram, pdfjsProgram } from './engines.js';
-import { allKept, kept, keptWasm, manifest, prune } from './net.js';
+import { kept, keptWasm, manifest, missing, prune } from './net.js';
 import { serve } from './pdfium.js';
 import Pdftotext from './vendor/pdftotext.js';
 
@@ -12,34 +12,57 @@ const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v314.0.7/full/pyodide.mjs';
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/legacy/build';
 const status = (text, downloading) => postMessage({ type: 'status', text, downloading });
 
-const urls = manifest().then((m) => Object.fromEntries(m));
-const fetchKept = async (path) => kept((await urls)[path]);
+const files = manifest();
+const urls = files.then((m) => Object.fromEntries(m));
+const fetchKept = async (path, got) => kept((await urls)[path], got);
 
+const PDFTOTEXT = 'vendor/pdftotext.wasm';
 /** The files that boot installs: all Python files, but not the files of the LATER engines. */
-async function pythonFiles() {
-  const paths = Object.keys(await urls).filter((p) => !p.startsWith('vendor/') && !laterEngine(p));
-  return Object.fromEntries(await Promise.all(paths.map(async (p) => [p, await fetchKept(p)])));
+const pythonPaths = (entries) => entries.map(([p]) => p).filter((p) => !p.startsWith('vendor/') && !laterEngine(p));
+
+async function pythonFiles(paths, got) {
+  return Object.fromEntries(await Promise.all(paths.map(async (p) => [p, await fetchKept(p, got)])));
+}
+
+/** Returns got(n) for bytes(); posts {loaded, total, eta} at most 4 times a second. */
+function meter(total) {
+  const start = performance.now();
+  let loaded = 0;
+  let sent = 0;
+  return (n) => {
+    loaded += n;
+    const now = performance.now();
+    if (loaded < total && now - sent < 250) return;
+    sent = now;
+    const rate = loaded / (now - start); // bytes per ms
+    const eta = now - start > 1000 ? Math.max(0, (total - loaded) / rate / 1000) : null; // the first chunks give a bad rate
+    postMessage({ type: 'download', loaded, total, eta });
+  };
 }
 
 async function start() {
   await pdfium; // The page sends pdfium first. Thus, the previews do not share the network with the download below.
-  const entries = Object.entries(await urls);
-  const now = entries.filter(([p]) => !laterEngine(p)).map(([, u]) => u);
-  const cold = !(await allKept(now));
-  status(cold ? 'Downloading the engines' : 'Starting the engines', cold);
+  const entries = await files;
+  const paths = pythonPaths(entries);
+  const sizes = Object.fromEntries(entries.map(([, u, size]) => [u, size]));
+  const url = await urls;
+  const need = await missing([...paths, PDFTOTEXT].map((p) => url[p])); // the page gets pdfium itself
+  const total = need.reduce((sum, u) => sum + sizes[u], 0);
+  status(need.length ? 'Downloading the engines' : 'Starting the engines', need.length > 0);
+  const got = meter(total);
   prune(entries.map(([, u]) => u)).catch(() => {}); // removes the files that are not in files.json
-  const files = pythonFiles(); // not awaited; see core.js interpreter
+  const python = pythonFiles(paths, got); // not awaited; see core.js interpreter
   // keeps only this file's bytes, not every file's, for the life of the worker
-  const script = files.then((f) => f['site/pdfexorcist/_pdfjs.mjs']);
+  const script = python.then((f) => f['site/pdfexorcist/_pdfjs.mjs']);
   // opt-in engine: pdf.js is fetched on its first run; pdfjsWorker set runs it in this thread
   const pdfjs = async () => {
     globalThis.pdfjsWorker ??= await import(`${PDFJS}/pdf.worker.mjs`);
     const url = URL.createObjectURL(new Blob([await script], { type: 'text/javascript' }));
     return Promise.all([import(`${PDFJS}/pdf.mjs`), import(url)]);
   };
-  const [{ loadPyodide }, module] = await Promise.all([import(PYODIDE), urls.then((u) => keptWasm(u['vendor/pdftotext.wasm'])), pdfium]);
+  const [{ loadPyodide }, module] = await Promise.all([import(PYODIDE), urls.then((u) => keptWasm(u[PDFTOTEXT], got)), pdfium]);
   const programs = { pdftotext: emscriptenProgram(Pdftotext, module), node: pdfjsProgram(pdfjs) };
-  return boot({ loadPyodide, programs, files, log: status });
+  return boot({ loadPyodide, programs, files: python, log: status });
 }
 
 // [default engines, opt-in engines that this build can run].

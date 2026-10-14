@@ -4,7 +4,22 @@ export async function get(url) {
   return r;
 }
 
-export const bytes = async (url) => new Uint8Array(await (await get(url)).arrayBuffer());
+/** Returns the bytes at url; got(n) is called per chunk. */
+export async function bytes(url, got) {
+  const r = await get(url);
+  if (!got || !r.body) return new Uint8Array(await r.arrayBuffer());
+  const reader = r.body.getReader();
+  const parts = [];
+  let size = 0;
+  for (let c; !(c = await reader.read()).done; ) {
+    parts.push(c.value);
+    size += c.value.length;
+    got(c.value.length);
+  }
+  const out = new Uint8Array(size);
+  parts.reduce((at, c) => (out.set(c, at), at + c.length), 0);
+  return out;
+}
 
 const store = () => caches.open('pdfexorcist-files').catch(() => null); // some private windows have no Cache Storage
 
@@ -12,21 +27,21 @@ const store = () => caches.open('pdfexorcist-files').catch(() => null); // some 
 export const manifest = async () => (await fetch('files.json', { cache: 'no-cache' })).json();
 
 /** Returns the bytes of a content-versioned url. After the first visit, the bytes come from Cache Storage. */
-export async function kept(url) {
+export async function kept(url, got) {
   const cache = await store();
   const hit = await cache?.match(url).catch(() => null);
   if (hit) return new Uint8Array(await hit.arrayBuffer());
-  const data = await bytes(url);
+  const data = await bytes(url, got);
   await cache?.put(url, new Response(data)).catch(() => {}); // if the cache is full, the next visit downloads the file again
   return data;
 }
 
-/** Returns true when Cache Storage has all the urls. */
-export async function allKept(urls) {
+/** Returns the urls that Cache Storage does not have. */
+export async function missing(urls) {
   const cache = await store();
-  if (!cache) return false;
+  if (!cache) return urls;
   const hits = await Promise.all(urls.map((u) => cache.match(u).catch(() => null)));
-  return hits.every(Boolean);
+  return urls.filter((_, i) => !hits[i]);
 }
 
 /** Removes the files in Cache Storage that are not in urls. */
@@ -38,4 +53,4 @@ export async function prune(urls) {
 }
 
 /** Gets a wasm file with kept() and compiles it. */
-export const keptWasm = async (url) => WebAssembly.compile(await kept(url));
+export const keptWasm = async (url, got) => WebAssembly.compile(await kept(url, got));

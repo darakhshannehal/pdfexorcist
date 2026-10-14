@@ -53,7 +53,6 @@ def upright_pages(pdf: Path, out_dir: Path) -> Path:
     import pymupdf
 
     with pymupdf.open(pdf) as doc:
-        # ponytail: skips /Rotate pages, which MuPDF and PDFium ignore; fold it in if needed
         dirs = [None if page.rotation else _turn(page) for page in doc]
         if not any(dirs):
             return pdf

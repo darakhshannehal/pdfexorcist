@@ -3,7 +3,7 @@
     python web/build.py site          # after: sphinx-build -b html docs site/cli
     python web/build.py --manifest    # what Pyodide gets, as [path, source] JSON
 
-It also writes files.json, which gives the path and the content-versioned URL of each file.
+It also writes files.json: the path, content-versioned URL and size of each file.
 It also writes a redirect at the old address of each docs page.
 """
 
@@ -86,6 +86,11 @@ def python_files() -> list[tuple[str, Path]]:
     return out
 
 
+def _entry(path: str, url: str, src: Path) -> list:
+    """Return a files.json entry: [path, versioned url, size]."""
+    return [path, _versioned(url, src), src.stat().st_size]
+
+
 def _versioned(url: str, src: Path) -> str:
     """Return url?v=<content hash>.
 
@@ -124,11 +129,11 @@ def main(site: Path) -> None:
     manifest = []
     for path, src in python_files():
         _copy(src, site / "py" / path)
-        manifest.append([path, _versioned(f"py/{path}", src)])
+        manifest.append(_entry(path, f"py/{path}", src))
     # Pyodide does not use these files.
     # The page and the workers use this list to get them by content.
     kept = [n for n in VENDOR if not n.endswith(".js")]  # worker.js imports pdftotext.js directly
-    manifest += [[f"vendor/{n}", _versioned(f"vendor/{n}", WEB / "vendor" / n)] for n in kept]
+    manifest += [_entry(f"vendor/{n}", f"vendor/{n}", WEB / "vendor" / n) for n in kept]
     (site / "files.json").write_text(json.dumps(manifest))
     for ex in json.loads((WEB / "examples.json").read_text()):
         _copy(ROOT / ex["pdf"], site / "samples" / Path(ex["pdf"]).name)
