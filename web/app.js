@@ -1,7 +1,7 @@
 // previews run in their own worker so they never wait behind an extraction
 
 import { Client } from './client.js';
-import { bytes, get, wasm } from './net.js';
+import { bytes, get, kept, keptWasm, manifest } from './net.js';
 import { outcome } from './results.js';
 import { button, draw, el, failure, fill, fmt, minutes, plural } from './ui.js';
 
@@ -14,16 +14,25 @@ const SECONDS_PER_PAGE = 1.8; // all five engines, measured on a fact sheet
 
 const INITIAL = { ready: false, failed: null, pause: true, status: 'Loading the engines…' };
 let engines = INITIAL;
-const pdfium = wasm('vendor/pdfium.wasm'); // compiled once, shared by both workers
-const init = () => pdfium.then((m) => ({ pdfium: m }));
+const files = manifest();
+// The page compiles pdfium one time for the two workers.
+// The page gets pdfium first, so that the previews do not wait for the engine download.
+const pdfium = files.then((m) => {
+  const url = Object.fromEntries(m);
+  return Promise.all([keptWasm(url['vendor/pdfium.wasm']), kept(url['vendor/pdfium.cjs']).then((b) => new TextDecoder().decode(b))]);
+});
+const init = () => pdfium.then(([m, script]) => ({ pdfium: m, script }));
 
 const worker = new Client('./worker.js', {
   init,
   onStatus: (data) => {
     if (data.type === 'restart') engines = INITIAL;
-    else if (data.type === 'status') engines = { ...engines, status: `${data.text}…` };
+    else if (data.type === 'status') {
+      // true when the cache did not have the engines at the start of this visit
+      engines = { ...engines, status: `${data.text}…`, downloading: engines.downloading || data.downloading };
+    }
     else if (data.type === 'ready') {
-      engines = { ...engines, ready: true, pause: data.pause, names: data.names, optIn: data.optIn };
+      engines = { ...engines, ready: true, pause: data.pause, names: data.names, later: data.later, optIn: data.optIn };
       pickers();
     }
     else if (data.type === 'failed') engines = { ...engines, failed: `The engines could not start: ${data.message}` };
@@ -40,18 +49,28 @@ function showEngines() {
     : engines.ready && !engines.pause
       ? 'Ready, without pdftotext: it needs Chrome 137, Safari 27 or Firefox 153, and does not run on iPhone or iPad.'
       : engines.ready
-        ? `Ready: ${engines.names.join(', ')}${engines.optIn.length ? `; opt-in: ${engines.optIn.join(', ')}` : ''}.`
-        : `${engines.status} 60 MB on the first visit, cached after.`;
+        ? `Ready: ${engines.names.join(', ')}${more().length ? `; under Options: ${more().join(', ')}` : ''}.`
+        : engines.downloading
+          ? `${engines.status} About 50 MB, once: this browser keeps them for later visits.`
+          : engines.status;
 }
 showEngines();
 
-/** one checkbox per engine; unchecks survive a worker restart */
+const more = () => [...engines.later, ...engines.optIn];
+
+/** Makes one checkbox for each engine. The default engines are checked. The choices stay after a worker restart. */
 function pickers() {
-  const off = new Set([...$('engine-picks').querySelectorAll('input:not(:checked)')].map((c) => c.value));
-  fill($('engine-picks'), [...engines.names, ...engines.optIn].map((name) =>
-    el('label', {}, el('input', { type: 'checkbox', value: name, checked: !off.has(name) }), name)));
+  const was = new Map([...$('engine-picks').querySelectorAll('input')].map((c) => [c.value, c.checked]));
+  fill($('engine-picks'), engineBoxes((name) => was.get(name) ?? engines.names.includes(name)));
 }
-const picked = () => [...$('engine-picks').querySelectorAll('input:checked')].map((c) => c.value);
+const picked = (box = $('engine-picks')) => [...box.querySelectorAll('input:checked')].map((c) => c.value);
+
+/** Makes a checkbox for each engine that this build can run. An engine that is not in the first download shows "(downloads once)". */
+function engineBoxes(checked) {
+  return [...engines.names, ...more()].map((name) =>
+    el('label', {}, el('input', { type: 'checkbox', value: name, checked: checked(name) }), name,
+      engines.later.includes(name) ? el('small', {}, ' (downloads once)') : ''));
+}
 
 // ---- home
 
@@ -111,10 +130,9 @@ get('examples.json')
   .then((list) => list.forEach(addExample))
   .then(route);
 
-get('files.json')
-  .then((r) => r.json())
-  .then((files) => {
-    for (const [path] of files) {
+files
+  .then((list) => {
+    for (const [path] of list) {
       if (path.startsWith('examples/') && path.endsWith('.toml')) {
         $('recipe').append(el('option', { value: path }, path.slice('examples/'.length)));
       }
@@ -239,7 +257,7 @@ async function read(job, pane, signal) {
   const started = performance.now();
   let first; // the first page read; the estimate leaves out the engines' start-up
   const progress = (data) => {
-    first ??= performance.now();
+    if (!data.downloading) first ??= performance.now();
     view.update(data);
   };
   try {
@@ -251,13 +269,30 @@ async function read(job, pane, signal) {
       ? { read: () => read({ ...job, pages: undefined, sample: false }, pane, signal),
           seconds: ((performance.now() - (first ?? started)) / 1000 / pagesRead) * job.count }
       : null;
-    fill(result, outcome(res, job, (performance.now() - started) / 1000, pane, again, (page) => openGrid(job, page)));
+    fill(result,
+      outcome(res, job, (performance.now() - started) / 1000, pane, again, (page) => openGrid(job, page)),
+      rerun(job, pane, signal));
   } catch (e) {
     if (signal.aborted) return;
     fill(result, stop.signal.aborted ? failure('Stopped.', 'The engines are restarting.') : failure('Something went wrong.', e.message));
   } finally {
     view.done();
   }
+}
+
+/** A form that reads the same pages again with other engines. The engines of the last run are checked. */
+function rerun(job, pane, signal) {
+  const ran = job.engines ?? engines.names;
+  const box = el('div', { className: 'engine-boxes' }, engineBoxes((name) => ran.includes(name)));
+  const again = (e) => {
+    e.preventDefault();
+    const chosen = picked(box);
+    if (chosen.length) read({ ...job, engines: chosen }, pane, signal);
+  };
+  return el('form', { className: 'picks rerun', onsubmit: again },
+    el('p', { className: 'sub' }, 'Read again with other engines. More engines, more cross-checks; camelot is the slowest.'),
+    box,
+    el('div', { className: 'actions' }, el('button', { className: 'button quiet', type: 'submit' }, 'Read again')));
 }
 
 /** a tab opened now, inside the click, so pop-up blockers allow it; filled when ready */
@@ -358,14 +393,18 @@ function progressView(onStop) {
       status,
       list,
       el('div', { className: 'actions' }, stop)),
-    update({ engine, page, pages }) {
+    update({ engine, page, pages, downloading }) {
       let row = rows.get(engine);
       if (!row) {
         row = el('li', {}, el('b', {}, engine), el('span', {}), el('i', { className: 'meter' }));
-        row.started = performance.now();
         rows.set(engine, row);
         list.append(row);
       }
+      if (downloading) {
+        row.children[1].textContent = 'downloading, once: kept for later visits';
+        return;
+      }
+      row.started ??= performance.now(); // the engine starts to read now
       const time = took(performance.now() - row.started);
       row.children[1].textContent = page >= pages
         ? `${plural(pages, 'page')}, done in ${time}`

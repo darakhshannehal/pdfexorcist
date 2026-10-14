@@ -47,3 +47,50 @@ jobs:
       - run: node test/pytest.mjs -q -ra --ignore=tests/test_fetch.py
         env:
           SHARD: ${{ matrix.shard }}/4
+
+  site:
+    # This job opens the built site in Chrome. It makes sure that:
+    # - a slow first visit shows the previews,
+    # - each example gives the same result as the CLI,
+    # - camelot downloads only when you select it,
+    # - a second visit downloads no engine files.
+    name: Site in Chrome
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-poppler # the CLI runs use its pdftotext
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: |
+            pyproject.toml
+            uv.lock
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci --omit=optional
+        working-directory: web
+      - name: Build the site
+        run: |
+          uv run --with-requirements docs/requirements.txt sphinx-build -b html docs site/cli
+          uv run python web/build.py site
+      - name: site.mjs
+        run: |
+          python3 -m http.server -d site 8765 --bind 127.0.0.1 &
+          until curl -sf http://127.0.0.1:8765/ > /dev/null; do sleep 0.5; done
+          node web/test/site.mjs http://127.0.0.1:8765/ site-shots
+        env:
+          CHROME: /usr/bin/google-chrome # Ubuntu runners have Chrome installed
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-shots
+          path: site-shots/
+          if-no-files-found: ignore
+          retention-days: 14

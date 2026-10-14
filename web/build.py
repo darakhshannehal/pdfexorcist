@@ -3,7 +3,8 @@
     python web/build.py site          # after: sphinx-build -b html docs site/cli
     python web/build.py --manifest    # what Pyodide gets, as [path, source] JSON
 
-Also writes files.json and a redirect at each docs page's old address.
+It also writes files.json, which gives the path and the content-versioned URL of each file.
+It also writes a redirect at the old address of each docs page.
 """
 
 import hashlib
@@ -85,6 +86,14 @@ def python_files() -> list[tuple[str, Path]]:
     return out
 
 
+def _versioned(url: str, src: Path) -> str:
+    """Return url?v=<content hash>.
+
+    net.js kept stores each version in the browser after the first download.
+    """
+    return f"{url}?v={hashlib.sha256(src.read_bytes()).hexdigest()[:16]}"
+
+
 def _redirects(site: Path) -> int:
     """Redirects from the docs' old addresses."""
     n = 0
@@ -114,14 +123,18 @@ def main(site: Path) -> None:
         _copy(ROOT / src, site / "assets" / name)
     manifest = []
     for path, src in python_files():
-        url = f"py/{path}"
-        _copy(src, site / url)
-        manifest.append([path, url])
+        _copy(src, site / "py" / path)
+        manifest.append([path, _versioned(f"py/{path}", src)])
+    # Pyodide does not use these files.
+    # The page and the workers use this list to get them by content.
+    kept = [n for n in VENDOR if not n.endswith(".js")]  # worker.js imports pdftotext.js directly
+    manifest += [[f"vendor/{n}", _versioned(f"vendor/{n}", WEB / "vendor" / n)] for n in kept]
     (site / "files.json").write_text(json.dumps(manifest))
     for ex in json.loads((WEB / "examples.json").read_text()):
         _copy(ROOT / ex["pdf"], site / "samples" / Path(ex["pdf"]).name)
     (site / ".nojekyll").touch()  # else Pages hides Sphinx's _static
-    print(f"Wrote the app to {site}/ ({len(manifest)} Python files), {_redirects(site)} redirects")
+    n = len(manifest) - len(kept)
+    print(f"Wrote the app to {site}/ ({n} Python files), {_redirects(site)} redirects")
 
 
 if __name__ == "__main__":

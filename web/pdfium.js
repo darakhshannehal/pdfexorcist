@@ -1,17 +1,16 @@
 
 import { pdfiumBridge, withModule } from './engines.js';
-import { get } from './net.js';
 
 const MAX_PIXELS = 4096 * 4096; // per page; a huge MediaBox would exhaust memory
 
-/** first message {pdfium: module}; then answer(msg) -> [result, transfer], {cancel: id} -> cancel */
+/** The first message is {pdfium: module, script}. Then answer(msg) -> [result, transfer], and {cancel: id} -> cancel. */
 export function serve(answer, cancel = () => {}) {
   let start;
   const ready = new Promise((resolve) => {
     start = resolve;
   });
   onmessage = async ({ data: msg }) => {
-    if (msg.pdfium) return start(instantiate(msg.pdfium));
+    if (msg.pdfium) return start(instantiate(msg.pdfium, msg.script));
     if ('cancel' in msg) return cancel(msg.cancel);
     try {
       await ready;
@@ -24,8 +23,7 @@ export function serve(answer, cancel = () => {}) {
   return ready;
 }
 
-async function instantiate(module) {
-  const script = await (await get('vendor/pdfium.cjs')).text();
+async function instantiate(module, script) {
   // classic Emscripten script: uses the global Module for its lifetime
   const ready = new Promise((resolve) => {
     globalThis.Module = {

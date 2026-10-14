@@ -6,7 +6,6 @@ import { canPause, ls, programRunner } from './engines.js';
 const PACKAGES = [
   'micropip',
   'pandas',
-  'opencv-python',
   'pillow',
   'cryptography',
   'charset-normalizer',
@@ -14,13 +13,39 @@ const PACKAGES = [
   'annotated-doc',
 ];
 
-/** files (or a promise of them): "site/..." to site-packages, "wheel/..." installed, the rest under /repo */
-/** programs: {name: program} for engines.js programRunner */
+// Engines that are not in the first download. add() installs an engine when a run selects it.
+export const LATER = {
+  camelot: { wheels: ['wheel/camelot_py-', 'wheel/playa_pdf-'], packages: ['opencv-python'] },
+};
+/** Returns the LATER engine that a file is part of, or undefined. */
+export const laterEngine = (path) => Object.keys(LATER).find((n) => LATER[n].wheels.some((w) => path.startsWith(w)));
+const laterIn = (files) => new Set(Object.keys(files).map(laterEngine).filter(Boolean));
+
+/**
+ * files (or a promise of them): boot copies "site/..." to site-packages, installs "wheel/...",
+ * and puts the other files under /repo.
+ * If files contains the wheels of a LATER engine, boot installs that engine. The Node tests send all the wheels.
+ * programs: {name: program} for engines.js programRunner.
+ */
 export async function boot(opts) {
   globalThis.runProgram ??= programRunner(opts.programs);
   globalThis.canPause = canPause;
   const py = await interpreter(opts);
-  return { py, glue: py.pyimport('browser') };
+  return { py, glue: py.pyimport('browser'), added: laterIn(await opts.files) };
+}
+
+/** Installs each LATER engine in names that is not installed. fetch(path) returns the bytes of one file of the engine. */
+export async function add(ctx, names, paths, fetch, downloading) {
+  for (const name of names.filter((n) => LATER[n] && !ctx.added.has(n))) {
+    downloading(name);
+    const mine = paths.filter((p) => laterEngine(p) === name);
+    const [files] = await Promise.all([
+      Promise.all(mine.map(async (p) => [p, await fetch(p)])).then(Object.fromEntries),
+      ctx.py.loadPackage(LATER[name].packages, { messageCallback: () => {} }),
+    ]);
+    await install(ctx.py, files);
+    ctx.added.add(name);
+  }
 }
 
 /** python as a subprocess: a fresh interpreter, dropped after; Pyodide cannot free one */
@@ -92,8 +117,18 @@ async function interpreter({ loadPyodide, files, log = () => {} }) {
   const py = await loadPyodide();
   log('Loading Python packages');
   await py.loadPackage(PACKAGES, { messageCallback: () => {} });
-  const site = py.runPython('import site; site.getsitepackages()[0]');
   files = await files; // awaited late: downloads alongside Pyodide's packages
+  const later = [...laterIn(files)];
+  await py.loadPackage(later.flatMap((n) => LATER[n].packages), { messageCallback: () => {} });
+  log('Installing the engines');
+  await install(py, files);
+  py.FS.mkdirTree('/work/out');
+  return py;
+}
+
+/** Writes files to the locations that the boot doc gives. Installs the wheels in files. */
+async function install(py, files) {
+  const site = py.runPython('import site; site.getsitepackages()[0]');
   for (const [path, data] of Object.entries(files)) {
     const dest = path.startsWith('site/')
       ? `${site}/${path.slice(5)}`
@@ -106,14 +141,12 @@ async function interpreter({ loadPyodide, files, log = () => {} }) {
   const wheels = Object.keys(files)
     .filter((p) => p.startsWith('wheel/'))
     .map((p) => `emfs:/tmp/${p}`);
-  log('Installing the engines');
   await py.runPythonAsync(`
 import micropip
 await micropip.install(${JSON.stringify(wheels)}, deps=False)
 `);
   for (const w of wheels) py.FS.unlink(w.slice('emfs:'.length)); // installed; frees the memory
-  py.FS.mkdirTree('/work/out');
-  return py;
+  py.runPython('import importlib; importlib.invalidate_caches()'); // so that find_spec finds an engine that add() installed
 }
 
 const documents = new Map(); // handle -> path of an opened PDF

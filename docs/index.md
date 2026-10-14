@@ -14,7 +14,7 @@ description: "Extract tables from PDFs, scans and photos by majority vote across
 
 A cell the engines disagree on is left blank and listed for review with every engine's reading.
 
-To try it without installing anything, [run it in your browser](https://pdfexorcist.in/): the same five default engines, plus the opt-in `pypdf` and `pdfjs`, on your own computer.
+You can use pdfexorcist [in your browser](https://pdfexorcist.in/) without installation. The browser version runs four of the five default engines on your computer. It can also run camelot, `pypdf` and `pdfjs`.
 
 ## Quick start
 

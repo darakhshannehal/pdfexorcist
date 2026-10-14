@@ -11,13 +11,16 @@ import { chromium } from 'playwright-core';
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const examples = JSON.parse(readFileSync(join(ROOT, 'web/examples.json'), 'utf8'));
 
-async function native(ex) {
+// The default engines of the site. Camelot downloads only when you select it (core.js LATER).
+const WEB_ENGINES = ['pdftotext', 'pdfplumber', 'pymupdf', 'pdfium'];
+
+async function native(ex, engines = WEB_ENGINES) {
   const dir = mkdtempSync(join(tmpdir(), 'site-'));
   try {
     copyFileSync(join(ROOT, ex.pdf), join(dir, 'doc.pdf'));
     let out;
     try {
-      const args = ['run', 'pdfexorcist', 'extract', join(dir, 'doc.pdf'), '--recipe', ex.recipe, '--json', '-q'];
+      const args = ['run', 'pdfexorcist', 'extract', join(dir, 'doc.pdf'), '--recipe', ex.recipe, '--json', '-q', '--engines', engines.join(',')];
       out = (await promisify(execFile)('uv', args, { cwd: ROOT })).stdout;
     } catch (e) {
       out = e.stdout; // exit 1 when a check fails
@@ -67,7 +70,64 @@ out.save(${JSON.stringify(pdf)})`], { cwd: ROOT });
   }
 }
 
-const natives = examples.map(native); // runs while Chrome boots the engines
+/** A first visit with an empty cache on a slow network. The example cards must show their pages before the engines can run. */
+async function slowFirstVisit(browser) {
+  const context = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+  try {
+    const page = await context.newPage();
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Network.enable');
+    // At 4 Mbit/s, approximately 60 MB of engines download in 2 minutes. A thumbnail uses approximately 1 MB.
+    await cdp.send('Network.emulateNetworkConditions', {
+      offline: false, latency: 40, downloadThroughput: 4e6 / 8, uploadThroughput: 1e6 / 8,
+    });
+    await page.goto(url);
+    await page.locator('#examples .thumb canvas').first().waitFor({ timeout: 20_000 }).catch(() => {});
+    const drawn = await page.locator('#examples .thumb canvas').count();
+    const ready = await page.locator('#dots.ready').count();
+    console.log(`slow first visit: ${drawn} thumbnails drawn after 20 s, engines ${ready ? 'ready' : 'still loading'}`);
+    if (!drawn) failures.push('slow first visit: no thumbnail within 20 s; previews wait behind the engine download');
+  } finally {
+    await context.close();
+  }
+}
+
+/** Reads an example again with camelot selected. Camelot must download and run.
+ * The result must be the same as the CLI result with five engines. */
+async function withCamelot(page) {
+  const ex = examples[0];
+  const want = native(ex, [...WEB_ENGINES, 'camelot']);
+  await page.locator('.example').first().click();
+  await page.waitForSelector('#result .say >> text=/values agreed/', { timeout: 300_000 });
+  await page.locator('.rerun input[value=camelot]').check();
+  await page.locator('.rerun button[type=submit]').click();
+  await page.waitForSelector('.progress li >> text=/downloading/', { timeout: 60_000 });
+  await page.waitForSelector('#result .say >> text=/values agreed/', { timeout: 300_000 });
+  const voters = await page.locator('.voters li').count();
+  const csv = await downloaded(page, 'text=Download CSV');
+  console.log(`${ex.title}, read again with camelot: ${await page.locator('#result .say').innerText()} | ${voters} engines`);
+  if (voters !== WEB_ENGINES.length + 1) failures.push(`with camelot: ${voters} engines ran`);
+  if (csv !== (await want).csv) failures.push('with camelot: CSV differs from the CLI with five engines');
+  await page.locator('#back').click();
+}
+
+/** Opens the site again in the same browser. All engine files must come from Cache Storage, not from the network. */
+async function secondVisit(context) {
+  const page = await context.newPage();
+  const fetched = [];
+  const files = await (await fetch(new URL('files.json', url))).json();
+  const kept = new Set(files.map(([, u]) => new URL(u, url).href)); // the files in files.json, not the Pyodide files
+  context.on('request', (r) => kept.has(r.url()) && fetched.push(r.url())); // this includes the requests of the workers
+  await page.goto(url);
+  const said = await page.locator('#engine-status').innerText();
+  await page.waitForSelector('#dots.ready', { state: 'attached', timeout: 300_000 });
+  console.log(`second visit: "${said}", ${fetched.length} engine files fetched`);
+  if (/Downloading|MB/.test(said)) failures.push(`second visit: says "${said}"`); // "MB" is in the text of the first visit
+  if (fetched.length) failures.push(`second visit fetched ${fetched.length} engine files, e.g. ${fetched[0]}`);
+  await page.close();
+}
+
+const natives = examples.map((ex) => native(ex)); // these runs occur while Chrome starts the engines
 const browser = await chromium.launch({ executablePath: CHROME });
 const downloaded = async (page, button) => {
   const [d] = await Promise.all([page.waitForEvent('download'), page.locator(button).click()]);
@@ -75,7 +135,10 @@ const downloaded = async (page, button) => {
 };
 const failures = [];
 try {
-  const page = await browser.newPage({ colorScheme: 'light', viewport: { width: 1360, height: 900 }, acceptDownloads: true });
+  await slowFirstVisit(browser);
+  // a different context, so that secondVisit can open one more page in the same profile
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1360, height: 900 }, acceptDownloads: true });
+  const page = await context.newPage();
   page.on('pageerror', (e) => failures.push(`page error: ${e.message}`));
   page.on('console', (m) => m.type() === 'error' && failures.push(`console: ${m.text()}`));
   await page.goto(url);
@@ -113,14 +176,16 @@ try {
     console.log(`  browser ${JSON.stringify(web)}\n  native  ${JSON.stringify(want.cells)}`);
     console.log(`  CSV ${csv === want.csv ? 'identical to' : 'DIFFERS from'} the CLI's (${csv.length} bytes)`);
     if (new URL(page.url()).hash !== `#${examples[i].id}`) failures.push(`example ${i}: URL is ${page.url()}`);
-    if (voters !== 5) failures.push(`example ${i}: ${voters} engines ran`);
+    if (voters !== WEB_ENGINES.length) failures.push(`example ${i}: ${voters} engines ran`);
     if (!rows) failures.push(`example ${i}: the table is empty`);
     if (JSON.stringify(web) !== JSON.stringify(want.cells)) failures.push(`example ${i}: counts differ from the CLI`);
     if (csv !== want.csv) failures.push(`example ${i}: CSV differs from the CLI`);
     if (shots) await page.screenshot({ path: `${shots}/example-${i}.png`, fullPage: true });
     await page.locator('#back').click();
   }
+  await withCamelot(page);
   await longPdf(page);
+  await secondVisit(context);
   const shared = examples.at(-1); // a shared link opens its example in a fresh tab
   const tab = await browser.newPage();
   await tab.goto(`${url}#${shared.id}`);
