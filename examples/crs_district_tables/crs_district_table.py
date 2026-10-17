@@ -69,7 +69,8 @@ def parse(pages: Iterable[Page]) -> Iterator[dict]:
         carry, state, first = state, "", last + 1
         for cell in parse_by_columns([(page_no, glued)], placement="both"):
             name = cell["label"].replace("_", " ")
-            if not name or name.lower().startswith(("note", "sl.", "no.")):
+            # not _key(name): "……", slanted "Not Available" that poppler >= 26 reads as its own line
+            if not _key(name) or name.lower().startswith(("note", "sl.", "no.")):
                 continue
             serial = serials.get(cell["label"], 0)
             if not serial:
