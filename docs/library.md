@@ -196,6 +196,7 @@ Two parsers ship with the package:
 
 * `parse_rows` (default): a label, then values in reading order. Key: `page`, `row`, `col`.
 * `parse_by_columns`: places each value in the nearest column by its x position, so a value one engine missed leaves the others in their columns. Use it for OCR.
+* `parse_by_columns(..., placement="both")`: places each value by its order and by its x, and keeps it only where the two agree. Where they differ, the engine reads both values for the cell, so it loses its vote there, and `dissent` shows both readings (`pymupdf=blank/28`). Use it when "Not Available" or a dropped value can shift a row's values into the wrong columns.
 
 For a larger example, see [MCCD Table 4](examples/mccd-table4.md).
 
@@ -333,3 +334,11 @@ print(pages_matching("mccd_2009.pdf", start=r"TABLE\s*4", match="Septicaemia"))
 ```
 
 `pages_matching` finds pages by their text: from the first page matching `start` up to (not including) the one matching `stop`, keeping those that match `match`. Pass the result to `extract(..., pages=...)`.
+
+A page without usable text (no text layer, or the control codes of a font without a Unicode map) is matched on tesseract's OCR of its top strip. `pages.find(pdf, pattern, ocr_fallback=True, strip=0.15)` is the short form for one pattern:
+
+```python
+from pdfexorcist.pages import find
+
+print(find("CRS_Report_2017.pdf", r"TABLE\s*-?\s*8\s*:"))
+```

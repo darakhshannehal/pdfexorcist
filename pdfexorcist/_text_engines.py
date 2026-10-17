@@ -1,10 +1,8 @@
 """Text-layer engines."""
 
-import ctypes
 import functools
 import gc
 import logging
-import math
 import os
 import re
 import shutil
@@ -15,8 +13,9 @@ from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
+from ._bold import COPY_PT, debold_line, one_value
 from ._registry import register
-from .cells import Box, BoxCell
+from .cells import Box, BoxCell, _inside
 from .rows import Page, group_words, is_value
 
 logger = logging.getLogger(__name__)
@@ -39,11 +38,25 @@ def pdftotext(pdf: Path) -> Iterator[Page]:
 
 
 def _layout_lines(text: str) -> list:
-    """Cells of fixed-width layout text, x in character columns."""
-    return [
-        [(m.start() + len(m.group()) / 2, m.group()) for m in re.finditer(r"\S+(?: \S+)*", ln)]
-        for ln in text.splitlines()
-    ]
+    """Cells of fixed-width layout text, x in character columns.
+
+    Words one space apart form a cell, so values in narrow columns ("947 948")
+    are split into a cell each at its own columns; label words stay joined.
+    """
+    out = []
+    for ln in text.splitlines():
+        cells = [(m.start(), m.group()) for m in re.finditer(r"\S+(?: \S+)*", ln)]
+        line = debold_line([(at + len(t) / 2, t) for at, t in cells], is_value)
+        split = []
+        for (at, _), (x, t) in zip(cells, line, strict=True):
+            toks = list(re.finditer(r"\S+", t))
+            as_printed = t == ln[at : at + len(t)]  # not de-bolded
+            if len(toks) > 1 and as_printed and all(is_value(m.group()) for m in toks):
+                split += [(at + m.start() + len(m.group()) / 2, m.group()) for m in toks]
+            else:
+                split.append((x, t))
+        out.append(split)
+    return out
 
 
 @register("pypdf", default=False)
@@ -117,11 +130,6 @@ def _not_in(ids: set[int]) -> Callable[[Any], bool]:
     return lambda o: id(o) not in ids
 
 
-def _inside(box: tuple, x0: float, y0: float, x1: float, y1: float) -> bool:
-    """Test whether a box center lies inside box."""
-    return box[0] <= (x0 + x1) / 2 <= box[2] and box[1] <= (y0 + y1) / 2 <= box[3]
-
-
 @register("pdfplumber")
 def pdfplumber_(pdf: Path) -> Iterator[Page]:
     """Extract pdfplumber words grouped into lines."""
@@ -129,7 +137,8 @@ def pdfplumber_(pdf: Path) -> Iterator[Page]:
 
     with pdfplumber.open(pdf) as doc:
         for i, raw in enumerate(doc.pages, start=1):
-            page = raw.filter(_not_in(_space_ids(raw)))
+            # fake bold draws a glyph again a fraction of a point off
+            page = raw.filter(_not_in(_space_ids(raw))).dedupe_chars(tolerance=COPY_PT)
             words = [  # pdfminer reads text drawn outside the page box; poppler doesn't
                 w
                 for w in page.extract_words(use_text_flow=False)
@@ -219,7 +228,13 @@ def _camelot_pages(pdf: Path) -> Iterator[Page]:
                     for r, row in enumerate(t.df.itertuples(index=False))
                 ]
             )
-        yield i, max(reads, key=_n_values, default=[])
+        best: list = max(reads, key=_n_values, default=[])
+        yield i, [debold_line(_one_values(ln), is_value) for ln in best]
+
+
+def _one_values(line: list) -> list:
+    """Read each overprinted cell once."""
+    return [BoxCell(c[0], one_value(c[1], is_value), c.box) for c in line]
 
 
 def _distinct(tables: Any) -> list:
@@ -298,95 +313,7 @@ def tabula_(pdf: Path) -> Iterator[Page]:
         yield i, max(reads, key=_n_values, default=[])
 
 
-@register("pdfium")
-def pdfium_(pdf: Path) -> Iterator[Page]:
-    """Extract PDFium glyphs grouped into words by gap, then into lines."""
-    import pypdfium2 as pdfium
+# last: import order sets registration order
+from ._pdfium import _displayed, _pdfium_words, pdfium_  # noqa: E402
 
-    doc = pdfium.PdfDocument(str(pdf))
-    try:
-        for i, page in enumerate(doc, start=1):
-            tp = page.get_textpage()
-            yield i, group_words(_pdfium_words(page, tp))
-            tp.close()
-            page.close()
-    finally:
-        doc.close()
-
-
-def _pdfium_words(page: Any, tp: Any) -> list:
-    """Group PDFium glyphs into words by gap; PDFium's own text runs span empty columns."""
-    import pypdfium2 as pdfium
-    from pdfplumber.utils.text import WordExtractor
-
-    rot = page.get_rotation()
-    w, h = page.get_size()  # displayed; glyph boxes are unrotated
-    box = page.get_bbox()
-    chars: list[dict] = []
-    runs: list[list[tuple]] = []  # sideways glyphs (j, x0, x1, top, bottom, text) per run
-    seen: dict[tuple, list[tuple]] = {}  # (text, x, y) on a 1 pt grid -> (x0, top, j)
-    ox, oy = ctypes.c_double(), ctypes.c_double()
-    char_angle = pdfium.raw.FPDFText_GetCharAngle
-    for j, ch in enumerate(tp.get_text_range()):
-        # tight boxes gap around "."
-        left, b, r, t = tp.get_charbox(j, loose=True)
-        if r <= left or not _inside(box, left, b, r, t):
-            continue  # generated (zero-width) glyph, or outside the page box
-        x0, top, x1, bottom = _displayed(left, b, r, t, rot, w, h)
-        gx, gy = int(x0), int(top)
-        near = (
-            k
-            for dx in (-1, 0, 1)
-            for dy in (-1, 0, 1)
-            for k in seen.get((ch, gx + dx, gy + dy), ())
-        )
-        # fake bold redraws a glyph a fraction of a point off; ligature letters are neighbours
-        if any(abs(kx - x0) < 1 and abs(kt - top) < 1 and j - kj != 1 for kx, kt, kj in near):
-            continue
-        seen.setdefault((ch, gx, gy), []).append((x0, top, j))
-        # pdfium char angles ignore /Rotate
-        angle = round(math.degrees(char_angle(tp, j)) + rot) % 360
-        if angle == 0:
-            chars.append(
-                {
-                    "text": ch,
-                    "x0": x0,
-                    "x1": x1,
-                    "top": top,
-                    "bottom": bottom,
-                    "doctop": top,
-                    "upright": True,
-                }
-            )
-            continue
-        # vertical runs use the baseline; glyph extents across them differ by pdfium build
-        if angle in (90, 270):
-            pdfium.raw.FPDFText_GetCharOrigin(tp, j, ox, oy)
-            x0 = x1 = _displayed(ox.value, oy.value, ox.value, oy.value, rot, w, h)[0]
-        glyph = (j, x0, x1, top, bottom, ch)
-        if runs and runs[-1][-1][0] == j - 1:
-            runs[-1].append(glyph)
-        else:
-            runs.append([glyph])
-    out = [
-        (wd["x0"], wd["x1"], wd["bottom"], wd["text"], wd["top"])
-        for wd, _ in WordExtractor().iter_extract_tuples(chars)
-    ]
-    for run in runs:
-        _, x0s, x1s, tops, bottoms, text = zip(*run, strict=True)
-        if word := "".join(text).strip():
-            out.append((min(x0s), max(x1s), max(bottoms), word, min(tops)))
-    return out
-
-
-def _displayed(
-    left: float, b: float, r: float, t: float, rot: int, w: float, h: float
-) -> tuple[float, float, float, float]:
-    """Map an unrotated PDF box (y up) to a displayed w x h page: x0, top, x1, bottom."""
-    if rot == 90:
-        return b, left, t, r
-    if rot == 180:
-        return w - r, b, w - left, t
-    if rot == 270:
-        return w - t, h - r, w - b, h - left
-    return left, h - t, r, h - b
+__all__ = ["_displayed", "_pdfium_words", "pdfium_"]

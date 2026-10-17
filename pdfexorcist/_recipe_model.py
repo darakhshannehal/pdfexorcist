@@ -90,6 +90,7 @@ class Recipe:
     parser: str = "rows"
     min_values: int | None = None
     tolerance: float | None = None
+    placement: str = "x"
     parser_function: str | None = None
     key: tuple[str, ...] | None = None
     checks: tuple[Any, ...] = ()  # TotalRule or "file.py:function"
@@ -118,6 +119,8 @@ class Recipe:
             opts["min_values"] = self.min_values
         if self.tolerance is not None and self.parser == "columns":
             opts["tol"] = self.tolerance
+        if self.placement != "x":
+            opts["placement"] = self.placement
         if not opts:
             return base, list(KEY)
 

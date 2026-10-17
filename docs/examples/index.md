@@ -13,7 +13,7 @@ Each example is a recipe in the repository's `examples/` folder and runs on a fi
 | [SRS life tables](srs.md) | One State a page: Total, Rural and Urban blocks of 19 ages x 12 values. | The State kept out of the key, so camelot (which drops the title) still votes; a survivorship check in Python. |
 | [IIPS district projections](census-projections.md#iips-district-projections) | Two blocks a page: five years of Males and Females by single age. | Keyed by block position and printed year; the district from the table title, since some "District:" headers are wrong. |
 | [MoHFW State projections](census-projections.md#mohfw-state-projections) | Person, Male and Female by age for six years, in thousands. | Keyed by year, age and sex only (one table crosses a page, one is titled PUNJAB); TOML checks with a rounding tolerance. |
-| [CRS State Tables 1-4](crs.md) | A row per State/UT: Rural, Urban and Total by Male, Female and Person. | Table pages found by `match`; `area` and `sex` columns, so the `>=` totals are TOML checks. |
+| [CRS State and District Tables](crs.md) | A row per State/UT, age group or district: Rural, Urban and Total by Male, Female and Person. | Fake bold, slanted "Not Available", Type3 fonts without a Unicode map; `placement="both"`; age groups and districts add up to the State. |
 | [Crime in India](../recipes.md#example-a-text-table) | State/UT rows of counts and rates, then total rows. | The generic parser, cleaned numbers, totals that must add up. |
 | [BMC lake levels](../recipes.md#example-a-photographed-table) | A phone photo: seven lakes, this year and the two before. | OCR engines only, with your own parser. |
 | [NFHS-6 fact sheets](nfhs6-factsheets.md) | Key Indicators by State and district. | `examples/nfhs6/` (`state.toml`, `district.toml`): rows by printed indicator number, placeholders kept as printed, one parser for two layouts. |
@@ -56,7 +56,9 @@ Each test pairs a document parser with values checked against the printed page. 
 | `test_pravah_dams.py` | Maharashtra WRD Pravah daily dam storage |
 | `test_nta_toppers.py` | NTA NEET (UG) 2026 toppers list (a scan, OCR) |
 | `test_nta_notice.py` | NTA NEET (UG) 2024 press release: nine tables in one recipe |
-| `test_crs_state_table.py` | CRS State Tables 1 and 4: births and still births by State, sex and residence (2023) |
+| `test_crs_state_table.py` | CRS State Tables 1, 4 and 6: births, still births and deaths by age, by State, sex and residence (2010, 2011, 2023) |
+| `test_crs_district_table.py` | CRS District Tables 7 and 8: births and deaths by district (2016, 2017) |
+| `test_crs_gaps.py` | The CRS cases behind slanted text, fake bold, joined pdftotext values, Excel rounding, placement and Type3 fonts |
 | `test_nfhs6_factsheet.py` | NFHS-6 Key Indicators fact sheets, India, States and districts (an outlined page, OCR) |
 | `test_nfhs5_factsheet.py` | NFHS-5 Key Indicators fact sheets, India, States and districts (2019-21) |
 

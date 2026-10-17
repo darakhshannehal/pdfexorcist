@@ -90,6 +90,8 @@ jobs:
 
       - uses: ./.github/actions/setup-poppler
 
+      - uses: ./.github/actions/setup-tesseract # Type3 glyph decoding and other needs_tesseract tests
+
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}

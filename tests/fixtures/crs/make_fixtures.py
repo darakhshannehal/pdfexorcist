@@ -1,4 +1,9 @@
-"""Build the CRS fixture."""
+"""Build the CRS fixtures: python make_fixtures.py ~/github/crsindia
+
+Every fixture is cut from the reports in data-raw/pdfs. expected.csv comes from
+crsindia's parquet only for PARQUET_EXPECTED, whose values all agree with the
+page; the other tests pin values read off the printed page.
+"""
 
 import csv
 import re
@@ -15,6 +20,7 @@ PRINTED = {
     "Andaman & Nicobar Islands": "A & N Islands",
     "Dadra & Nagar Haveli & Daman & Diu": "Dadra and Nagar Haveli and Daman and Diu",
 }
+PARQUET_EXPECTED = {"crs_2023_t1_t4.pdf"}
 
 
 def state_key(name: str) -> str:
@@ -35,6 +41,8 @@ def main(project: Path) -> None:
             doc.insert_pdf(src, from_page=page - 1, to_page=page - 1)
         doc.subset_fonts()
         doc.save(HERE / fixture, garbage=4, deflate=True)
+        if fixture not in PARQUET_EXPECTED:
+            continue
         for fixture_page, m in enumerate(rows, start=1):
             d = pq[(pq.year == int(m["year"])) & (pq["table"] == int(m["table"]))]
             for r in d.itertuples():

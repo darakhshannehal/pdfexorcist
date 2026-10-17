@@ -9,15 +9,20 @@ from typing import Any, Literal, overload
 
 import pandas as pd
 
+from ._glyphs import decode_type3
+from ._prepare import _pages, _photo_pdf, fit_page_boxes
 from ._registry import IN_PROCESS
+from ._slanted import drop_slanted
 from ._upright import upright_pages
-from .checks import Check, validate
+from .checks import Check, lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
 from .pages import IMAGE_SUFFIXES, ocr_layer
 from .readings import Readings
 from .rows import KEY, Page, parse_rows
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["_pages", "extract", "fit_page_boxes", "vote"]
 
 Parser = Callable[[Iterable[Page]], Iterator[dict]]
 
@@ -63,12 +68,18 @@ def vote(
     key = list(key)
     df = readings.astype({"value": str}).drop_duplicates([*key, "method", "value"])
     ambiguous = df.duplicated([*key, "method"], keep=False)
+    both: dict[tuple, dict[str, str]] = {}  # cell -> method -> its readings, for dissent
+    lost = df[ambiguous]
     if ambiguous.any():
         logger.warning("%d self-contradicting readings dropped", ambiguous.sum())
+        g = lost.groupby([*key, "method"], sort=False)["value"]
+        for (*cell, m), v in g.agg(lambda v: "/".join(x or "blank" for x in v)).items():
+            both.setdefault(tuple(cell), {})[m] = v
     df = df[~ambiguous]
     if families:
         df = _family_vote(df, key, families)
     methods = sorted(df["method"].unique())
+    listed = sorted({*methods, *(m for said in both.values() for m in said)})
     if min_agree is None:
         min_agree = max(2 if families else 3, len(methods) // 2 + 1)
     extra = [c for c in df.columns if c not in (*key, "method", "value")]
@@ -89,13 +100,28 @@ def vote(
                 "votes": " | ".join(f"{v}×{c}" for v, c in votes.most_common()),
                 "sources": "|".join(m for m in methods if by_method.get(m) == best),
                 "dissent": "|".join(
-                    f"{m}={by_method.get(m, '<missing>')}"
-                    for m in methods
+                    f"{m}={by_method.get(m) or both.get(k, {}).get(m, '<missing>')}"
+                    for m in listed
                     if by_method.get(m) != best
                 ),
                 "status": "verified" if ok else "unresolved",
             }
         )
+    seen = {tuple(r[c] for c in key) for r in rows}
+    for k, g in lost.groupby(key, sort=False):  # cells every method contradicted itself on
+        if k not in seen:
+            rows.append(
+                {
+                    **dict(zip(key, k, strict=True)),
+                    **{c: _mode(g[c]) for c in extra},
+                    "value": "",
+                    "n_agree": 0,
+                    "votes": "",
+                    "sources": "",
+                    "dissent": "|".join(f"{m}={both[k][m]}" for m in sorted(set(g.method))),
+                    "status": "unresolved",
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -105,67 +131,7 @@ def _mode(s: pd.Series) -> Any:
     return m.iat[0] if len(m) else None
 
 
-def fit_page_boxes(pdf: Path, out_dir: Path) -> Path:
-    """Copy of pdf whose page boxes cover all their text, or pdf itself.
-
-    Poppler and MuPDF clip text drawn outside a page box; pdfminer and PDFium read
-    it, so without this the engines would read different tables.
-    """
-    import pymupdf
-
-    with pymupdf.open(pdf) as doc:  # closed on exit: Windows cannot delete an open file
-        return _fit_boxes(doc, pdf, out_dir)
-
-
-def _fit_boxes(doc: Any, pdf: Path, out_dir: Path) -> Path:
-    import pymupdf
-
-    grown = 0
-    for page in doc:
-        big = pymupdf.Rect(-1e4, -1e4, 1e4, 1e4)
-        words = page.get_textpage(clip=big).extractWORDS()
-        if not words:
-            continue
-        # words are in page space (y down, origin top-left); boxes are set in PDF space (y up)
-        box = pymupdf.Rect(page.cropbox)
-        for w in words:
-            box |= pymupdf.Rect(w[:4]) * page.derotation_matrix
-        if box != page.cropbox:
-            # set_mediabox also resets the CropBox (which MuPDF clips to) to the new MediaBox
-            page.set_mediabox(box * ~page.transformation_matrix)
-            grown += 1
-    if not grown:
-        return Path(pdf)
-    logger.info("%d pages had text outside their box; boxes grown", grown)
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-    out = Path(out_dir) / Path(pdf).name
-    doc.save(out, no_new_id=True)  # stable bytes: older OCR caches are keyed on them
-    return out
-
-
 TEXT_ENGINES = ["pdftotext", "pdfplumber", "pymupdf", "pdfium", "camelot"]
-
-
-def _pages(pdf: Path, pages: Sequence[int], out_dir: Path) -> Path:
-    """Copy selected pages into a new PDF."""
-    import pymupdf
-
-    path = Path(out_dir) / f"pages_{Path(pdf).name}"
-    with pymupdf.open(pdf) as src, pymupdf.open() as out:
-        for p in pages:
-            out.insert_pdf(src, from_page=p - 1, to_page=p - 1)
-        out.save(path, no_new_id=True)  # stable bytes: older OCR caches are keyed on them
-    return path
-
-
-def _photo_pdf(img: Path, out_dir: Path) -> Path:
-    """Wrap an image in a one-page PDF."""
-    import pymupdf
-
-    path = Path(out_dir) / f"{Path(img).stem}.pdf"
-    with pymupdf.open(img) as doc:
-        path.write_bytes(doc.convert_to_pdf())
-    return path
 
 
 _POOLS: dict[int, Any] = {}  # spawned workers import pdfexorcist once per session, not per call
@@ -291,6 +257,7 @@ def extract(
     fit_boxes: bool = ...,
     return_readings: Literal[False] = ...,
     jobs: int = ...,
+    decode_fonts: bool = ...,
 ) -> pd.DataFrame: ...
 
 
@@ -311,6 +278,7 @@ def extract(
     *,
     return_readings: Literal[True],
     jobs: int = ...,
+    decode_fonts: bool = ...,
 ) -> tuple[pd.DataFrame, Readings]: ...
 
 
@@ -329,6 +297,7 @@ def extract(
     fit_boxes: bool = True,
     return_readings: bool = False,
     jobs: int = 1,
+    decode_fonts: bool = True,
 ) -> pd.DataFrame | tuple[pd.DataFrame, Readings]:
     """Read pdf with each engine, parse, vote and check.
 
@@ -341,7 +310,8 @@ def extract(
         key: Columns that name a cell.
         min_agree: Engines that must agree; default a strict majority, at least 3.
             Missing or crashing engines do not lower it.
-        checks: Run on verified cells; they fill the failed column.
+        checks: Run on verified cells; they fill the failed column. checks.lossy
+            always runs: a value printed as 2E+05, ##### or #REF! fails it.
         min_unopposed: Also accept a value this many engines read when none read another.
         families: Engines that are not independent vote once per family. A text
             layer made by ocrmypdf makes the text engines one family.
@@ -356,6 +326,9 @@ def extract(
         jobs: Worker processes; each built-in engine reads up to jobs chunks of
             pages. Chandra, GLM-OCR and your own engines read in this process.
             Same result as 1.
+        decode_fonts: Give Type3 fonts without a Unicode map one, read by OCR of their
+            glyphs (needs tesseract), so the text engines read text, not control
+            codes. Raises GlyphMapError when a glyph reads unclearly.
 
     Returns:
         One row per key with its value, status and failed checks; with
@@ -372,9 +345,12 @@ def extract(
         if Path(pdf).suffix.lower() in IMAGE_SUFFIXES:
             pdf = _photo_pdf(Path(pdf), Path(tmp))
         pdf = _pages(Path(pdf), pages, Path(tmp)) if pages else Path(pdf)
+        if decode_fonts:
+            pdf = decode_type3(pdf, Path(tmp) / "decoded")
         if fit_boxes:
             pdf = fit_page_boxes(pdf, Path(tmp) / "fit")
         pdf = upright_pages(pdf, Path(tmp) / "upright")
+        pdf = drop_slanted(pdf, Path(tmp) / "level")
         if return_readings:
             kept.pdf = pdf.read_bytes()
         if not families and ocr_layer(pdf):
@@ -419,5 +395,5 @@ def extract(
         raise RuntimeError(f"{len(voters)} independent readings produced output; need >= {need}")
     res = vote(pd.concat(readings, ignore_index=True), key, min_agree, min_unopposed, families)
     ok = res.status == "verified"
-    res["failed"] = validate(res[ok], checks)["failed"].reindex(res.index, fill_value="")
+    res["failed"] = validate(res[ok], [*checks, lossy])["failed"].reindex(res.index, fill_value="")
     return (res, kept) if return_readings else res

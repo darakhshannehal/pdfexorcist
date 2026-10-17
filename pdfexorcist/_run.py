@@ -13,7 +13,7 @@ from . import doctor
 from . import recipe as recipes
 from ._progress import EngineProgress as EngineProgress  # used via _run by callers
 from ._ui import EXIT_FAILED, CliError, cmd_arg, plural, refuse_overwrite
-from .checks import validate
+from .checks import lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
 from .pages import IMAGE_SUFFIXES, ocr_layer, page_kinds
 from .recipe import Recipe, page_list
@@ -318,9 +318,8 @@ def run(
                     f"{type(res).__name__}.",
                     code=EXIT_FAILED,
                 )
-    if checks:
-        ok = res.status == "verified"
-        res["failed"] = validate(res[ok], checks)["failed"].reindex(res.index, fill_value="")
+    ok = res.status == "verified"  # again: postprocess may have changed values
+    res["failed"] = validate(res[ok], [*checks, lossy])["failed"].reindex(res.index, fill_value="")
     res.attrs["checks_run"] = [c.__name__ for c in checks]
     if plan.pages and "page" in res.columns:
         orig = dict(enumerate(plan.pages, start=1))

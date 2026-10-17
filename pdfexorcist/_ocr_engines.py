@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ._registry import OCR_DPI, register
+from ._registry import OCR_DPI, register, tesseract_words
 from ._text_engines import _words
 from .rows import Page, group_words
 
@@ -28,18 +28,10 @@ def tesseract_(pdf: Path) -> Iterator[Page]:
     with pymupdf.open(pdf) as doc:
         for i, page in enumerate(doc, start=1):
             png = page.get_pixmap(dpi=OCR_DPI).tobytes("png")
-            tsv = subprocess.run(
-                ["tesseract", "stdin", "stdout", "--psm", "6", "tsv"],
-                input=png,
-                capture_output=True,
-                check=True,
-            ).stdout.decode()
             words = []
-            for row in tsv.splitlines()[1:]:
-                f = row.split("\t")
-                if len(f) == 12 and f[0] == "5" and f[11].strip():
-                    x, y, w, h = (int(v) * scale for v in f[6:10])
-                    words.append((x, x + w, y + h, f[11], y))
+            for *box, text in tesseract_words(png):
+                x, y, w, h = (v * scale for v in box)
+                words.append((x, x + w, y + h, text, y))
             yield i, group_words(words)
 
 

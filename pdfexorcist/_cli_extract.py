@@ -1,5 +1,6 @@
 """The extract command."""
 
+import dataclasses
 from pathlib import Path
 
 import typer
@@ -94,6 +95,15 @@ def extract(
         metavar="PAGES",
         help='Pages to read, e.g. "3" or "1-3,7" or "10-". Default: all (or the recipe\'s).',
     ),
+    pages_matching: str | None = typer.Option(
+        None,
+        "--pages-matching",
+        rich_help_panel=ENG_PANEL,
+        show_default=False,
+        metavar="REGEX",
+        help="Read the pages whose text matches REGEX (case-insensitive), e.g. "
+        '"TABLE - 8". Pages without usable text are matched on OCR of their top strip.',
+    ),
     ocr: Ocr = False,
     engines: Engines = None,
     min_agree: MinAgree = None,
@@ -128,6 +138,8 @@ def extract(
             raise CliError(f"--layout {layout!r} is not table or cells.", "Example: --layout cells")
         src = resolve_input(file)
         rec = load_recipe(recipe)
+        if pages_matching:
+            rec = dataclasses.replace(rec, match=pages_matching)
         plan = make_plan(src, rec, output, fmt, pages, engines, ocr, min_agree, layout, force)
         if not (quiet or as_json):
             what = (

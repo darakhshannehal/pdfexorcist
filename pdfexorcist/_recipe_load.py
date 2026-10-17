@@ -11,6 +11,7 @@ from ._recipe_error import RecipeError
 from ._recipe_model import FORMATS, LAYOUTS, OPS, PARSERS, Recipe, TotalRule, parse_rule
 from .extractors import EXTRACTORS
 from .pages import parse_pages
+from .rows import PLACEMENTS
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -52,6 +53,7 @@ SCHEMA: dict[str, dict[str, tuple[tuple, str]]] = {
         "type": _TEXT,
         "min_values": _INT,
         "tolerance": _NUM,
+        "placement": _TEXT,
         "function": _TEXT,
         "key": _TEXTS,
     },
@@ -253,6 +255,14 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
             "tolerance",
         )
 
+    if par.get("placement", "x") not in PLACEMENTS or ("placement" in par and ptype != "columns"):
+        raise err(
+            '[parser] placement is "x" or "both", with type = "columns"',
+            "parser",
+            "placement",
+            hint='"both": a value counts only where its order and its x give the same column',
+        )
+
     checks: list[Any] = []
     for i, c in enumerate(checks_raw):
         checks.append(_check(c, i, err))
@@ -285,6 +295,7 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
         parser=ptype,
         min_values=par.get("min_values"),
         tolerance=par.get("tolerance"),
+        placement=par.get("placement", "x"),
         parser_function=par.get("function"),
         key=tuple(par["key"]) if "key" in par else None,
         checks=tuple(checks),

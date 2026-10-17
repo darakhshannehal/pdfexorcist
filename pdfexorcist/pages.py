@@ -1,13 +1,19 @@
 """Page selection and text/scan detection."""
 
+import logging
 import re
+import shutil
+import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
+logger = logging.getLogger(__name__)
+
 _RANGE = re.compile(r"^(\d+)?\s*(-)?\s*(\d+)?$")
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
 INPUT_SUFFIXES = IMAGE_SUFFIXES | {".pdf"}
+STRIP = 0.15  # share of the page height read by OCR for titles
 
 
 def parse_pages(spec: str, n_pages: int | None = None) -> list[int]:
@@ -39,12 +45,61 @@ def parse_pages(spec: str, n_pages: int | None = None) -> list[int]:
     return out
 
 
-def page_texts(pdf: Path) -> list[str]:
-    """Read each page's text layer."""
+def page_texts(
+    pdf: Path,
+    ocr_fallback: bool = False,
+    strip: float = STRIP,
+    within: Sequence[int] | None = None,
+) -> list[str]:
+    """Read each page's text layer.
+
+    With ocr_fallback, a page whose text layer is unusable (none, or control codes
+    from a font without a Unicode map) also gets tesseract's OCR of its top strip
+    (that share of the page height), where titles are; only pages in within, if given.
+    """
     import pymupdf
 
     with pymupdf.open(pdf) as doc:
-        return [page.get_text() for page in doc]
+        texts = [page.get_text() for page in doc]
+        ocr = set(within or range(1, len(texts) + 1)) if ocr_fallback else set()
+        bad = [i for i, t in enumerate(texts) if i + 1 in ocr and not usable(t)]
+        if bad and not shutil.which("tesseract"):
+            logger.warning(
+                "%d pages have no usable text; matching their titles needs tesseract", len(bad)
+            )
+            return texts
+        for i in bad:
+            texts[i] += "\n" + _ocr_top(doc[i], strip)
+    return texts
+
+
+def usable(text: str) -> bool:
+    """Whether a text layer reads as text: 20 letters or digits, and almost no control codes."""
+    shown = [c for c in text if not c.isspace()]
+    junk = sum(1 for c in shown if ord(c) < 32 or 0xE000 <= ord(c) <= 0xF8FF or c == "\ufffd")
+    return sum(c.isalnum() for c in shown) >= 20 and junk <= 0.02 * len(shown)
+
+
+def _ocr_top(page: Any, strip: float) -> str:
+    """Tesseract's reading of the top strip of a page."""
+    import pymupdf
+
+    clip = pymupdf.Rect(
+        page.rect.x0, page.rect.y0, page.rect.x1, page.rect.y0 + strip * page.rect.height
+    )
+    png = page.get_pixmap(dpi=200, clip=clip, colorspace=pymupdf.csGRAY).tobytes("png")
+    return subprocess.run(
+        ["tesseract", "stdin", "stdout", "--psm", "6"], input=png, capture_output=True, check=False
+    ).stdout.decode()
+
+
+def find(pdf: Path, pattern: str, ocr_fallback: bool = True, strip: float = STRIP) -> list[int]:
+    """1-based pages whose text matches pattern (case-insensitive).
+
+    A page without usable text is matched on OCR of its top strip (strip x its
+    height) when ocr_fallback is set and tesseract is installed.
+    """
+    return pages_matching(pdf, match=pattern, ocr_fallback=ocr_fallback, strip=strip)
 
 
 def pages_matching(
@@ -53,6 +108,8 @@ def pages_matching(
     stop: str | None = None,
     match: str | None = None,
     within: Sequence[int] | None = None,
+    ocr_fallback: bool = True,
+    strip: float = STRIP,
 ) -> list[int]:
     """Return pages selected by case-insensitive text patterns.
 
@@ -62,9 +119,11 @@ def pages_matching(
         stop: Pattern closing that run.
         match: Pattern filtering selected pages.
         within: Candidate 1-based page numbers.
+        ocr_fallback: Read pages without usable text by OCR of their top strip.
+        strip: Share of the page height that OCR reads.
     """
     flags = re.IGNORECASE | re.DOTALL
-    texts = page_texts(pdf)
+    texts = page_texts(pdf, ocr_fallback, strip, within)
     pages = list(within) if within else list(range(1, len(texts) + 1))
     if start:
         rx = re.compile(start, flags)

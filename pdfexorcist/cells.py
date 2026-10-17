@@ -10,6 +10,11 @@ if TYPE_CHECKING:
 Box = tuple[float, float, float, float]
 
 
+def _inside(box: tuple, x0: float, y0: float, x1: float, y1: float) -> bool:
+    """Test whether a box center lies inside box."""
+    return box[0] <= (x0 + x1) / 2 <= box[2] and box[1] <= (y0 + y1) / 2 <= box[3]
+
+
 class BoxCell(tuple[float, str]):
     """An (x, text) cell with an optional box; equal to, and unpacks like, (x, text)."""
 

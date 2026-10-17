@@ -1,5 +1,6 @@
 """Engine registry."""
 
+import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -32,3 +33,19 @@ def register(
         return fn
 
     return deco
+
+
+def tesseract_words(png: bytes, psm: int = 6) -> list[tuple[int, int, int, int, str]]:
+    """Tesseract words of a PNG: (left, top, width, height, text) in pixels."""
+    tsv = subprocess.run(
+        ["tesseract", "stdin", "stdout", "--psm", str(psm), "tsv"],
+        input=png,
+        capture_output=True,
+        check=True,
+    ).stdout.decode()
+    out = []
+    for row in tsv.splitlines()[1:]:
+        f = row.split("\t")
+        if len(f) == 12 and f[0] == "5" and f[11].strip():
+            out.append((int(f[6]), int(f[7]), int(f[8]), int(f[9]), f[11].strip()))
+    return out

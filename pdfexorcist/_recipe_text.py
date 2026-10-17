@@ -79,6 +79,8 @@ def describe(r: Recipe) -> list[tuple[str, str]]:
         opts = [f"rows with at least {r.min_values} values"] if r.min_values else []
         if r.tolerance is not None and r.parser == "columns":
             opts.append(f"tolerance {r.tolerance}")
+        if r.placement == "both":
+            opts.append("only where order and position agree")
         rows.append(("Parser", how + (f"; {', '.join(opts)}" if opts else "")))
     rows.extend(
         ("Check", c.describe() if isinstance(c, TotalRule) else f"your function {c}")

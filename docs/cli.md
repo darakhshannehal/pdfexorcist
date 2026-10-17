@@ -58,6 +58,7 @@ engines disagreed,1,#3,0,,,unresolved,,1,9×1,pdfium,camelot=<missing>|pdfplumbe
 | Option | Description |
 | --- | --- |
 | `-p`, `--pages` | Pages to read: `"3"`, `"1-3,7"`, `"10-"`. Default: all, or the recipe's. |
+| `--pages-matching` | Read the pages whose text matches this regular expression (case-insensitive). A page without usable text, such as a font without a Unicode map, is matched on OCR of its top strip when tesseract is installed. `--pages` wins over it. |
 | `--ocr` | Also read the page pixels with the installed OCR engines. Use it for scans and photos. An image turns it on by itself. |
 | `-e`, `--engines` | Engines to use, comma-separated, e.g. `pdfplumber,pymupdf,pdfium`. |
 | `-k`, `--min-agree` | Engines that must read a value identically. Default: a strict majority, at least 3 (2 when only OCR engines read). |

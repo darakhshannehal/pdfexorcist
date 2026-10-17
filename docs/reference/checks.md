@@ -1,5 +1,5 @@
 ---
-description: check, total_check and validate.
+description: check, total_check, validate and the built-in lossy check.
 ---
 
 # Checks
@@ -14,4 +14,8 @@ description: check, total_check and validate.
 
 ```{eval-rst}
 .. autofunction:: pdfexorcist.validate
+```
+
+```{eval-rst}
+.. autofunction:: pdfexorcist.checks.lossy
 ```

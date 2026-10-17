@@ -1,0 +1,110 @@
+"""Drop slanted text printed across a table ("Not Available" over blank cells)."""
+
+import logging
+from pathlib import Path
+from typing import Any
+
+from ._prepare import redact_dots, save_copy
+
+logger = logging.getLogger(__name__)
+
+Char = tuple[str, float, float]  # text, centre x, centre y
+
+
+def _chars(page: Any) -> tuple[list[Char], list[Char], list[Any]]:
+    """Return the page's level characters, its slanted digit-free ones, and the level boxes."""
+    import pymupdf
+
+    level: list[Char] = []
+    slanted: list[Char] = []
+    boxes = []
+    for block in page.get_text("rawdict", flags=pymupdf.TEXTFLAGS_TEXT)["blocks"]:
+        for line in block.get("lines", []):
+            chars = [c for s in line["spans"] for c in s["chars"] if not c["c"].isspace()]
+            dx, dy = line["dir"]
+            flat = abs(dy) < 0.02 and dx > 0
+            if not flat and any(c["c"].isdigit() for c in chars):
+                continue  # a sideways number is table data
+            for c in chars:
+                x0, y0, x1, y1 = c["bbox"]
+                (level if flat else slanted).append((c["c"], (x0 + x1) / 2, (y0 + y1) / 2))
+                if flat:
+                    boxes.append(pymupdf.Rect(c["bbox"]))
+    return level, slanted, boxes
+
+
+def _level_copy(doc: Any, n: int, dots: list[tuple[float, float]]) -> Any:
+    """A one-page copy of page n with dots redacted, or None if its level text changed."""
+    import pymupdf
+
+    one = pymupdf.open()
+    one.insert_pdf(doc, from_page=n, to_page=n)
+    level = _chars(one[0])[0]
+    redact_dots(one[0], dots)
+    if _chars(one[0])[0] == level:
+        return one
+    one.close()
+    return None
+
+
+def _has_slanted(page: Any) -> bool:
+    """Whether any text line on the page is not level (cheaper than _chars)."""
+    import pymupdf
+
+    return any(
+        not (abs(ln["dir"][1]) < 0.02 and ln["dir"][0] > 0)
+        for block in page.get_text("dict", flags=pymupdf.TEXTFLAGS_TEXT)["blocks"]
+        for ln in block.get("lines", [])
+    )
+
+
+def _levelled(doc: Any, page: Any) -> Any:
+    """A one-page copy of page without its slanted text, or None to keep the page."""
+    import pymupdf
+
+    if page.rotation or not _has_slanted(page):  # ponytail: /Rotate pages keep their text
+        return None
+    _, slanted, boxes = _chars(page)
+    dots = [(x, y) for _, x, y in slanted]
+    if not dots:
+        return None
+    if one := _level_copy(doc, page.number, dots):
+        return one
+    clear = [
+        (x, y)
+        for x, y in dots
+        if not any(b.intersects(pymupdf.Rect(x - 0.3, y - 0.3, x + 0.3, y + 0.3)) for b in boxes)
+    ]
+    if clear and (one := _level_copy(doc, page.number, clear)):
+        return one
+    logger.info("page %d: slanted text overlaps level text; kept", page.number + 1)
+    return None
+
+
+def drop_slanted(pdf: Path, out_dir: Path) -> Path:
+    """Copy of pdf without slanted digit-free text, or pdf itself.
+
+    Rotated or diagonal words cover several rows, so every engine that groups
+    words by height chains those rows into one line. Every slanted character is
+    redacted; if that changes the level text, only those clear of level text are;
+    if that changes it too, the page is kept as printed.
+    """
+    import pymupdf
+
+    with pymupdf.open(pdf) as doc:
+        copies = {page.number: one for page in doc if (one := _levelled(doc, page))}
+        if not copies:
+            return pdf
+        with pymupdf.open() as out:
+            done = 0  # pages before this are in out
+            for i, one in sorted(copies.items()):
+                if i > done:
+                    out.insert_pdf(doc, from_page=done, to_page=i - 1)
+                out.insert_pdf(one)
+                one.close()
+                done = i + 1
+            if done < doc.page_count:
+                out.insert_pdf(doc, from_page=done, to_page=doc.page_count - 1)
+            logger.info("%d pages: slanted text dropped", len(copies))
+            path = save_copy(out, out_dir, pdf.name)
+    return path

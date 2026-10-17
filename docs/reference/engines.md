@@ -1,5 +1,5 @@
 ---
-description: register, EXTRACTORS, pages_matching, parse_pages and fit_page_boxes.
+description: register, EXTRACTORS, pages_matching, pages.find, parse_pages and fit_page_boxes.
 ---
 
 # Engines and pages
@@ -19,6 +19,10 @@ description: register, EXTRACTORS, pages_matching, parse_pages and fit_page_boxe
 
 ```{eval-rst}
 .. autofunction:: pdfexorcist.pages_matching
+```
+
+```{eval-rst}
+.. autofunction:: pdfexorcist.pages.find
 ```
 
 ```{eval-rst}

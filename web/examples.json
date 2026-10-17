@@ -80,6 +80,22 @@
     "recipe": "examples/crs_state_tables/recipe.toml"
   },
   {
+    "id": "crs-2023-deaths-by-age",
+    "kicker": "CRS 2023 · Deaths by age",
+    "title": "Bold rows drawn four times",
+    "blurb": "Each State's row and its age groups. The bold rows are printed four times over; the age groups add up to the State.",
+    "pdf": "tests/fixtures/crs/crs_2023_t6_fakebold.pdf",
+    "recipe": "examples/crs_state_tables/table6.toml"
+  },
+  {
+    "id": "crs-2016-districts",
+    "kicker": "CRS 2016 · District Tables 7 and 8",
+    "title": "Not Available, printed at 45 degrees",
+    "blurb": "Births and deaths by district. Slanted text over blank cells is dropped, and values count only where their order and position agree.",
+    "pdf": "tests/fixtures/crs/crs_2016_district_rotated.pdf",
+    "recipe": "examples/crs_district_tables/recipe.toml"
+  },
+  {
     "id": "srs-life-tables",
     "kicker": "SRS abridged life tables 2019-23",
     "title": "One State a page",

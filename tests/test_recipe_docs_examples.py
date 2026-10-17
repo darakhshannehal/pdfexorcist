@@ -109,7 +109,7 @@ def test_normalize_switch_and_function(tmp_path):
 def test_original_pages(tmp_path):
     code, s = _extract(tmp_path, "crs/crs_2023_t1_t4.pdf", "crs_state_tables/table4.toml")
     assert code == 0 and s["pages"] == [2]
-    assert (s["cells"]["verified"], s["cells"]["unresolved"]) == (324, 9)
+    assert (s["cells"]["verified"], s["cells"]["unresolved"]) == (333, 0)  # India's fake bold read
     t = pd.read_csv(tmp_path / "doc.csv", dtype=str).set_index(["page", "label"])
     assert t.loc[("2", "Andhra Pradesh"), "Total_Person"] == "1997"
 

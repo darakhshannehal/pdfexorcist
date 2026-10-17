@@ -1,0 +1,53 @@
+# pdfexorcist recipe: CRS District Tables 7-10 (births, deaths, infant deaths and
+# still births registered, by district, sex and residence)
+#
+# Each State's row (its total) is followed by its numbered districts, each with
+# nine values (Rural, Urban and Total, each by Male, Female and Person); Table 7
+# adds the sex ratio at birth (SRB). crs_district_table.py names each row's
+# State and district. Values are placed by their order and by their position,
+# and a cell counts only where the two agree, so a row with "Not Available"
+# over some cells keeps its values in their columns. Try it:
+#
+#   pdfexorcist extract tests/fixtures/crs/crs_2016_district_rotated.pdf --recipe examples/crs_district_tables/recipe.toml
+#
+# The 2017 report has no usable text layer (Type3 fonts without a Unicode map);
+# pdfexorcist reads its glyphs and its page titles by OCR when tesseract is
+# installed.
+
+name = "CRS District Tables 7-10"
+description = "Registered births, deaths, infant deaths and still births by district, sex and residence"
+sample = "../../tests/fixtures/crs/crs_2016_district_rotated.pdf"
+
+[pages]
+match = 'TABLE\s*-?\s*(7|8|9|10)\s*:\s*NUMBER OF .{0,80}DISTRICTS'
+
+[engines]
+ocr = false  # a text layer: the five default engines, 3 must agree
+
+[parser]
+type = "custom"
+function = "crs_district_table.py:parse"
+key = ["page", "state", "district", "col"]
+
+[[checks]]
+column = "sex"
+rule = "Person >= Male + Female"
+by = ["page", "state", "district", "area"]
+
+[[checks]]
+column = "area"
+rule = "Total >= Rural + Urban"
+by = ["page", "state", "district", "sex"]
+
+# >=: a State's districts can run on to a page not read
+[[checks]]
+column = "level"
+rule = "State >= District"
+by = ["table", "state", "col"]
+where = "col != 'SRB'"
+
+[output]
+layout = "table"
+rows = ["page", "state", "label"]  # one row per State and district
+columns = "col"                    # Rural_Male ... Total_Person, SRB
+format = "csv"

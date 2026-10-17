@@ -207,6 +207,7 @@ unresolved cells. It requires `--force` to overwrite an output file.
 | Option | What it does |
 |---|---|
 | `--pages 3-5` | read only these pages (`"1-3,7"`, `"10-"`) |
+| `--pages-matching "TABLE - 8"` | read only the pages whose text matches; a page without usable text is matched on OCR of its top strip (needs tesseract) |
 | `--ocr` | also read the pixels with the installed OCR engines: use it for scans and photos (an image turns it on by itself) |
 | `-o out.xlsx` | where to write; the ending picks the format (csv, xlsx, parquet, json); a name without one is a folder |
 | `--layout cells` | one row per cell with every engine's reading |
@@ -394,7 +395,8 @@ sample = "report.pdf"            # the file it was made with (for your reference
 select = "3-5, 9"                # page numbers; "21-" runs to the last page
 start = 'TABLE\s*4\s*[-:.].*STATES'  # or: from the first page whose text matches,
 stop = 'TABLE\s*5'               #   up to (not including) the next page that matches
-match = 'All India'              # only pages whose text matches
+match = 'All India'              # only pages whose text matches (a page without usable
+                                 #   text: OCR of its top 15%, when tesseract is installed)
 fit_boxes = false                # default true: widen a page to cover text drawn outside
                                  #   it; false when that text is another page's
 
@@ -418,6 +420,8 @@ type = "rows"                    # "rows": a label, then values in reading order
                                  # "custom": your own function (below)
 min_values = 2                   # skip lines with fewer values (titles, footnotes)
 tolerance = 0.45                 # "columns" only: how far from a column a value may sit
+placement = "both"               # "columns" only: keep a value only where its order and
+                                 #   its position give the same column (default "x")
 function = "my_parser.py:parse"  # "custom": pages -> one dict per value
 key = ["page", "code", "sex", "col"]  # "custom": the columns that identify a cell
 
@@ -490,6 +494,19 @@ recipe that names a `.py` file runs that code: only use recipes you trust.
 | `glmocr` (GLM-OCR 0.9B VLM via MLX, Apple Silicon; tables only) | rendered page | opt-in, `pip install "pdfexorcist[glmocr]"` |
 
 
+
+### Before the vote
+
+`extract()` fixes some PDFs before the engines read them, in a copy:
+
+* Text printed sideways on an upright page is turned upright.
+* Slanted text without digits ("Not Available" printed across blank cells) is dropped. If that changes the upright text, the page is kept as printed.
+* A Type3 glyph whose box is far taller than its drawing gets a box that fits it, so PDFium's boxes do not span rows.
+* A Type3 font without a Unicode map gets one: tesseract reads each glyph from the words it is part of. If a glyph reads unclearly, `extract()` raises `GlyphMapError`. Without tesseract it logs a warning, and the engines read control codes. `decode_fonts=False` turns this off.
+
+The engines then read each word once. A word drawn several times a fraction of a point apart (fake bold) counts once.
+
+A value printed in a lossy form (`2E+05`, `#####`, `#REF!`) is read, so its column stays in place. The built-in check `lossy value` fails it.
 
 ## Development and releases
 

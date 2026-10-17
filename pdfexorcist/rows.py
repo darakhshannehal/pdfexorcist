@@ -6,17 +6,22 @@ from collections import Counter
 from collections.abc import Iterable, Iterator
 from itertools import pairwise
 
+from ._bold import drop_copies
 from .cells import Box, BoxCell, token_boxes, union
 
 Cell = tuple[float, str]  # engines may pass a BoxCell: the same pair plus .box
 Page = tuple[int, list[list[Cell]]]
 
-# nc: "no cases" in the NFHS-5 national report; 2E+05: Excel's display of a number too
-# wide for its cell (MCCD 2013). A placeholder: its true value is not printed.
+# nc: "no cases" (NFHS-5); 2E+05, #####: Excel's display of a number too wide for its cell
+# read as values so columns stay in place; checks.lossy fails them
+LOSSY_FORMS = r"\d(\.\d+)?E\+\d+|#{3,}|#(REF!|VALUE!|DIV/0!|NAME\?)"
 VALUE = re.compile(
-    r"^\(?[-−]?\d[\d,]*([.·]\d+)?%?\)?[*#@$]?$|^(\*|-|–|—|\.\.\.?|…|--|na|NA|nc|NC|n/a|N/A|N\.A\.|n\.a\.|#REF!|#VALUE!|#N/A|#DIV/0!|#NAME\?|\d(\.\d+)?E\+\d+)$"
+    r"^\(?[-−]?\d[\d,]*([.·]\d+)?%?\)?[*#@$]?$|^(\*|-|–|—|\.\.\.?|…|--|na|NA|nc|NC|n/a|N/A|N\.A\.|n\.a\.|#N/A|"
+    + LOSSY_FORMS
+    + ")$"
 )
 KEY = ["page", "row", "col"]
+PLACEMENTS = ("x", "both")
 
 
 def is_value(tok: str) -> bool:
@@ -69,29 +74,23 @@ def parse_rows(pages: Iterable[Page], min_values: int = 1) -> Iterator[dict]:
 def group_words(words: list[tuple], gap: float = 8.0) -> list[list[Cell]]:
     """(x0, x1, y_bottom, text[, y_top]) words to lines of (x_centre, text) BoxCells.
 
-    A word joins a line when their vertical extents overlap by half the shorter
-    one; a word without y_top is 1 pt tall; a word drawn twice (fake bold) counts
-    once. Label words within gap pt join one cell; values never join.
+    A word joins a line when it overlaps the line's first word by half the shorter
+    height; a word without y_top is 1 pt tall. Copies of a word drawn again within
+    COPY_PT (fake bold) count once.
+    Label words within gap pt join one cell; values never join.
     """
     boxes = [(w[0], w[1], w[4] if len(w) > 4 else w[2] - 1, w[2], w[3]) for w in words]
-    # "fake bold": some PDFs draw each word twice, a fraction of a point apart
-    seen, unique = set(), []
-    for b in boxes:
-        k = (b[4], round(b[0]), round(b[3]))
-        if k not in seen:
-            seen.add(k)
-            unique.append(b)
-    boxes = unique
-    rows: list[list] = []  # [top, bottom, words]
+    boxes = drop_copies(boxes)
+    rows: list[list] = []  # [anchor top, anchor bottom, words]
     for x0, x1, top, bottom, t in sorted(boxes, key=lambda b: ((b[2] + b[3]) / 2, b[0])):
+        word = (x0, x1, t, top, bottom)
         if rows:
             r = rows[-1]
             overlap = min(r[1], bottom) - max(r[0], top)
             if overlap >= 0.5 * min(r[1] - r[0], bottom - top):
-                r[0], r[1] = min(r[0], top), max(r[1], bottom)
-                r[2].append((x0, x1, t, top, bottom))
+                r[2].append(word)
                 continue
-        rows.append([top, bottom, [(x0, x1, t, top, bottom)]])
+        rows.append([top, bottom, [word]])
     out: list[list[Cell]] = []
     for _, _, row in rows:
         row.sort(key=lambda w: w[0])
@@ -113,7 +112,7 @@ def group_words(words: list[tuple], gap: float = 8.0) -> list[list[Cell]]:
 
 
 def parse_by_columns(
-    pages: Iterable[Page], min_values: int = 2, tol: float = 0.45
+    pages: Iterable[Page], min_values: int = 2, tol: float = 0.45, placement: str = "x"
 ) -> Iterator[dict]:
     """Like parse_rows, but a value's column comes from its x.
 
@@ -121,7 +120,15 @@ def parse_by_columns(
     most common value count; each value goes to the nearest centre within tol x
     the spacing, so a value an engine missed shifts nothing. Tokens in one column
     are joined ("1" "437" -> "1437").
+
+    placement="both" also places values by their order and keeps a cell only where
+    the two agree. Where they differ the engine reads both values there (a blank
+    reads ""), so it loses its vote on that cell and the vote shows both readings.
+    A row with fewer values than the page's mode is skipped when one of its values
+    has no column by x.
     """
+    if placement not in PLACEMENTS:
+        raise ValueError(f"placement must be 'x' or 'both', got {placement!r}")
     for page_no, lines in pages:
         rows = []  # (label, [(x, value token, its box or None)])
         for cells in lines:
@@ -139,24 +146,49 @@ def parse_by_columns(
         for label, vals in rows:
             if len(vals) < min_values:
                 continue
+            cols = [_column(x, centres, tol * spacing) for x, _, _ in vals]
+            if placement == "both" and len(vals) < k and None in cols:
+                continue  # an engine that dropped a value and misplaced another
             placed: dict[int, list[tuple[str, Box | None]]] = {}
-            for x, t, b in vals:
-                c = min(range(k), key=lambda i: abs(centres[i] - x))
-                if abs(centres[c] - x) <= tol * spacing:
+            for c, (_, t, b) in zip(cols, vals, strict=True):
+                if c is not None:
                     placed.setdefault(c, []).append((t, b))
             key = label_key(label)
             seen[key] += 1
-            for col, ts in sorted(placed.items()):
-                value = "".join(t for t, _ in ts)
-                if is_value(value):
-                    cell = {
-                        "page": page_no,
-                        "row": f"{key}#{seen[key]}",
-                        "col": col,
-                        "label": label,
-                        "value": value,
-                    }
-                    box = union([b for _, b in ts])
-                    if box is not None:
-                        cell["box"] = box
-                    yield cell
+            by_x = {
+                c: ("".join(t for t, _ in ts), union([b for _, b in ts]))
+                for c, ts in placed.items()
+            }
+            if placement == "x":
+                readings = [(c, v, b) for c, (v, b) in sorted(by_x.items())]
+            else:
+                readings = _both(by_x, vals)
+            for col, value, box in readings:
+                if value and not is_value(value):
+                    continue
+                cell = {
+                    "page": page_no,
+                    "row": f"{key}#{seen[key]}",
+                    "col": col,
+                    "label": label,
+                    "value": value,
+                }
+                if box is not None:
+                    cell["box"] = box
+                yield cell
+
+
+def _column(x: float, centres: list[float], within: float) -> int | None:
+    """Index of the centre nearest x, or None when it is further than within."""
+    c = min(range(len(centres)), key=lambda i: abs(centres[i] - x))
+    return c if abs(centres[c] - x) <= within else None
+
+
+def _both(by_x: dict, vals: list) -> list[tuple[int, str, Box | None]]:
+    """Readings where x and order agree, and both readings where they do not."""
+    by_order = {i: (t, b) for i, (_, t, b) in enumerate(vals)}
+    out = []
+    for c in sorted(by_x.keys() | by_order.keys()):
+        (a, box), (b, _) = by_order.get(c, ("", None)), by_x.get(c, ("", None))
+        out += [(c, a, box)] if a == b else [(c, a, box), (c, b, box)]
+    return out

@@ -15,10 +15,20 @@ workflow moves those entries into a dated section.
 - Examples for NCRB Prison Statistics India (`examples/prison_stats/`), the SRS Statistical Report (`examples/srs_statistical_report/`), the SRS maternal mortality bulletin and Cause of Death report (`examples/srs_maternal_mortality/`), MoRTH Road Accidents in India (`examples/road_accidents/`) and the CBHI National Health Profile's malaria table (`examples/nhp_malaria/`)
 - The web version lets you choose which engines read an uploaded PDF
 - Make web examples RESTful
+- `placement="both"` (`parse_by_columns`, recipe `[parser]`): a value counts only where its order and x agree; else the cell is unresolved
+- `pages.find(pdf, pattern)` and `extract --pages-matching REGEX`; pages without text are matched by OCR of their top strip
+- Type3 fonts without a Unicode map are decoded by tesseract; `extract(decode_fonts=False)` turns it off
+- Built-in check `lossy value` fails `2E+05`, `#####` and `#REF!`
+- CRS State Table 6 and District Tables 7-10 examples, also on the web
 
 ### Fixed
 
-- Tables printed sideways on an upright page (no `/Rotate`) are turned upright before feeding into the engines
+- Slanted text across a table ("Not Available") is dropped so it cannot chain rows
+- Fake bold (text drawn 3-4 times) is read once by pdfplumber, pymupdf, pdfium, camelot and pdftotext
+- pdftotext splits narrow-column values joined by one space
+- PDFium reads Type3 fonts with oversized glyph boxes
+- A cell every engine read two values for is unresolved, not dropped
+- Sideways tables on upright pages (no `/Rotate`) are turned upright
 - mypy error in `_upright.py`
 
 ## [0.1.2 - 11 Oct 2026]

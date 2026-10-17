@@ -347,6 +347,8 @@ type = "rows"                    # "rows": a label, then values in reading order
                                  # "custom": your own function (below)
 min_values = 2                   # skip lines with fewer values (titles, footnotes)
 tolerance = 0.45                 # "columns" only: how far from a column a value may sit
+placement = "both"               # "columns" only: keep a value only where its order and its
+                                 # position give the same column (default "x": position)
 function = "my_parser.py:parse"  # "custom": pages -> one dict per value
 key = ["page", "code", "sex", "col"]  # "custom": the columns that identify a cell
 

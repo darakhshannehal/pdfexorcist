@@ -109,6 +109,26 @@ def test_crs_state_tables(tmp_path):
     assert t.loc[("2", "Rajasthan"), "Total_Person"] == "19804"
 
 
+def test_crs_deaths_by_age(tmp_path):
+    """Pin CRS Table 6: fake-bold State rows, and age groups adding up to them."""
+    code, s, t = _extract(tmp_path, "crs/crs_2023_t6_fakebold.pdf", "crs_state_tables/table6.toml")
+    assert code == 0 and s["cells"]["failed_checks"] == 0 and len(s["checks_run"]) == 3
+    t = t.set_index(["page", "label", "age"])
+    assert t.loc[("1", "Delhi", "All Ages"), "Total_Person"] == "132391"
+    assert t.loc[("1", "Ladakh", "All Ages"), "Rural_Male"] == "388"
+
+
+def test_crs_districts(tmp_path):
+    """Pin CRS District Tables 7 and 8 with slanted Not Available."""
+    code, s, t = _extract(
+        tmp_path, "crs/crs_2016_district_rotated.pdf", "crs_district_tables/recipe.toml"
+    )
+    assert code == 0 and s["cells"]["failed_checks"] == 0 and len(s["checks_run"]) == 3
+    t = t.set_index(["page", "label"])
+    assert t.loc[("1", "Malkangiri"), "SRB"] == "951"
+    assert t.loc[("2", "Cuttack"), "Total_Person"] == "31433"
+
+
 def test_imd_1961_1990_abu(tmp_path):
     """Pin Abu's pages, stored with /Rotate 90 and Hindi in a legacy font."""
     fixture = "imd/imd_1961_1990_abu_p106-107.pdf"

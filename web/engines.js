@@ -77,8 +77,8 @@ export function pdfiumBridge(m) {
       const n = m._FPDFText_CountChars(tp);
       if (n <= 0) return '';
       return scratch(2 * (n + 1), (ptr) => {
-        m._FPDFText_GetText(tp, 0, n, ptr);
-        return utf16Ignore(m.HEAPU16.slice(ptr / 2, ptr / 2 + n));
+        const written = m._FPDFText_GetText(tp, 0, n, ptr) - 1; // as pypdfium2: units written, less the NUL
+        return utf16Ignore(m.HEAPU16.slice(ptr / 2, ptr / 2 + Math.max(0, written)));
       });
     },
     /** pypdfium2's (l, b, r, t) */

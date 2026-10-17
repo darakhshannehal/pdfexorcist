@@ -1,8 +1,11 @@
 """Checks on extracted values."""
 
+import re
 from collections.abc import Callable, Iterable, Sequence
 
 import pandas as pd
+
+from .rows import LOSSY_FORMS
 
 Check = Callable[[pd.DataFrame], pd.Series]
 
@@ -15,6 +18,19 @@ def check(name: str) -> Callable[[Check], Check]:
         return fn
 
     return deco
+
+
+# displays that hide the number: Excel's 2E+05 or #####, formula errors
+LOSSY = re.compile(f"^({LOSSY_FORMS})$")
+
+
+@check("lossy value")
+def lossy(df: pd.DataFrame) -> pd.Series:
+    """Fail a value whose printed form hides the number (2E+05, #####, #REF!).
+
+    extract() always runs it, so such a value is never silently verified.
+    """
+    return df["value"].astype(str).str.match(LOSSY)
 
 
 FLOAT_NOISE = 1e-9  # relative; far below any printed rounding
