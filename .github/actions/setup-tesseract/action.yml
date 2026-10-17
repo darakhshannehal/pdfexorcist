@@ -1,0 +1,33 @@
+name: Install tesseract
+description: >-
+  Put tesseract (with English data) on PATH (Linux: apt, macOS: Homebrew,
+  Windows: Chocolatey's UB Mannheim build).
+runs:
+  using: composite
+  steps:
+    - name: Install tesseract (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo apt-get install -y -qq --no-install-recommends tesseract-ocr tesseract-ocr-eng
+
+    - name: Install tesseract (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: "1"
+        HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
+      run: brew install tesseract
+
+    - name: Install tesseract (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        choco install tesseract -y --no-progress
+        if ($LASTEXITCODE -ne 0) { throw "tesseract install failed" }
+        # the installer does not add itself to PATH
+        "$env:ProgramFiles\Tesseract-OCR" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Check tesseract
+      shell: bash
+      run: tesseract --version
