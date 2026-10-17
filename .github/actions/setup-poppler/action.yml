@@ -41,10 +41,12 @@ runs:
         $exe = Get-ChildItem $dest -Recurse -Filter pdftotext.exe | Select-Object -First 1
         if (-not $exe) { throw "pdftotext.exe not found in $($zip.Name)" }
         $exe.DirectoryName | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        # Git Bash puts /mingw64/bin ahead of GITHUB_PATH, and it ships xpdf's
-        # pdftotext (exits 99 on -v, different layout). Remove it so bash steps
-        # and the tests they launch find poppler's.
-        Remove-Item "$env:ProgramFiles\Git\mingw64\bin\pdftotext.exe" -ErrorAction SilentlyContinue
+        # Git Bash puts /mingw64/bin (older images) or /ucrt64/bin ahead of
+        # GITHUB_PATH, and it ships xpdf's pdftotext (exits 99 on -v, different
+        # layout). Remove it so bash steps and the tests they launch find poppler's.
+        foreach ($env_dir in "mingw64", "ucrt64") {
+          Remove-Item "$env:ProgramFiles\Git\$env_dir\bin\pdftotext.exe" -ErrorAction SilentlyContinue
+        }
 
     - name: Check pdftotext
       shell: bash
