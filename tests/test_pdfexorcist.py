@@ -380,3 +380,58 @@ def test_sideways_table(tmp_path, rot):
     res = extract(pdf, ["pdftotext", "pdfplumber", "pymupdf", "pdfium"], min_agree=4)
     ok = res[res.status == "verified"]
     assert ok.groupby("label")["value"].apply(tuple).to_dict() == {r[0]: r[1:] for r in ROWS}
+
+
+def _keys(lines: list, **kw) -> list[tuple[str, str]]:
+    return [(r["row"], r["value"]) for r in parse_rows([(1, lines)], **kw) if r["col"] == 0]
+
+
+def test_side_labels_do_not_key_rows() -> None:
+    """A side label on its own line, in a first cell, or joined (pdftotext) keys nothing."""
+    lines = [
+        [(30.0, "Percentage of cases"), (90.0, "1.0")],
+        [(5.0, "Rural")],
+        [(30.0, "Female Sterilisation"), (90.0, "2.0")],
+        [(30.0, "Percentage of cases"), (90.0, "3.0")],
+        [(5.0, "Urban"), (30.0, "Female Sterilisation"), (90.0, "4.0")],
+        [(17.0, "Urban Percentage of cases"), (90.0, "5.0")],
+        [(5.0, "Private hospital:"), (30.0, "All"), (90.0, "6.0")],  # a heading stays
+        [(5.0, "51."), (30.0, "Institutional births"), (90.0, "7.0")],  # a serial stays
+    ]
+    assert _keys(lines) == [
+        ("percentageofcases#1", "1.0"),
+        ("femalesterilisation#1", "2.0"),
+        ("percentageofcases#2", "3.0"),
+        ("femalesterilisation#2", "4.0"),
+        ("percentageofcases#3", "5.0"),
+        ("privatehospitalall#1", "6.0"),
+        ("51institutionalbirths#1", "7.0"),
+    ]
+
+
+def test_wrapped_label_takes_its_values() -> None:
+    """Pin values between a wrapped label's lines; headings and side labels lend no label."""
+    lines = [
+        [(50.0, "Male"), (70.0, "Female")],
+        [(50.0, "1"), (70.0, "2")],
+        [(30.0, "Public hospitals"), (90.0, "327")],
+        [(30.0, "Charitable/NGO run")],
+        [(90.0, "589")],
+        [(30.0, "hospitals")],
+        [(5.0, "Rural +")],
+        [(90.0, "8")],
+    ]
+    assert [k for k, _ in _keys(lines)] == ["#1", "publichospitals#1", "charitablengorun#1", "#2"]
+
+
+def test_fit_width_gives_back_a_label_number() -> None:
+    """ "below 20" keeps its 20 with fit_width; a wider table's last row keeps its values."""
+    lines = [
+        [(10.0, "below"), (40.0, "20"), (60.0, "98"), (80.0, "85")],
+        [(10.0, "20-24"), (60.0, "99"), (80.0, "86")],
+    ]
+    assert [r["row"] for r in parse_rows([(1, lines)])][:3] == ["below#1"] * 3
+    assert _keys(lines, fit_width=True)[0] == ("below20#1", "98")
+    wide = [[(10.0, t), (40.0, "1"), (60.0, "2"), (80.0, "3")] for t in ("a", "b")]
+    wide.append([(10.0, "c"), (60.0, "4")])
+    assert _keys(wide, fit_width=True) == [("a#1", "1"), ("b#1", "1"), ("c#1", "4")]

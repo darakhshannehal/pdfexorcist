@@ -20,13 +20,13 @@ def check(name: str) -> Callable[[Check], Check]:
     return deco
 
 
-# displays that hide the number: Excel's 2E+05 or #####, formula errors
+# displays that hide the number: Excel's 2E+05 or #####, formula errors, a lone closing bracket
 LOSSY = re.compile(f"^({LOSSY_FORMS})$")
 
 
 @check("lossy value")
 def lossy(df: pd.DataFrame) -> pd.Series:
-    """Fail a value whose printed form hides the number (2E+05, #####, #REF!).
+    """Fail a value whose printed form hides the number or has an unmatched bracket.
 
     extract() always runs it, so such a value is never silently verified.
     """

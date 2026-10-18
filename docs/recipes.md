@@ -326,6 +326,8 @@ stop = 'TABLE\s*5'               #   up to (not including) the next page that ma
 match = 'All India'              # only pages whose text matches
 fit_boxes = false                # default true: widen a page to cover text drawn outside
                                  #   it; false when that text is another page's
+area = [72, 144, 288, 432]       # crop every selected page before engines read it
+                                 #   (x0, y0, x1, y1 in PDF points)
 
 [engines]
 use = ["pdfplumber", "pymupdf", "pdfium"]  # default: the installed default engines
@@ -349,6 +351,8 @@ min_values = 2                   # skip lines with fewer values (titles, footnot
 tolerance = 0.45                 # "columns" only: how far from a column a value may sit
 placement = "both"               # "columns" only: keep a value only where its order and its
                                  # position give the same column (default "x": position)
+fit_width = true                 # "rows" only: a row with more values than the rows beside
+                                 #   it gives the first back to its label ("below 20")
 function = "my_parser.py:parse"  # "custom": pages -> one dict per value
 key = ["page", "code", "sex", "col"]  # "custom": the columns that identify a cell
 
@@ -415,6 +419,9 @@ Values that break a rule are kept, named in the `failed` column and listed for r
 
 Page numbers in the output are the original ones.
 
+A custom parser should key printed labels with `pdfexorcist.rows.label_key()`. It drops
+spacing, so pdfium's `1st(lowest 20% of population)` votes with `1st (lowest 20% of population)`.
+
 ### Where each setting is used
 
 Every example recipe runs on a fixture in `tests/fixtures/`.
@@ -425,6 +432,7 @@ Every example recipe runs on a fixture in `tests/fixtures/`.
 | `[pages] start`, `stop` | [MCCD Table 4](examples/mccd-table4.md#the-recipe), [MCCD tables](examples/mccd.md) |
 | `[pages] match` | [CRS](examples/crs.md#the-recipe), [NFHS-6](examples/nfhs6-factsheets.md#the-recipe), [NFHS-5](examples/nfhs5-factsheets.md#the-recipe) |
 | `[pages] fit_boxes` | [MCCD 2011, unfitted](examples/settings.md#page-boxes) |
+| `[pages] area` | Crop a table away from running text in another column |
 | `[engines] use` | [lake photo](#example-a-photographed-table), [NFHS-6, all engines](examples/settings.md#every-engine-must-agree) |
 | `[engines] min_agree`, `min_unopposed` | [NFHS-6, all engines](examples/settings.md#every-engine-must-agree) |
 | `[engines] families` | [NFHS-5, pdfminer as one](examples/settings.md#engines-that-vote-once) |

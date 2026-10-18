@@ -166,5 +166,13 @@
     "blurb": "M, F and T rows per cause, under State names printed sideways.",
     "pdf": "tests/fixtures/mccd/mccd_2014.pdf",
     "recipe": "examples/mccd/table4.toml"
+  },
+  {
+    "id": "nss-ki75-health",
+    "kicker": "NSS 75th round · Health",
+    "title": "Detailed tables A23-A32",
+    "blurb": "Spending per spell and per childbirth, care for the aged: Rural, Urban and Rural + Urban blocks with the sector printed once beside each.",
+    "pdf": "tests/fixtures/nss_health/nss_ki75_appendix_p68-73.pdf",
+    "recipe": "examples/nss_health/recipe.toml"
   }
 ]

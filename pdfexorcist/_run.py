@@ -11,6 +11,7 @@ import pandas as pd
 
 from . import doctor
 from . import recipe as recipes
+from ._prepare import crop_pages
 from ._progress import EngineProgress as EngineProgress  # used via _run by callers
 from ._ui import EXIT_FAILED, CliError, cmd_arg, plural, refuse_overwrite
 from .checks import lossy, validate
@@ -287,6 +288,8 @@ def run(
     post = rec.postprocess_function()
     with tempfile.TemporaryDirectory() as tmp:
         pdf = _pages(plan.src, plan.pages, Path(tmp)) if plan.pages else plan.src
+        if rec.area:
+            pdf = crop_pages(pdf, Path(tmp) / "area", rec.area)
         try:
             res = extract(
                 pdf,

@@ -77,6 +77,7 @@ class Recipe:
     stop: str | None = None
     match: str | None = None
     fit_boxes: bool = True
+    area: tuple[float, float, float, float] | None = None
     engines: tuple[str, ...] | None = None
     ocr: bool = False
     min_agree: int | None = None
@@ -91,6 +92,7 @@ class Recipe:
     min_values: int | None = None
     tolerance: float | None = None
     placement: str = "x"
+    fit_width: bool = False
     parser_function: str | None = None
     key: tuple[str, ...] | None = None
     checks: tuple[Any, ...] = ()  # TotalRule or "file.py:function"
@@ -119,6 +121,8 @@ class Recipe:
             opts["min_values"] = self.min_values
         if self.tolerance is not None and self.parser == "columns":
             opts["tol"] = self.tolerance
+        if self.fit_width:
+            opts["fit_width"] = True
         if self.placement != "x":
             opts["placement"] = self.placement
         if not opts:

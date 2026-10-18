@@ -16,13 +16,18 @@ def save_copy(doc: Any, out_dir: Path, name: str) -> Path:
     return path
 
 
+def redact(page: Any, rects: Iterable[Any]) -> None:
+    """Remove the text in each rect, keeping images and rules."""
+    for rect in rects:
+        page.add_redact_annot(rect)
+    page.apply_redactions(images=0, graphics=0)
+
+
 def redact_dots(page: Any, centres: Iterable[tuple[float, float]]) -> None:
     """Remove the text at each centre (a 0.3 pt dot), keeping images and rules."""
     import pymupdf
 
-    for x, y in centres:
-        page.add_redact_annot(pymupdf.Rect(x - 0.3, y - 0.3, x + 0.3, y + 0.3))
-    page.apply_redactions(images=0, graphics=0)
+    redact(page, (pymupdf.Rect(x - 0.3, y - 0.3, x + 0.3, y + 0.3) for x, y in centres))
 
 
 def fit_page_boxes(pdf: Path, out_dir: Path) -> Path:
@@ -70,6 +75,30 @@ def _pages(pdf: Path, pages: Sequence[int], out_dir: Path) -> Path:
             out.insert_pdf(src, from_page=p - 1, to_page=p - 1)
         out.save(path, no_new_id=True)  # stable bytes: older OCR caches are keyed on them
     return path
+
+
+def crop_pages(pdf: Path, out_dir: Path, area: tuple[float, float, float, float]) -> Path:
+    """Copy pdf with every page cropped to (x0, y0, x1, y1) in points."""
+    import pymupdf
+
+    rect = pymupdf.Rect(area)
+    if rect.is_empty or rect.is_infinite:
+        raise ValueError("page area needs x1 > x0 and y1 > y0")
+    with pymupdf.open(pdf) as doc:
+        for page in doc:
+            if not page.rect.contains(rect):
+                raise ValueError(f"page area {area} is outside page {tuple(page.rect)}")
+            # redact outside too; some extractors ignore the CropBox
+            whole = page.rect
+            bands = (
+                pymupdf.Rect(whole.x0, whole.y0, rect.x0, whole.y1),
+                pymupdf.Rect(rect.x1, whole.y0, whole.x1, whole.y1),
+                pymupdf.Rect(rect.x0, whole.y0, rect.x1, rect.y0),
+                pymupdf.Rect(rect.x0, rect.y1, rect.x1, whole.y1),
+            )
+            redact(page, (b for b in bands if not b.is_empty))
+            page.set_cropbox(rect)
+        return save_copy(doc, out_dir, f"area_{Path(pdf).name}")
 
 
 def _photo_pdf(img: Path, out_dir: Path) -> Path:

@@ -31,6 +31,7 @@ SCHEMA: dict[str, dict[str, tuple[tuple, str]]] = {
         "stop": _TEXT,
         "match": _TEXT,
         "fit_boxes": _BOOL,
+        "area": ((list,), "four page coordinates, like [72, 144, 288, 432]"),
     },
     "engines": {
         "use": _TEXTS,
@@ -54,6 +55,7 @@ SCHEMA: dict[str, dict[str, tuple[tuple, str]]] = {
         "min_values": _INT,
         "tolerance": _NUM,
         "placement": _TEXT,
+        "fit_width": _BOOL,
         "function": _TEXT,
         "key": _TEXTS,
     },
@@ -200,6 +202,18 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
                 ) from None
     if "stop" in pages and "start" not in pages:
         raise err("[pages] stop needs a start", "pages", "stop")
+    area = pages.get("area")
+    if area is not None and (
+        len(area) != 4
+        or not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in area)
+        or area[2] <= area[0]
+        or area[3] <= area[1]
+    ):
+        raise err("[pages] area needs four increasing numbers: [x0, y0, x1, y1]", "pages", "area")
+    box = None
+    if area is not None:
+        x0, y0, x1, y1 = (float(v) for v in area)
+        box = (x0, y0, x1, y1)
 
     engines = None
     if "use" in eng:
@@ -246,6 +260,8 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
         raise err('[parser] function is only used with type = "custom"', "parser", "function")
     if "key" in par and ptype != "custom":
         raise err("[parser] key is only used by a custom parser", "parser", "key")
+    if "fit_width" in par and ptype != "rows":
+        raise err('[parser] fit_width is only used with type = "rows"', "parser", "fit_width")
     if "min_values" in par and par["min_values"] < 1:
         raise err("[parser] min_values must be at least 1", "parser", "min_values")
     if "tolerance" in par and not 0 < par["tolerance"] < 1:
@@ -282,6 +298,7 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
         stop=pages.get("stop"),
         match=pages.get("match"),
         fit_boxes=pages.get("fit_boxes", True),
+        area=box,
         engines=engines,
         ocr=eng.get("ocr", False),
         min_agree=eng.get("min_agree"),
@@ -296,6 +313,7 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
         min_values=par.get("min_values"),
         tolerance=par.get("tolerance"),
         placement=par.get("placement", "x"),
+        fit_width=par.get("fit_width", False),
         parser_function=par.get("function"),
         key=tuple(par["key"]) if "key" in par else None,
         checks=tuple(checks),

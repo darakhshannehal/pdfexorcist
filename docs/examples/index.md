@@ -22,6 +22,7 @@ Each example is a recipe in the repository's `examples/` folder and runs on a fi
 | [MMIS monthly malaria situation](mmis.md) | NCVBDC's monthly report: a small table of months under each trend graph, by State and indicator. | Cells keyed by the graph's place on the page; area and indicator from the graph title as extra columns; a TPR check and a check that fails on a table under the wrong graph. |
 | [Prison Statistics India](prison_stats.md) | NCRB's capacity, inmates and occupancy by State/UT, by sex and by jail type; one table runs over three pages by column. | Cells keyed by printed column number, so the three pages join; totals, Table 1.3 against Table 1.2, and an occupancy check. |
 | [SRS Statistical Report](srs_statistical_report.md) | Table 1: percent distribution of the population by age, sex and residence, one or two State blocks a page. | Keyed by block on the page, the State an extra column; age groups add up to 100 and a total lies between its parts. |
+| [NSS health Key Indicators](nss_health.md) | KI 75/25.0 Appendix A: spending, childbirth and the aged, in Rural, Urban and Rural + Urban blocks. | The sector side label dropped wherever an engine puts it; rows keyed by block and a space-free label. |
 | [SRS maternal mortality](srs_maternal_mortality.md) | MMR by State with its 95% CI, deaths by age, and the Cause of Death report's top 10 causes. | Intervals split into lower and upper columns, percents made numbers; CI, lifetime-risk and sum-to-100 checks. |
 | [Road Accidents in India](road_accidents.md) | MoRTH's State/UT accidents, killed and injured, printed sideways, with three-level headers and Indian comma grouping. | Pages turned upright, `fit_boxes = false` for a spread, values placed by x; totals, share and rank checks. |
 | [NHP malaria](nhp_malaria.md) | CBHI National Health Profile: State/UT malaria cases and deaths for five years, the last provisional. | Years read from the header; a wrapped name joined; States/UTs add up to India. |
@@ -50,6 +51,7 @@ Each test pairs a document parser with values checked against the printed page. 
 | `test_mmis_malaria.py` | NCVBDC Monthly Malaria Situation, Category II (October 2023) |
 | `test_prison_stats.py` | NCRB Prison Statistics India 2023, Tables 1.2 and 1.3 |
 | `test_srs_statistical_report.py` | SRS Statistical Report 2024, Table 1: age distribution by State |
+| `test_nss_health.py` | NSS KI 75/25.0 (Health), Appendix A Tables A23-A32 |
 | `test_srs_maternal_mortality.py` | SRS maternal mortality bulletin 2021-23 and Cause of Death Table 2.3A |
 | `test_road_accidents.py` | MoRTH Road Accidents in India 2022, Annexures 2-4 (sideways) |
 | `test_nhp_malaria.py` | CBHI National Health Profile 2023, Table 3.1.1: malaria by State/UT |
@@ -82,6 +84,7 @@ nta-notice
 mmis
 prison_stats
 srs_statistical_report
+nss_health
 srs_maternal_mortality
 road_accidents
 nhp_malaria

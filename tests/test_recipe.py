@@ -85,6 +85,13 @@ def test_normalize_rules():
     ]
 
 
+def test_page_area():
+    rec = loads("[pages]\narea = [72, 144, 288, 432]\n")
+    assert rec.area == (72.0, 144.0, 288.0, 432.0)
+    with pytest.raises(RecipeError, match="four increasing"):
+        loads("[pages]\narea = [72, 144, 72, 432]\n")
+
+
 def write_recipe(tmp_path: Path, text: str, name: str = "r.toml") -> Path:
     p = tmp_path / name
     p.write_text(text, encoding="utf-8")

@@ -1,5 +1,6 @@
 """Lines to keyed cells."""
 
+import math
 import re
 import statistics
 from collections import Counter
@@ -14,7 +15,7 @@ Page = tuple[int, list[list[Cell]]]
 
 # nc: "no cases" (NFHS-5); 2E+05, #####: Excel's display of a number too wide for its cell
 # read as values so columns stay in place; checks.lossy fails them
-LOSSY_FORMS = r"\d(\.\d+)?E\+\d+|#{3,}|#(REF!|VALUE!|DIV/0!|NAME\?)"
+LOSSY_FORMS = r"\d(\.\d+)?E\+\d+|#{3,}|#(REF!|VALUE!|DIV/0!|NAME\?)|\d[\d,]*(\.\d+)?%?\)"
 VALUE = re.compile(
     r"^\(?[-−]?\d[\d,]*([.·]\d+)?%?\)?[*#@$]?$|^(\*|-|–|—|\.\.\.?|…|--|na|NA|nc|NC|n/a|N/A|N\.A\.|n\.a\.|#N/A|"
     + LOSSY_FORMS
@@ -43,21 +44,28 @@ def split_values(cells: list[Cell]) -> tuple[str, list[str]]:
     return " ".join(toks[:i]), toks[i:]
 
 
-def parse_rows(pages: Iterable[Page], min_values: int = 1) -> Iterator[dict]:
+def parse_rows(
+    pages: Iterable[Page], min_values: int = 1, fit_width: bool = False
+) -> Iterator[dict]:
     """Default parser: one dict per value, keyed by KEY, plus the label text.
 
-    A trailing number in a label ("Population 2019") is read as a value; pass a
-    document parser to extract() when that matters.
+    The row key leaves out a side label (a group name printed once left of the label
+    column, beside its block of rows) wherever an engine puts it: on a line of its
+    own, in a row's first cell, or joined to a label that other rows show alone. Values
+    on a line without a label take the label of the label-only line just above (a label
+    wrapped onto two lines). A trailing number in a label ("below 20") is read as a
+    value; fit_width gives it back when the row is wider than the rows beside it.
     """
     for page_no, lines in pages:
+        rows = _page_rows(lines)
+        if fit_width:
+            rows = _fit_width(rows)
         seen: Counter = Counter()
-        for cells in lines:
-            label, vals = split_values(cells)
+        for label, vals, boxes in rows:
             if len(vals) < min_values:  # e.g. 2: skip a title ending in its year
                 continue
             key = label_key(label)
             seen[key] += 1
-            boxes = [b for _, _, b in token_boxes(cells)][-len(vals) :]
             for col, v in enumerate(vals):
                 cell = {
                     "page": page_no,
@@ -69,6 +77,104 @@ def parse_rows(pages: Iterable[Page], min_values: int = 1) -> Iterator[dict]:
                 if boxes[col] is not None:  # where the engine saw it (BoxCell lines)
                     cell["box"] = boxes[col]
                 yield cell
+
+
+def _fit_width(rows: list[tuple[str, list[str], list]]) -> list[tuple[str, list[str], list]]:
+    """Give a row's leading values back to its label when it is wider than both neighbours."""
+    out = []
+    for i, (label, vals, boxes) in enumerate(rows):
+        near = [len(r[1]) for r in rows[max(i - 1, 0) : i] + rows[i + 1 : i + 2]]
+        k = max(near, default=len(vals))
+        if label and k < len(vals):
+            label, vals, boxes = " ".join([label, *vals[:-k]]), vals[-k:], boxes[-k:]
+        out.append((label, vals, boxes))
+    return out
+
+
+def _left(cell: Cell) -> float:
+    """Where a cell starts; x only, so a vote never depends on boxes."""
+    # ponytail: exact for character columns (pdftotext), approximate in points
+    return cell[0] - len(cell[1]) / 2
+
+
+def _heads(cells: list[Cell]) -> int:
+    """How many leading cells hold label text."""
+    n = 0
+    while n < len(cells) and not all(is_value(t) for t in cells[n][1].split() or ["-"]):
+        n += 1
+    return n
+
+
+def _page_rows(lines: list[list[Cell]]) -> list[tuple[str, list[str], list[Box | None]]]:
+    """(label, values, value boxes) per line with values; side labels dropped."""
+    out: list[tuple[str, list[str], list[Box | None]]] = []
+    above = ""
+    for part in _tables(lines):
+        valued = [c for c in part if split_values(c)[1]]
+        sides = [_left(c[0]) for c in valued if _side_head(c)]
+        # leftmost label, skipping rows that start at a side label (joined); 2 units slack
+        col = min(
+            (_left(c[0]) for c in valued
+             if _heads(c) == 1 and all(abs(_left(c[0]) - x) > 2 for x in sides)),
+            default=-math.inf,
+        ) - 2  # fmt: skip
+        part = [c[1:] if _side_head(c) and _left(c[0]) < col else c for c in part]
+        labels = {
+            key
+            for c in part
+            if _heads(c) and _left(c[0]) >= col and (key := label_key(split_values(c)[0]))
+        }
+        for cells in part:
+            if _heads(cells) == 1 and _left(cells[0]) < col:
+                words = cells[0][1].split()
+                # side label joined to a known label (pdftotext)
+                cut = max(
+                    (i for i in range(1, min(len(words), 5))
+                     if _is_side(words[:i]) and label_key("".join(words[i:])) in labels),
+                    default=0,
+                )  # fmt: skip
+                if not cut and not split_values(cells)[1]:
+                    above = ""  # a side label on a line of its own
+                    continue
+                cells = [(cells[0][0], " ".join(words[cut:])), *cells[1:]]
+            label, vals = split_values(cells)
+            if not vals:
+                # a wrapped label is one cell without a closing ":"
+                above = label if len(cells) == 1 and not label.rstrip().endswith(":") else ""
+                continue
+            label, above = label or above, ""
+            out.append((label, vals, [b for _, _, b in token_boxes(cells)][-len(vals) :]))
+    return out
+
+
+def _side_head(cells: list[Cell]) -> bool:
+    """Whether the first cell is a side label before more label text."""
+    return _heads(cells) > 1 and _is_side(cells[0][1].split())
+
+
+def _is_side(words: list[str]) -> bool:
+    """A few words, no digits ("51.") and no closing colon ("Private hospital:")."""
+    return (
+        0 < len(words) <= 4
+        and not words[-1].endswith(":")
+        and not any(ch.isdigit() for w in words for ch in w)
+    )
+
+
+def _tables(lines: list[list[Cell]]) -> Iterator[list[list[Cell]]]:
+    """Runs of lines; a run ends before a line whose value count differs from the run's."""
+    part: list[list[Cell]] = []
+    width = None
+    for cells in lines:
+        n = len(split_values(cells)[1])
+        if n:
+            if width not in (None, n):
+                yield part
+                part = []
+            width = n
+        part.append(cells)
+    if part:
+        yield part
 
 
 def group_words(words: list[tuple], gap: float = 8.0) -> list[list[Cell]]:
