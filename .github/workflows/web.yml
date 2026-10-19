@@ -6,7 +6,6 @@ on:
     paths: &paths
       - "pdfexorcist/**"
       - "tests/**"
-      - "examples/**"
       - "web/**"
       - ".github/workflows/web.yml"
   push:
@@ -23,13 +22,13 @@ concurrency:
 
 jobs:
   pytest:
-    name: pytest in Pyodide ${{ matrix.shard }}/4
+    name: pytest in Pyodide ${{ matrix.shard }}/8
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4] # Pyodide is single-threaded; the suite takes ~50 min in one job
+        shard: [1, 2, 3, 4, 5, 6, 7, 8] # Pyodide is single-threaded; the suite takes ~25 min in one job
     defaults:
       run:
         working-directory: web
@@ -46,7 +45,7 @@ jobs:
       # test_fetch.py needs threads, which Pyodide lacks
       - run: node test/pytest.mjs -q -ra --ignore=tests/test_fetch.py
         env:
-          SHARD: ${{ matrix.shard }}/4
+          SHARD: ${{ matrix.shard }}/8
 
   site:
     # This job opens the built site in Chrome. It makes sure that:

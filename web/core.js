@@ -174,7 +174,7 @@ export function close({ py }, doc) {
 async function cli({ py, glue }, cmd, doc, argv, recipe, progress) {
   const path = documents.get(doc);
   if (!path) throw new Error('This PDF is no longer open; choose it again.');
-  const args = py.toPy([cmd, path, ...argv, ...(recipe ? ['--recipe', `/repo/${recipe}`] : [])]);
+  const args = py.toPy([cmd, path, ...argv, ...(recipe ? ['--recipe', recipe] : [])]);
   try {
     const res = await glue.run.callPromising(args, progress); // callPromising: run_sync waits on wasm programs
     try {
@@ -198,7 +198,7 @@ export async function show(ctx, { doc, page, recipe, engines }) {
   return { html: ctx.py.FS.readFile(out, { encoding: 'utf8' }) };
 }
 
-/** recipe: a path under /repo; returns the summary, and the table and review as text */
+/** recipe: a shipped recipe's short name; returns the summary, and the table and review as text */
 export async function extract(ctx, { doc, recipe, pages, engines, progress }) {
   const { py } = ctx;
   for (const f of ls(py.FS, '/work/out')) py.FS.unlink(`/work/out/${f}`);

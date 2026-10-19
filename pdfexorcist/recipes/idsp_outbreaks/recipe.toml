@@ -1,0 +1,38 @@
+# pdfexorcist recipe: IDSP weekly outbreak report (NCDC)
+#
+# Disease alerts and outbreaks reported by States/UTs in one week, and those of
+# previous weeks reported late: State, district, disease, cases, deaths, dates and
+# status. idsp_outbreaks.py keys each value by the outbreak's unique ID, joins
+# names that wrap onto several lines ("Acute / Diarrhoeal / Disease"), glues
+# words the narrow columns break ("Maharashtr" "a"), and leaves out the comments.
+# The State, district and disease are voted on like the numbers. Try it on week 9
+# of 2026 (idsp.mohfw.gov.in lists every week; this copy is from the Internet Archive):
+#
+#   pdfexorcist extract https://web.archive.org/web/20260518121932id_/https://idsp.mohfw.gov.in/WriteReadData/l892s/12897727101776340624.pdf --recipe pdfexorcist/recipes/idsp_outbreaks/recipe.toml
+#
+# On the fixture (pages 3-4, 11, 27-28, 31 and 35-36 of week 9, 2026):
+#
+#   pdfexorcist extract tests/fixtures/idsp_outbreaks/idsp_outbreaks_2026_week09_p3-4_11_27-28_31_35-36.pdf --recipe pdfexorcist/recipes/idsp_outbreaks/recipe.toml
+
+name = "IDSP weekly outbreaks"
+description = "Disease outbreaks by State/UT and district, with cases, deaths, dates and status (IDSP, NCDC)"
+sample = "../../../tests/fixtures/idsp_outbreaks/idsp_outbreaks_2026_week09_p3-4_11_27-28_31_35-36.pdf"
+
+[engines]
+ocr = false
+
+[parser]
+type = "custom"
+function = "idsp_outbreaks.py:parse"
+key = ["id", "col"]
+
+[[checks]]
+column = "col"
+rule = "cases >= deaths"
+by = ["id"]
+
+[output]
+layout = "table"
+rows = ["table", "id"]  # this week's outbreaks, then those reported late
+columns = "col"
+format = "csv"

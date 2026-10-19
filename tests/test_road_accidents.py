@@ -12,7 +12,7 @@ from morth import COLUMNS, parse, rank
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "road_accidents"
 FIXTURE = "morth_ra_2022_annexure_p136-138.pdf"
-RECIPE = ROOT / "examples" / "road_accidents" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "road_accidents" / "recipe.toml"
 ROWS = ["measure", "name"]
 
 pytestmark = pytest.mark.usefixtures("wide_console")

@@ -6,7 +6,7 @@ description: "Maharashtra's daily dam-storage report read with a recipe: rows ke
 
 The Maharashtra Water Resources Department publishes a storage report every morning on its [Pravah dam-safety site](https://mwrdpravah.in/damsafety/control/pdfLatestReportEng). The link serves only the latest report. Pages 1 and 2 summarise storage by region; from page 3 each major dam has a row under its region and district: serial number, name, the date and time of the reading, designed dead, live and gross storage, today's live and gross storage (Mcum), and today's live storage as a % of designed live, today and on the same date last year.
 
-The files are in `examples/pravah_dams/`: `recipe.toml` and `pravah_dams.py`. The fixture is pages 5-8 of the 3 October 2026 report, in `tests/fixtures/pravah/`.
+The files are in `pdfexorcist/recipes/pravah_dams/`: `recipe.toml` and `pravah_dams.py`. The fixture is pages 5-8 of the 3 October 2026 report, in `tests/fixtures/pravah/`.
 
 ## The recipe
 
@@ -44,22 +44,22 @@ The generic `rows` parser reads nothing here: pdfplumber and PyMuPDF read `98.63
 ## Run it
 
 ```bash
-pdfexorcist extract https://mwrdpravah.in/damsafety/control/pdfLatestReportEng --recipe examples/pravah_dams/recipe.toml -o pravah.csv
+pdfexorcist extract https://mwrdpravah.in/damsafety/control/pdfLatestReportEng --recipe pdfexorcist/recipes/pravah_dams/recipe.toml -o pravah.csv
 ```
 
 ```
 Reading Today's-Storage-ReportEng-03-10-2026.pdf from the link.
-  pdftotext   1,380 readings  1.5s
-  pdfplumber  1,380 readings  46.9s
-  pymupdf     1,380 readings  0.8s
-  camelot     1,380 readings  35.6s
-  pdfium      1,380 readings  0.6s
+✓ pdftotext   1,380 readings  1.5s
+✓ pdfplumber  1,380 readings  46.9s
+✓ pymupdf     1,380 readings  0.8s
+✓ camelot     1,380 readings  35.6s
+✓ pdfium      1,380 readings  0.6s
 
-Agreed        1,380  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed        1,380  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote pravah.csv (table layout, 138 rows).
+   Wrote   pravah.csv  138 rows, table layout
 ```
 
 ```
@@ -76,10 +76,10 @@ Tansa,Kokan,Thane,5,02/10/2026,07:35 AM,12.08,172.52,184.60,164.83,176.91,95.54,
 On the fixture:
 
 ```bash
-pdfexorcist extract tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe examples/pravah_dams/recipe.toml
+pdfexorcist extract tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe pdfexorcist/recipes/pravah_dams/recipe.toml
 ```
 
-`pdfexorcist show tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe examples/pravah_dams/recipe.toml --page 4 -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe pdfexorcist/recipes/pravah_dams/recipe.toml --page 4 -o page.png` draws what the recipe reads:
 
 ![Pravah report page with the Thane dams: a row per dam, named in the margin](../assets/examples/pravah.png)
 

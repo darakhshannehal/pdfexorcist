@@ -6,7 +6,7 @@ description: "The NTA list of NEET (UG) 2026 toppers read with a recipe: a scan 
 
 The National Testing Agency's [list of NEET (UG) 2026 re-examination toppers](https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/07/20260716180970800.pdf) opens with "List of Top 138 candidates scoring equal to or more than 690 marks" on pages 1-6. Each row has a Sr. No., Application No., candidate name, gender, category, percentile, NEET rank and State. The pages are 300 dpi scans with no text layer, so only OCR engines can read them. Pages 7-15 hold shorter lists (female, male, EWS, SC ... toppers) and a marks table.
 
-The files are in `examples/nta_toppers/`: `recipe.toml` and `nta_toppers.py`. The fixture is pages 1 and 2, in `tests/fixtures/nta/`.
+The files are in `pdfexorcist/recipes/nta_toppers/`: `recipe.toml` and `nta_toppers.py`. The fixture is pages 1 and 2, in `tests/fixtures/nta/`.
 
 ## The recipe
 
@@ -40,17 +40,17 @@ Each value is keyed by the printed Sr. No. and its column. Two of the three engi
 
 ```bash
 pdfexorcist extract https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/07/20260716180970800.pdf \
-  --recipe examples/nta_toppers/recipe.toml --pages 1-6 -o neet_top138.csv
+  --recipe pdfexorcist/recipes/nta_toppers/recipe.toml --pages 1-6 -o neet_top138.csv
 ```
 
 ```
-  paddleocr  966 readings  254.9s
-  ocrmac     928 readings  7.9s
-  glmocr     845 readings  39.2s
+✓ paddleocr  966 readings  254.9s
+✓ ocrmac     928 readings  7.9s
+✓ glmocr     845 readings  39.2s
 
-Agreed          965  99.9% of cells
-Unresolved        1  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed          965  99.9% of cells
+!  Unresolved        1  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 A few columns of `neet_top138.csv`:
@@ -67,7 +67,7 @@ sr_no,rank,percentile,category,state
 
 The unresolved cell is the Application No. of Sr. No. 89: only PaddleOCR reads it. Apple Vision reads that row's percentile as `99.995499šę`, so the parser skips the row, and GLM-OCR leaves out the column.
 
-`pdfexorcist show tests/fixtures/nta/neet_2026_top138_p1-2.pdf --recipe examples/nta_toppers/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nta/neet_2026_top138_p1-2.pdf --recipe pdfexorcist/recipes/nta_toppers/recipe.toml -o page.png` draws what the recipe reads:
 
 ![Scanned NEET toppers list: each row boxed and named by its Sr. No.](../assets/examples/nta-toppers.png)
 

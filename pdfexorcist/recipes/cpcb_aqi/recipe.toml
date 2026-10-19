@@ -1,0 +1,42 @@
+# pdfexorcist recipe: CPCB daily Air Quality Index bulletin
+#
+# A row per city: serial number, air-quality category, AQI (average of the past
+# 24 hours), prominent pollutants, and stations participated / total. cpcb_aqi.py
+# keys each value by the city's name, joins a name that wraps onto two lines
+# ("Aurangabad (Maharashtra)"), and adds the bulletin's date and time from the
+# title ("Oct 18, 2026 @ 4 PM": 2026-10-18, 16:00). Try it on any day's bulletin:
+#
+#   pdfexorcist extract 'https://cpcb.gov.in/displaypdf.php?id=RG93bmxvYWRzL0FRSV9CdWxsZXRpbl8yMDI2MTAxOC5wZGY=' --recipe pdfexorcist/recipes/cpcb_aqi/recipe.toml
+#
+# The id is base64 of Downloads/AQI_Bulletin_<yyyymmdd>.pdf. On the fixture (pages 1-2 and 14-15 of 18 October 2026):
+#
+#   pdfexorcist extract tests/fixtures/cpcb/cpcb_aqi_2026-10-18_p1-2_14-15.pdf --recipe pdfexorcist/recipes/cpcb_aqi/recipe.toml
+
+name = "CPCB AQI bulletin"
+description = "Daily Air Quality Index by city, with category, prominent pollutants and stations (CPCB)"
+sample = "../../../tests/fixtures/cpcb/cpcb_aqi_2026-10-18_p1-2_14-15.pdf"
+
+[pages]
+match = 'Total Stations'  # the city tables; the last page lists absent cities
+
+[engines]
+ocr = false
+
+[parser]
+type = "custom"
+function = "cpcb_aqi.py:parse"
+key = ["page", "id", "col"]
+
+[[checks]]
+function = "cpcb_aqi.py:category_band"
+
+[[checks]]
+column = "col"
+rule = "stations >= participated"
+by = ["page", "id"]
+
+[output]
+layout = "table"
+rows = ["city"]
+columns = "col"
+format = "csv"

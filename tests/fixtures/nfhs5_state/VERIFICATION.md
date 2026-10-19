@@ -24,7 +24,7 @@ data and their own definitions, so they corroborate some State values.
 
 1. Read every Key Indicators page of the 37 fact sheets and the 36
    compendiums with the five default text engines and
-   `examples/nfhs5/nfhs5_factsheet.py` (3 of 5 must agree), with the parser's two
+   `pdfexorcist/recipes/nfhs5/nfhs5_factsheet.py` (3 of 5 must agree), with the parser's two
    checks (no percentage over 100; each State Total between its Urban and
    Rural).
 2. Join the agreed values to the CSVs by geography (the page title; the CSVs
@@ -148,7 +148,7 @@ same label.
 ### Class b: parser fixes made during this check
 
 Each was found by a disagreement or a short count, fixed in
-`examples/nfhs5/nfhs5_factsheet.py`, and is covered by `tests/test_nfhs5_factsheet.py`:
+`pdfexorcist/recipes/nfhs5/nfhs5_factsheet.py`, and is covered by `tests/test_nfhs5_factsheet.py`:
 
 * A district with no comparable NFHS-4 estimate (boundaries changed, or newly
   formed) has one value column (132 districts).

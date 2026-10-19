@@ -11,14 +11,15 @@ import pandas as pd
 
 from . import doctor
 from . import recipe as recipes
-from ._prepare import crop_pages
+from ._clean import cut
 from ._progress import EngineProgress as EngineProgress  # used via _run by callers
+from ._shipped import resolve_recipe
 from ._ui import EXIT_FAILED, CliError, cmd_arg, plural, refuse_overwrite
 from .checks import lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
-from .pages import IMAGE_SUFFIXES, ocr_layer, page_kinds
+from .pages import IMAGE_SUFFIXES, is_scan, ocr_layer, page_kinds
 from .recipe import Recipe, page_list
-from .vote import _pages, extract
+from .vote import TooFewReadings, extract
 
 EXT = {"csv": ".csv", "xlsx": ".xlsx", "parquet": ".parquet", "json": ".json"}
 FORMAT_DEPS = {"xlsx": [("openpyxl",)], "parquet": [("pyarrow",), ("fastparquet",)]}
@@ -34,12 +35,12 @@ class Plan:
     pages: list[int] | None
     methods: list[str]
     min_agree: int | None
-    fmt: str
-    layout: str
-    columns: str
-    rows: list[str] | None
-    output: Path
-    review: Path | None
+    fmt: str = "csv"
+    layout: str = "cells"
+    columns: str = "col"
+    rows: list[str] | None = None
+    output: Path = Path("out.csv")
+    review: Path | None = None
     notes: list[str] = field(default_factory=list)
     not_installed: dict[str, str] = field(default_factory=dict)
 
@@ -48,7 +49,7 @@ def load_recipe(path: Path | None) -> Recipe:
     """Load the selected recipe before extraction."""
     if path is None:
         return Recipe()
-    rec = recipes.load(path)
+    rec = recipes.load(resolve_recipe(path))
     rec.resolve_all()
     return rec
 
@@ -180,7 +181,7 @@ def make_plan(
         if kinds is None or any(p not in kinds for p in read):
             kinds = {k["page"]: k for k in page_kinds(src, read)}
         chosen = [kinds[p] for p in read]
-        scanned = all(k["chars"] < 20 for k in chosen) and any(k["scan"] for k in chosen)
+        scanned = is_scan(chosen)
         if not ocr and not explicit and not rec.families and ocr_layer(src):
             raise CliError(
                 "This PDF's text layer was made by OCR (ocrmypdf), so the text engines all repeat "
@@ -279,17 +280,20 @@ def make_plan(
 
 
 def run(
-    plan: Plan, rec: Recipe, progress: Callable[[str, str, Any], None], jobs: int = 1
+    plan: Plan,
+    rec: Recipe,
+    progress: Callable[[str, str, Any], None],
+    jobs: int = 1,
+    prepared: bool = False,
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Vote, post-process, and check; return cells and key columns."""
+    """Vote, post-process, and check; return cells and key columns. prepared: plan.src went
+    through _clean.prepare with the recipe's pages, area and fit_boxes."""
     parse, key = rec.parse_and_key()
     normalize = rec.normalizer()
     checks = rec.check_functions()
     post = rec.postprocess_function()
     with tempfile.TemporaryDirectory() as tmp:
-        pdf = _pages(plan.src, plan.pages, Path(tmp)) if plan.pages else plan.src
-        if rec.area:
-            pdf = crop_pages(pdf, Path(tmp) / "area", rec.area)
+        pdf = plan.src if prepared else cut(plan.src, plan.pages, rec.area, Path(tmp))
         try:
             res = extract(
                 pdf,
@@ -303,16 +307,15 @@ def run(
                 on_engine=progress,
                 fit_boxes=rec.fit_boxes,
                 jobs=jobs,
+                cleaned=prepared,
             )
-        except RuntimeError as e:
-            if "independent readings" not in str(e):
-                raise
+        except TooFewReadings as e:
             raise CliError(
                 f"Too few engines read anything from these pages ({e}).",
                 "Check that the pages hold a table (pdfexorcist inspect), pick pages with --pages, "
                 "or add OCR engines with --ocr for scans.",
                 code=EXIT_FAILED,
-            ) from None
+            ) from e
         if post is not None:
             res = post(res, pdf)
             if not isinstance(res, pd.DataFrame):

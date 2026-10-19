@@ -2,20 +2,22 @@
 
 import functools
 import gc
+import itertools
 import logging
 import os
 import re
 import shutil
 import subprocess
-from collections import defaultdict
 from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
 from ._bold import COPY_PT, debold_line, one_value
 from ._registry import register
-from .cells import Box, BoxCell, _inside
+from ._spaces import overprinted_spaces
+from .cells import Box, BoxCell, _inside, union
 from .rows import Page, group_words, is_value
 
 logger = logging.getLogger(__name__)
@@ -111,18 +113,7 @@ def _pdfjs_dist() -> Path | None:
 
 def _space_ids(page: Any) -> set[int]:
     """Find space glyphs overprinted on visible glyphs."""
-    lines: defaultdict[int, list[tuple[float, float]]] = defaultdict(list)
-    for c in page.chars:
-        if c["text"] != " ":
-            lines[round(c["top"])].append((c["x0"], c["x1"]))
-    stray = set()
-    for c in page.chars:
-        if c["text"] == " ":
-            mid = (c["x0"] + c["x1"]) / 2
-            near = (lines.get(round(c["top"]) + d, ()) for d in (-2, -1, 0, 1, 2))
-            if any(a < mid < b for ln in near for a, b in ln):
-                stray.add(id(c))
-    return stray
+    return overprinted_spaces(page.chars)
 
 
 def _not_in(ids: set[int]) -> Callable[[Any], bool]:
@@ -156,14 +147,60 @@ def pymupdf_(pdf: Path) -> Iterator[Page]:
     """Extract PyMuPDF words grouped into lines."""
     import pymupdf
 
+    flags = pymupdf.TEXTFLAGS_WORDS & ~pymupdf.TEXT_MEDIABOX_CLIP
     with pymupdf.open(pdf) as doc:
         for i, page in enumerate(doc, start=1):
-            words = page.get_text(
-                "words", flags=pymupdf.TEXTFLAGS_WORDS & ~pymupdf.TEXT_MEDIABOX_CLIP
+            tp = page.get_textpage(flags=flags)  # laid out once for both readings
+            words = _respace(
+                page.get_text("words", textpage=tp), page.get_text("rawdict", textpage=tp)
             )
             turn = page.rotation_matrix  # words come unrotated
             rects = [(pymupdf.Rect(w[:4]) * turn, w[4]) for w in words]
             yield i, group_words([(r.x0, r.x1, r.y1, t, r.y0) for r, t in rects])
+
+
+def _respace(words: list, raw: dict) -> list:
+    """Rejoin PyMuPDF words split at space glyphs overprinted on letters ("d u c k").
+
+    A line holding such a space gets words rebuilt from its glyphs without it,
+    when they spell the same letters; every other line keeps PyMuPDF's words.
+    """
+    rebuilt: dict[tuple[int, int], list] = {}
+    for block in raw["blocks"]:
+        for n, line in enumerate(block.get("lines", ())):
+            glyphs = [g for span in line["spans"] for g in span["chars"]]
+            if line["dir"] != (1.0, 0.0) or not any(g["c"] == " " for g in glyphs):
+                continue
+            chars = [
+                {"text": g["c"], "x0": b[0], "x1": b[2], "top": b[1], "g": g}
+                for g in glyphs
+                for b in [g["bbox"]]
+            ]
+            stray = overprinted_spaces(chars)
+            if stray:
+                kept = [c["g"] for c in chars if id(c) not in stray]
+                rebuilt[(block["number"], n)] = _glyph_words(kept, block["number"], n)
+    if not rebuilt:
+        return words
+    out = []
+    for key, group in itertools.groupby(words, key=lambda w: (w[5], w[6])):
+        old = list(group)
+        new = rebuilt.get(key, old)
+        out += new if "".join(w[4] for w in new) == "".join(w[4] for w in old) else old
+    return out
+
+
+def _glyph_words(glyphs: list, block: int, line: int) -> list:
+    """PyMuPDF word tuples (x0, y0, x1, y1, text, block, line, word) from glyphs split at spaces."""
+    out: list = []
+    for space, run in itertools.groupby(glyphs, key=lambda g: g["c"].isspace()):
+        if space:
+            continue
+        gs = list(run)
+        box = union([g["bbox"] for g in gs])
+        assert box is not None  # every glyph has a bbox
+        out.append((*box, "".join(g["c"] for g in gs), block, line, len(out)))
+    return out
 
 
 def _n_values(lines: list) -> int:
@@ -202,34 +239,59 @@ def _camelot_pages(pdf: Path) -> Iterator[Page]:
     for i in range(1, n_pages + 1):
         reads: list = []
         dx, dy, h = boxes[i - 1]
-        for flavor in flavors:
-            try:
-                tables = camelot.read_pdf(str(pdf), pages=str(i), flavor=flavor)
-            except (
-                ValueError,
-                IndexError,
-                ZeroDivisionError,
-                ImportError,  # ml on a broken install
-            ) as e:  # blank/figure pages
-                logger.debug("camelot %s page %d: %s", flavor, i, e)
-                continue
-            reads.append(
-                [
+        with _layout_once():
+            for flavor in flavors:
+                try:
+                    tables = camelot.read_pdf(str(pdf), pages=str(i), flavor=flavor)
+                except (
+                    ValueError,
+                    IndexError,
+                    ZeroDivisionError,
+                    ImportError,  # ml on a broken install
+                ) as e:  # blank/figure pages
+                    logger.debug("camelot %s page %d: %s", flavor, i, e)
+                    continue
+                reads.append(
                     [
-                        BoxCell(
-                            ((b := t.cells[r][j]).x1 + b.x2) / 2,
-                            c.replace("\n", " "),
-                            (b.x1 + dx, h - b.y2 - dy, b.x2 + dx, h - b.y1 - dy),
-                        )
-                        for j, c in enumerate(row)
-                        if c
+                        [
+                            BoxCell(
+                                ((b := t.cells[r][j]).x1 + b.x2) / 2,
+                                " ".join(c.split()),  # a wrapped cell's lines, one space apart
+                                (b.x1 + dx, h - b.y2 - dy, b.x2 + dx, h - b.y1 - dy),
+                            )
+                            for j, c in enumerate(row)
+                            if c
+                        ]
+                        for t in _distinct(tables)
+                        for r, row in enumerate(t.df.itertuples(index=False))
                     ]
-                    for t in _distinct(tables)
-                    for r, row in enumerate(t.df.itertuples(index=False))
-                ]
-            )
+                )
         best: list = max(reads, key=_n_values, default=[])
         yield i, [debold_line(_one_values(ln), is_value) for ln in best]
+
+
+@contextmanager
+def _layout_once() -> Iterator[None]:
+    """Lay out each page once, shared by all of camelot's flavors."""
+    from camelot.handlers import PDFHandler
+
+    real = getattr(PDFHandler, "_get_layout", None)
+    if real is None:  # a private method; another camelot may not have it
+        yield
+        return
+    done: dict = {}  # one page's layouts, by layout settings
+
+    def layout(self: Any, page: Any, **kwargs: Any) -> Any:
+        key = tuple(sorted(kwargs.items()))
+        if key not in done:  # after camelot's own fix for rotated pages, which runs once
+            done[key] = real(self, page, **kwargs)
+        return done[key]
+
+    PDFHandler._get_layout = layout  # type: ignore[method-assign]
+    try:
+        yield
+    finally:
+        PDFHandler._get_layout = real  # type: ignore[method-assign]
 
 
 def _one_values(line: list) -> list:

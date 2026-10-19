@@ -4,13 +4,13 @@ description: "Small pdfexorcist recipes for the settings the gallery leaves at t
 
 # Other recipe settings
 
-The gallery recipes leave many settings at their defaults. Each recipe here changes a few of them and runs on a gallery fixture. The generic ones are in `examples/settings/`; the others sit next to the recipe they vary, so they can use its Python. `tests/test_recipe_docs_examples.py` runs each one. The [format reference](../recipes.md#format-reference) lists every setting.
+The gallery recipes leave many settings at their defaults. Each recipe here changes a few of them and runs on a gallery fixture. The generic ones are in `pdfexorcist/recipes/settings/`; the others sit next to the recipe they vary, so they can use its Python. `tests/test_recipe_docs_examples.py` runs each one. The [format reference](../recipes.md#format-reference) lists every setting.
 
 ## Rows or columns, and a total column
 
 Table 1A.4 of Crime in India 2023 prints, for each State/UT, road-accident deaths three times: in total, by Hit and Run, and by Other Accidents. Each has Incidence, Victims and Rate, so total incidence equals Hit and Run incidence plus Other incidence. Dadra and Nagar Haveli and Daman and Diu wraps its name around its row, which leaves the serial number `31` at the start of the line.
 
-`examples/settings/cii_rows.toml` reads the page with the `rows` parser and checks that total column:
+`pdfexorcist/recipes/settings/cii_rows.toml` reads the page with the `rows` parser and checks that total column:
 
 ```toml
 name = "Crime in India 1A.4, rows parser"
@@ -34,18 +34,19 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe examples/settings/cii_rows.toml -o cii_rows.csv
+pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe pdfexorcist/recipes/settings/cii_rows.toml -o cii_rows.csv
 ```
 
 ```
-Agreed         352  97.5% of cells
-Unresolved       9  engines disagreed: left blank
-Failed checks    3  agreed values that break a rule
-  x Total I = Hit and Run I + Other I: 3 cells
+✓  Agreed         352  97.5% of cells
+!  Unresolved       9  engines disagreed, left blank
+✗  Failed checks    3  agreed values break a rule
+    ✗ Total I = Hit and Run I + Other I: 3 cells
 
-Wrote cii_rows.csv (table layout, 40 rows).
-Cells to review, with the reason and every engine's reading: cii_rows.review.csv
-Some agreed values break a rule (see the failed column), so the exit code is 1.
+   Wrote   cii_rows.csv  40 rows, table layout
+   Review  cii_rows.review.csv  cells to check, with each engine's reading
+
+Some agreed values break a rule (see the failed column). The exit code is 1.
 ```
 
 ```
@@ -57,7 +58,7 @@ page,label,0,1,2,3,4,5,6,7,8,9
 
 The `rows` parser numbers values in reading order, so on the unlabelled line `31` becomes column 0 and every value moves one column right. 31 is not 6.0 + 2.8, so those cells fail the check.
 
-`examples/settings/cii_columns.toml` reads the same page with the `columns` parser, which puts each value in the column it sits under. Its parts that differ:
+`pdfexorcist/recipes/settings/cii_columns.toml` reads the same page with the `columns` parser, which puts each value in the column it sits under. Its parts that differ:
 
 ```toml
 [parser]
@@ -79,22 +80,22 @@ format = "xlsx"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe examples/settings/cii_columns.toml -o cii_columns.xlsx
+pdfexorcist extract tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe pdfexorcist/recipes/settings/cii_columns.toml -o cii_columns.xlsx
 ```
 
 ```
-  pdftotext   387 readings  0.0s
-  pdfplumber  387 readings  0.1s
-  pymupdf     387 readings  0.0s
-  camelot     387 readings  0.3s
-  pdfium      387 readings  0.0s
+✓ pdftotext   387 readings  0.0s
+✓ pdfplumber  387 readings  0.1s
+✓ pymupdf     387 readings  0.0s
+✓ camelot     387 readings  0.3s
+✓ pdfium      387 readings  0.0s
 
-Agreed         387  97.5% of cells
-Unresolved      10  engines disagreed: left blank
-Checks      1 rule  all passed
+✓  Agreed         387  97.5% of cells
+!  Unresolved      10  engines disagreed, left blank
+✓  Checks      1 rule  all passed
 
-Wrote cii_columns.xlsx (table layout, 40 rows).
-Cells to review, with the reason and every engine's reading: the review sheet.
+   Wrote   cii_columns.xlsx  40 rows, table layout
+   Review  the review sheet  cells to check
 ```
 
 The `table` sheet, as CSV:
@@ -113,7 +114,7 @@ The serial numbers have a column of their own, and the unlabelled row's values s
 
 ## A rounded total
 
-Column 3 of Crime in India 2021 Table 1A.1 is the mid-year population in lakhs, rounded to 0.1. The States and UTs add up to 13672.0, and the page prints 13671.8 for All India. `examples/settings/cii_population.toml` allows a relative gap and writes one row per cell:
+Column 3 of Crime in India 2021 Table 1A.1 is the mid-year population in lakhs, rounded to 0.1. The States and UTs add up to 13672.0, and the page prints 13671.8 for All India. `pdfexorcist/recipes/settings/cii_population.toml` allows a relative gap and writes one row per cell:
 
 ```toml
 name = "Crime in India 1A.1, population"
@@ -139,15 +140,15 @@ format = "json"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/cii/cii_2021_1A.1_p43.pdf --recipe examples/settings/cii_population.toml -o population.json
+pdfexorcist extract tests/fixtures/cii/cii_2021_1A.1_p43.pdf --recipe pdfexorcist/recipes/settings/cii_population.toml -o population.json
 ```
 
 ```
-Agreed         234  100.0% of cells
-Unresolved       0
-Checks      1 rule  all passed
+✓  Agreed         234  100.0% of cells
+   Unresolved       0
+✓  Checks      1 rule  all passed
 
-Wrote population.json (cells layout).
+   Wrote   population.json  cells layout
 ```
 
 One record:
@@ -172,7 +173,7 @@ Without `tolerance` the rule fails on the 0.2 gap. `abs_tolerance` allows a fixe
 
 ## Pages by number
 
-`examples/crs_state_tables/table4.toml` is the CRS recipe with `[pages] select = "2"`: the fixture holds Table 1 on page 1 and Table 4 (still births) on page 2.
+`pdfexorcist/recipes/crs_state_tables/table4.toml` is the CRS recipe with `[pages] select = "2"`: the fixture holds Table 1 on page 1 and Table 4 (still births) on page 2.
 
 ```toml
 [pages]
@@ -180,16 +181,16 @@ select = "2"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe examples/crs_state_tables/table4.toml -o table4.csv
+pdfexorcist extract tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe pdfexorcist/recipes/crs_state_tables/table4.toml -o table4.csv
 ```
 
 ```
 Reading page 2 of tests/fixtures/crs/crs_2023_t1_t4.pdf with 5 engines (a majority must agree),
-recipe examples/crs_state_tables/table4.toml
+recipe pdfexorcist/recipes/crs_state_tables/table4.toml
 ...
-Agreed          324  97.3% of cells
-Unresolved        9  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed          324  97.3% of cells
+!  Unresolved        9  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -202,7 +203,7 @@ The output keeps the page's number in the original file. The unresolved cells ar
 
 ## Page boxes
 
-`examples/mccd/unfitted.toml` is the MCCD Table 4 recipe with `[pages] fit_boxes = false`, run on the 2011 fixture: a two-page spread drawn half outside its page box. By default pdfexorcist widens each page box to cover its text before the engines read it. Without that:
+`pdfexorcist/recipes/mccd/unfitted.toml` is the MCCD Table 4 recipe with `[pages] fit_boxes = false`, run on the 2011 fixture: a two-page spread drawn half outside its page box. By default pdfexorcist widens each page box to cover its text before the engines read it. Without that:
 
 ```toml
 [pages]
@@ -210,21 +211,21 @@ fit_boxes = false
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2011.pdf --recipe examples/mccd/unfitted.toml -o unfitted.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2011.pdf --recipe pdfexorcist/recipes/mccd/unfitted.toml -o unfitted.csv
 ```
 
 ```
-  pdftotext   1,782 readings  0.0s
-  pdfplumber  1,782 readings  0.2s
-  pymupdf     1,782 readings  0.0s
-  camelot     3,564 readings  11.6s
-  pdfium      1,782 readings  0.1s
+✓ pdftotext   1,782 readings  0.0s
+✓ pdfplumber  1,782 readings  0.2s
+✓ pymupdf     1,782 readings  0.0s
+✓ camelot     3,564 readings  11.6s
+✓ pdfium      1,782 readings  0.1s
 
-Agreed         1,782  50.0% of cells
-Unresolved     1,782  engines disagreed: left blank
-Failed checks    768  agreed values that break a rule
-  x state 'All States (Total)' >= the rest, within each page, code, pocc, sex: 768 cells
-Note: 1,044 agreed cells were read with different values in different places (e.g. two pages); left
+✓  Agreed         1,782  50.0% of cells
+!  Unresolved     1,782  engines disagreed, left blank
+✗  Failed checks    768  agreed values break a rule
+    ✗ state 'All States (Total)' >= the rest, within each page, code, pocc, sex: 768 cells
+! 1,044 agreed cells were read with different values in different places (e.g. two pages); left
 blank in the table and listed for review.
 ```
 
@@ -232,7 +233,7 @@ Four engines read only the half inside the box; camelot reads all of it. Half th
 
 ## Every engine must agree
 
-`examples/nfhs6/unanimous.toml` is the NFHS-6 State recipe with these `[engines]` settings:
+`pdfexorcist/recipes/nfhs6/unanimous.toml` is the NFHS-6 State recipe with these `[engines]` settings:
 
 ```toml
 [engines]
@@ -244,40 +245,40 @@ min_unopposed = 3
 `min_agree = 5` alone, given here on the command line with `-k 5`:
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs6_state/nfhs6_chandigarh_p145-147.pdf --recipe examples/nfhs6/state.toml -k 5 -o chandigarh.csv
+pdfexorcist extract tests/fixtures/nfhs6_state/nfhs6_chandigarh_p145-147.pdf --recipe pdfexorcist/recipes/nfhs6/state.toml -k 5 -o chandigarh.csv
 ```
 
 ```
 Reading tests/fixtures/nfhs6_state/nfhs6_chandigarh_p145-147.pdf with 5 engines (5 must agree),
-recipe examples/nfhs6/state.toml
-  pdftotext   404 readings  0.0s
-  pdfplumber  404 readings  0.4s
-  pymupdf     404 readings  0.0s
-  camelot     384 readings  0.8s
-  pdfium      276 readings  0.0s
+recipe pdfexorcist/recipes/nfhs6/state.toml
+✓ pdftotext   404 readings  0.0s
+✓ pdfplumber  404 readings  0.4s
+✓ pymupdf     404 readings  0.0s
+✓ camelot     384 readings  0.8s
+✓ pdfium      276 readings  0.0s
 
-Agreed          260  64.4% of cells
-Unresolved      144  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed          260  64.4% of cells
+!  Unresolved      144  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 pdfium and camelot read nothing for some values, so those cells cannot reach 5. `min_unopposed = 3` also accepts a value that 3 engines read when no engine read another:
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs6_state/nfhs6_chandigarh_p145-147.pdf --recipe examples/nfhs6/unanimous.toml -o chandigarh.csv --force
+pdfexorcist extract tests/fixtures/nfhs6_state/nfhs6_chandigarh_p145-147.pdf --recipe pdfexorcist/recipes/nfhs6/unanimous.toml -o chandigarh.csv --force
 ```
 
 ```
-Agreed          404  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          404  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 A value two engines read differently still needs all five. `use` names the engines, so one that is not installed is an error.
 
 ## Engines that vote once
 
-pdfplumber and camelot both read the text layer with pdfminer, so a pdfminer misreading would count twice. `examples/nfhs5/families.toml` is the NFHS-5 State recipe with:
+pdfplumber and camelot both read the text layer with pdfminer, so a pdfminer misreading would count twice. `pdfexorcist/recipes/nfhs5/families.toml` is the NFHS-5 State recipe with:
 
 ```toml
 [engines]
@@ -287,26 +288,26 @@ families = { pdfminer = ["pdfplumber", "camelot"] }
 The two settle on one value first, and that value counts as one vote. Five engines make four voters, and 3 must agree.
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe examples/nfhs5/families.toml -o chandigarh.csv
+pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe pdfexorcist/recipes/nfhs5/families.toml -o chandigarh.csv
 ```
 
 ```
-  pdftotext   476 readings  0.0s
-  pdfplumber  524 readings  0.4s
-  pymupdf     524 readings  0.0s
-  camelot     524 readings  4.8s
-  pdfium      68 readings  0.1s
+✓ pdftotext   476 readings  0.0s
+✓ pdfplumber  524 readings  0.4s
+✓ pymupdf     524 readings  0.0s
+✓ camelot     524 readings  4.8s
+✓ pdfium      68 readings  0.1s
 
-Agreed          480  91.6% of cells
-Unresolved       44  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed          480  91.6% of cells
+!  Unresolved       44  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 Most cells the [plain run](nfhs5-factsheets.md#run-it) verified and this one does not were read only by pdfplumber, camelot and PyMuPDF, which now count as two votes. Families matter most for an OCRed PDF, where every text engine reads the same OCR text. See [Engines](../engines.md#families).
 
 ## Cleaning values
 
-`examples/nfhs5/numbers.toml` is the NFHS-5 State recipe with numbers cleaned before the vote and Parquet output:
+`pdfexorcist/recipes/nfhs5/numbers.toml` is the NFHS-5 State recipe with numbers cleaned before the vote and Parquet output:
 
 ```toml
 [normalize]
@@ -326,15 +327,15 @@ def drop_na(value: str) -> str | None:
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe examples/nfhs5/numbers.toml -o chandigarh.parquet
+pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe pdfexorcist/recipes/nfhs5/numbers.toml -o chandigarh.parquet
 ```
 
 ```
-Agreed          493  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          493  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote chandigarh.parquet (table layout, 131 rows).
+   Wrote   chandigarh.parquet  131 rows, table layout
 ```
 
 Read back with pandas (`pd.read_parquet("chandigarh.parquet")`), rows 3, 6 and 47:
@@ -350,7 +351,7 @@ The `na` readings are gone; brackets and `*` are kept. The values stay text in t
 
 ## Printed numbers that need cleaning
 
-`tests/fixtures/synthetic/cleaning.pdf` is a small synthetic table (`make_fixtures.py` next to it builds it). It prints numbers the way some reports do: raised-dot decimals (`65·3`), Unicode minus signs (`−4·0`), a footnote mark (`13·4*`) and a small-sample value in brackets (`(7·0)`). `examples/settings/cleaning.toml` cleans them before the vote and checks the table after it:
+`tests/fixtures/synthetic/cleaning.pdf` is a small synthetic table (`make_fixtures.py` next to it builds it). It prints numbers the way some reports do: raised-dot decimals (`65·3`), Unicode minus signs (`−4·0`), a footnote mark (`13·4*`) and a small-sample value in brackets (`(7·0)`). `pdfexorcist/recipes/settings/cleaning.toml` cleans them before the vote and checks the table after it:
 
 ```toml
 [normalize]
@@ -388,13 +389,13 @@ def add_number(cells: pd.DataFrame, pdf: object) -> pd.DataFrame:
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/synthetic/cleaning.pdf --recipe examples/settings/cleaning.toml -o cleaning.csv
+pdfexorcist extract tests/fixtures/synthetic/cleaning.pdf --recipe pdfexorcist/recipes/settings/cleaning.toml -o cleaning.csv
 ```
 
 ```
-Agreed           12  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed           12  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -409,7 +410,7 @@ The checks read `number` (`value = "number"`): `(7.0)` is not a number, so a che
 
 ## OCR for an image
 
-`examples/settings/cleaning_ocr.toml` reads the same table from an image, `cleaning.png`. An image has no text layer, so `ocr = true` adds every installed OCR engine; a majority of them, at least 2, must agree:
+`pdfexorcist/recipes/settings/cleaning_ocr.toml` reads the same table from an image, `cleaning.png`. An image has no text layer, so `ocr = true` adds every installed OCR engine; a majority of them, at least 2, must agree:
 
 ```toml
 [engines]
@@ -420,22 +421,22 @@ type = "columns"   # OCR engines place words by x; values go to the nearest colu
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/synthetic/cleaning.png --recipe examples/settings/cleaning_ocr.toml -o cleaning.csv
+pdfexorcist extract tests/fixtures/synthetic/cleaning.png --recipe pdfexorcist/recipes/settings/cleaning_ocr.toml -o cleaning.csv
 ```
 
 ```
 Reading tests/fixtures/synthetic/cleaning.png with 5 engines (3 must agree), recipe
-examples/settings/cleaning_ocr.toml
-  tesseract  0 readings  0.2s
-  chandra    12 readings  0.0s
-  paddleocr  12 readings  6.0s
-  ocrmac     8 readings  26.2s
-  glmocr     12 readings  3.0s
+pdfexorcist/recipes/settings/cleaning_ocr.toml
+✓ tesseract  0 readings  0.2s
+✓ chandra    12 readings  0.0s
+✓ paddleocr  12 readings  6.0s
+✓ ocrmac     8 readings  26.2s
+✓ glmocr     12 readings  3.0s
   tesseract read no values on these pages.
 
-Agreed          12  85.7% of cells
-Unresolved       2  engines disagreed: left blank
-Checks      1 rule  all passed
+✓  Agreed          12  85.7% of cells
+!  Unresolved       2  engines disagreed, left blank
+✓  Checks      1 rule  all passed
 ```
 
-Every cell of the table is agreed and equals the PDF's. The unresolved cells are a row only one engine read (`East 13.4.`). The engines depend on what is installed (`pdfexorcist engines`); the [lake photo](../recipes.md#example-a-photographed-table) names its OCR engines with `use` instead.
+Every cell of the table is agreed and equals the PDF's. The unresolved cells are a row only one engine read (`East 13.4.`). The engines depend on what is installed (`pdfexorcist engines`); the [MyBMC lakes](../recipes.md#example-mybmc-lakes-a-photographed-table) names its OCR engines with `use` instead.

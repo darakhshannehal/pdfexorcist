@@ -144,19 +144,17 @@ function route() {
   show('home');
 }
 
-get('examples.json')
-  .then((r) => r.json())
+const examples = get('examples.json').then((r) => r.json());
+examples
   .then((list) => list.forEach(addExample))
   .then(route);
 
-files
-  .then((list) => {
-    for (const [path] of list) {
-      if (path.startsWith('examples/') && path.endsWith('.toml')) {
-        $('recipe').append(el('option', { value: path }, path.slice('examples/'.length)));
-      }
-    }
-  });
+// the examples' recipes by their cards, then every other shipped recipe by its own name
+Promise.all([examples, get('recipes.json').then((r) => r.json())]).then(([list, recipes]) => {
+  const named = new Map(list.map((ex) => [ex.recipe, `${ex.kicker}: ${ex.title}`]));
+  for (const [path, label] of named) $('recipe').append(el('option', { value: path }, label));
+  for (const [path, name] of recipes) if (!named.has(path)) $('recipe').append(el('option', { value: path }, name));
+});
 
 const file = $('file');
 file.onchange = () => file.files[0] && openFile(file.files[0]);
@@ -223,6 +221,13 @@ async function run(job) {
   show('work');
   $('doc-kicker').textContent = job.kicker;
   $('doc-title').textContent = job.title;
+  $('reuse').hidden = !job.id; // every example has a recipe
+  $('reuse').onclick = () => {
+    $('recipe').value = job.recipe;
+    history.pushState(null, '', './');
+    show('home');
+    file.click();
+  };
   fill($('result')); // else the previous result shows under the new title
   const pane = pagesPane(job.pdf, signal);
   let count;

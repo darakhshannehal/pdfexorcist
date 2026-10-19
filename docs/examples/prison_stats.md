@@ -11,7 +11,7 @@ The National Crime Records Bureau (NCRB) publishes Prison Statistics India each 
 
 Rows follow NCRB's usual layout (Crime in India, ADSI): 28 States, `TOTAL (STATES)`, 8 UTs, `TOTAL (UTs)`, `TOTAL (ALL-INDIA)`, under a row of printed column numbers.
 
-The files are in `examples/prison_stats/`: `recipe.toml` and `psi.py`. The fixture is pages 58-61 of the 2023 report, in `tests/fixtures/prison_stats/`.
+The files are in `pdfexorcist/recipes/prison_stats/`: `recipe.toml` and `psi.py`. The fixture is pages 58-61 of the 2023 report, in `tests/fixtures/prison_stats/`.
 
 ## The recipe
 
@@ -78,27 +78,27 @@ A cell is keyed by page, State/UT and printed column number. `psi.py` names each
 ## Run it
 
 ```bash
-pdfexorcist extract https://www.ncrb.gov.in/uploads/files/PSI-2023.pdf --recipe examples/prison_stats/recipe.toml -o psi.csv
+pdfexorcist extract https://www.ncrb.gov.in/uploads/files/PSI-2023.pdf --recipe pdfexorcist/recipes/prison_stats/recipe.toml -o psi.csv
 ```
 
 On the whole report `match` picks pages 58-61, the fixture's pages:
 
 ```bash
-pdfexorcist extract tests/fixtures/prison_stats/psi_2023_p58-61.pdf --recipe examples/prison_stats/recipe.toml -o psi.csv
+pdfexorcist extract tests/fixtures/prison_stats/psi_2023_p58-61.pdf --recipe pdfexorcist/recipes/prison_stats/recipe.toml -o psi.csv
 ```
 
 ```
-  pdftotext   1,521 readings  0.0s
-  pdfplumber  1,521 readings  0.2s
-  pymupdf     1,521 readings  0.0s
-  camelot     1,521 readings  4.8s
-  pdfium      1,521 readings  0.0s
+✓ pdftotext   1,521 readings  0.0s
+✓ pdfplumber  1,521 readings  0.2s
+✓ pymupdf     1,521 readings  0.0s
+✓ camelot     1,521 readings  4.8s
+✓ pdfium      1,521 readings  0.0s
 
-Agreed        1,521  100.0% of cells
-Unresolved        0
-Checks      6 rules  all passed
+✓  Agreed        1,521  100.0% of cells
+   Unresolved        0
+✓  Checks      6 rules  all passed
 
-Wrote psi.csv (table layout, 39 rows).
+   Wrote   psi.csv  39 rows, table layout
 ```
 
 ```

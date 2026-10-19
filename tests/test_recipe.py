@@ -16,7 +16,7 @@ from pdfexorcist.recipe import RecipeError, load, loads, parse_rule
 
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "pdfexorcist" / "recipes"
 
 pytestmark = pytest.mark.usefixtures("wide_console")
 
@@ -324,7 +324,7 @@ def test_photo_parser():
     """Pin lake-recipe parsing of hand-checked rows."""
     from test_bmc_lake_report import _page, _report
 
-    parse, key = load(EXAMPLES / "lake_photo" / "recipe.toml").parse_and_key()
+    parse, key = load(EXAMPLES / "mybmc_lakes" / "recipe.toml").parse_and_key()
     assert key == ["lake", "year", "field"]
     got = {tuple(r[k] for k in key): r["value"] for r in parse(_page(_report("2026-09-28")))}
     assert got[("Tansa", "2026", "level")] and got[("", "", "report_date")] == "2026-09-28"
@@ -344,7 +344,7 @@ def test_example_photo_recipe_with_ocr(tmp_path, monkeypatch):
             "extract",
             "lake.jpg",
             "--recipe",
-            str(EXAMPLES / "lake_photo" / "recipe.toml"),
+            str(EXAMPLES / "mybmc_lakes" / "recipe.toml"),
             "--json",
             "-q",
         ]

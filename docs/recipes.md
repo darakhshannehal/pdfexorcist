@@ -8,6 +8,30 @@ A recipe is a TOML file with everything about one kind of table: its pages, the 
 
 Every section is optional. A missing setting keeps the default, as `extract` does without a recipe. Command-line options (`--pages`, `--engines`, ...) override the recipe.
 
+## Use a shipped recipe
+
+The package ships every recipe in `pdfexorcist/recipes/`. Name one with `--recipe`: `cpcb_aqi` is `pdfexorcist/recipes/cpcb_aqi/recipe.toml`, and `mccd/table9` is `pdfexorcist/recipes/mccd/table9.toml`.
+
+```bash
+pdfexorcist extract bulletin.pdf --recipe cpcb_aqi
+```
+
+`recipe suggest` finds the shipped recipe for a PDF in three steps:
+
+1. Words: the share of each recipe's sample words that the PDF prints, rare words weighted more. A recipe whose `[pages]` text is found gets a bonus.
+2. Layout: the shapes of the lines (text, whole numbers, decimals, dates) and where the columns start, compared with each sample. Renamed columns do not change it.
+3. Trial run: the top recipes by words, by layout and by page text run with one engine. A recipe fits when its checks pass and it reads at least a fifth of the numbers on its pages.
+
+A photo or a scan is read by tesseract for steps 1 and 2. Its trial runs with an installed OCR engine that the recipe names; see [recipe suggest](cli.md#recipe-suggest).
+
+```bash
+pdfexorcist recipe suggest bulletin.pdf
+```
+
+When no recipe fits, `suggest` names the closest layout. Its parser may look for headings this PDF does not print; copy that recipe, or start with `recipe new`.
+
+After a new recipe or fixture, rebuild the index of sample fingerprints with `python -m pdfexorcist._suggest`; `tests/test_suggest.py` fails until it is current.
+
 ## Make a recipe
 
 `recipe new` asks about the pages, the parser and the totals, tries the answers on a sample, and saves a commented TOML file. Here it runs on the Crime in India fixture; each answer follows its question:
@@ -95,7 +119,7 @@ pdfexorcist extract next_year.pdf --recipe cii.toml
 
 ## Example: a text table
 
-`examples/crime_in_india.toml` is that recipe, edited: `where` limits the first rule to the count columns (0-2), a second rule says no row exceeds All India, and `[normalize]` removes commas and footnote marks. This page prints neither, so `[normalize]` changes nothing here; on a page that prints `1,020` it keeps the sums checkable.
+`pdfexorcist/recipes/crime_in_india.toml` is that recipe, edited: `where` limits the first rule to the count columns (0-2), a second rule says no row exceeds All India, and `[normalize]` removes commas and footnote marks. This page prints neither, so `[normalize]` changes nothing here; on a page that prints `1,020` it keeps the sums checkable.
 
 ```toml
 name = "Crime in India: State/UT table"
@@ -131,15 +155,15 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/cii/cii_2021_1A.1_p43.pdf --recipe examples/crime_in_india.toml -o cii.csv
+pdfexorcist extract tests/fixtures/cii/cii_2021_1A.1_p43.pdf --recipe pdfexorcist/recipes/crime_in_india.toml -o cii.csv
 ```
 
 ```
-Agreed          234  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          234  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote cii.csv (table layout, 39 rows).
+   Wrote   cii.csv  39 rows, table layout
 ```
 
 ```
@@ -151,16 +175,16 @@ page,label,0,1,2,3,4,5
 1,TOTAL ALL INDIA,3225597,4254356,3663360,13671.8,268.0,72.3
 ```
 
-`pdfexorcist show tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe examples/settings/cii_rows.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/cii/cii_2023_1A.4_p47.pdf --recipe pdfexorcist/recipes/settings/cii_rows.toml -o page.png` draws what the recipe reads:
 
 ![Crime in India State/UT table with every value boxed](assets/examples/cii-rows.png)
 
-## Example: a photographed table
+## Example: MyBMC lakes, a photographed table
 
-`examples/lake_photo/recipe.toml` reads the lake-level report that Mumbai's water department posts each morning as a photo. Only OCR engines can read it. A row is placed by its YEAR cell, which the generic parsers cannot do, so the recipe names a Python parser next to it (comments trimmed):
+`pdfexorcist/recipes/mybmc_lakes/recipe.toml` reads the lake-level report that Mumbai's water department posts each morning as a photo on X (@mybmc). Only OCR engines can read it. A row is placed by its YEAR cell, which the generic parsers cannot do, so the recipe names a Python parser next to it (comments trimmed):
 
 ```toml
-name = "BMC lake levels"
+name = "MyBMC lakes"
 sample = "../../tests/fixtures/bmc/2026-09-28.jpg"
 
 [engines]
@@ -180,18 +204,18 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/bmc/2026-07-28.jpg --recipe examples/lake_photo/recipe.toml -o lakes.csv
+pdfexorcist extract tests/fixtures/bmc/2026-07-28.jpg --recipe pdfexorcist/recipes/mybmc_lakes/recipe.toml -o lakes.csv
 ```
 
 ```
-Reading tests/fixtures/bmc/2026-07-28.jpg with 4 engines (3 must agree), recipe examples/lake_photo/recipe.toml
-  chandra    124 readings  0.0s
-  glmocr     124 readings  1.8s
-  paddleocr  125 readings  24.8s
-  ocrmac     110 readings  1.1s
+Reading tests/fixtures/bmc/2026-07-28.jpg with 4 engines (3 must agree), recipe pdfexorcist/recipes/mybmc_lakes/recipe.toml
+✓ chandra    124 readings  0.0s
+✓ glmocr     124 readings  1.8s
+✓ paddleocr  125 readings  24.8s
+✓ ocrmac     110 readings  1.1s
 
-Agreed      125  100.0% of cells
-Unresolved    0
+✓  Agreed      125  100.0% of cells
+   Unresolved    0
 ```
 
 ```
@@ -222,87 +246,87 @@ def parse(pages):
 
 The `chandra` and `glmocr` reads were cached from an earlier run. If an engine reads nothing, `min_agree` does not drop: the others must still reach it. `min_unopposed = 2` also accepts a value two engines read identically where the others read nothing, such as the title date, which Chandra and GLM-OCR do not return. The generic parser with `--ocr` agrees on almost none of this photo's cells, because the engines split its rows differently.
 
-`pdfexorcist show tests/fixtures/bmc/2026-09-28.jpg --recipe examples/lake_photo/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/bmc/2026-09-28.jpg --recipe pdfexorcist/recipes/mybmc_lakes/recipe.toml -o page.png` draws what the recipe reads:
 
-![The BMC lake-level photo: every value boxed, rows named by lake and year](assets/examples/lake-photo.png)
+![The MyBMC lakes photo: every value boxed, rows named by lake and year](assets/examples/mybmc-lakes.png)
 
 ## Example: MCCD Table 4
 
-`examples/mccd/table4.toml` finds its pages by their title, uses a Python parser, and names each column's State after the vote from rotated headers. See the [worked example](examples/mccd-table4.md).
+`pdfexorcist/recipes/mccd/table4.toml` finds its pages by their title, uses a Python parser, and names each column's State after the vote from rotated headers. See the [worked example](examples/mccd-table4.md).
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2014.pdf --recipe examples/mccd/table4.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 4 page](assets/examples/mccd-table4.png)
 
 ## Example: MCCD Tables 2, 5 and 9
 
-`examples/mccd/` reads three more tables of the MCCD report: Table 2 with Table 4's parser, Tables 5 and 9 with a parser keyed by chapter numeral, columns named from the flat header. See [MCCD tables](examples/mccd.md).
+`pdfexorcist/recipes/mccd/` reads three more tables of the MCCD report: Table 2 with Table 4's parser, Tables 5 and 9 with a parser keyed by chapter numeral, columns named from the flat header. See [MCCD tables](examples/mccd.md).
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe examples/mccd/table5.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe pdfexorcist/recipes/mccd/table5.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 5 page](assets/examples/mccd-table5.png)
 
 ## Example: SRS life tables
 
-`examples/srs_life_table/recipe.toml` reads one State a page, keeps the State out of the key so camelot still votes, and checks survivorship in Python. See [SRS life tables](examples/srs.md).
+`pdfexorcist/recipes/srs_life_table/recipe.toml` reads one State a page, keeps the State out of the key so camelot still votes, and checks survivorship in Python. See [SRS life tables](examples/srs.md).
 
-`pdfexorcist show tests/fixtures/srs/srs_2019-23.pdf --recipe examples/srs_life_table/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/srs/srs_2019-23.pdf --recipe pdfexorcist/recipes/srs_life_table/recipe.toml -o page.png` draws what the recipe reads:
 
 ![SRS life table page](assets/examples/srs.png)
 
 ## Example: population projections
 
-`examples/census_iips_district/` and `examples/census_mohfw_state/` read two projection reports whose headers are misprinted, with TOML checks that allow for rounding. See [Population projections](examples/census-projections.md).
+`pdfexorcist/recipes/census_iips_district/` and `pdfexorcist/recipes/census_mohfw_state/` read two projection reports whose headers are misprinted, with TOML checks that allow for rounding. See [Population projections](examples/census-projections.md).
 
-`pdfexorcist show tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe examples/census_iips_district/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe pdfexorcist/recipes/census_iips_district/recipe.toml -o page.png` draws what the recipe reads:
 
 ![IIPS projection page](assets/examples/iips.png)
 
 ## Example: CRS State tables
 
-`examples/crs_state_tables/recipe.toml` finds the table pages with `match` and names each value's area and sex for the checks. See [CRS State Tables 1-4](examples/crs.md).
+`pdfexorcist/recipes/crs_state_tables/recipe.toml` finds the table pages with `match` and names each value's area and sex for the checks. See [CRS State Tables 1-4](examples/crs.md).
 
-`pdfexorcist show tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe examples/crs_state_tables/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe pdfexorcist/recipes/crs_state_tables/recipe.toml -o page.png` draws what the recipe reads:
 
 ![CRS Table 1 page](assets/examples/crs.png)
 
 ## Example: NFHS-6 fact sheets
 
-`examples/nfhs6/state.toml` and `examples/nfhs6/district.toml` read the NFHS-6 Key Indicators sheets for India, each State and each district with one Python parser: rows named by their printed indicator number, small-sample `(45.6)` and suppressed `*` values kept as printed. See the [worked example](examples/nfhs6-factsheets.md).
+`pdfexorcist/recipes/nfhs6/state.toml` and `pdfexorcist/recipes/nfhs6/district.toml` read the NFHS-6 Key Indicators sheets for India, each State and each district with one Python parser: rows named by their printed indicator number, small-sample `(45.6)` and suppressed `*` values kept as printed. See the [worked example](examples/nfhs6-factsheets.md).
 
-`pdfexorcist show tests/fixtures/nfhs6_state/nfhs6_india_p26-28.pdf --recipe examples/nfhs6/state.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nfhs6_state/nfhs6_india_p26-28.pdf --recipe pdfexorcist/recipes/nfhs6/state.toml -o page.png` draws what the recipe reads:
 
 ![NFHS-6 State fact sheet page](assets/examples/nfhs6-state.png)
 
 ## Example: NFHS-5 fact sheets
 
-`examples/nfhs5/state.toml` and `examples/nfhs5/district.toml` read the NFHS-5 (2019-21) Key Indicators sheets for India, each State and each district, with the NFHS-6 parser adapted to NFHS-5's layout (`na` placeholders, districts without an NFHS-4 column). The values are checked against an independent extraction. See the [worked example](examples/nfhs5-factsheets.md).
+`pdfexorcist/recipes/nfhs5/state.toml` and `pdfexorcist/recipes/nfhs5/district.toml` read the NFHS-5 (2019-21) Key Indicators sheets for India, each State and each district, with the NFHS-6 parser adapted to NFHS-5's layout (`na` placeholders, districts without an NFHS-4 column). The values are checked against an independent extraction. See the [worked example](examples/nfhs5-factsheets.md).
 
-`pdfexorcist show tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe examples/nfhs5/district.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe pdfexorcist/recipes/nfhs5/district.toml -o page.png` draws what the recipe reads:
 
 ![NFHS-5 district fact sheet page](assets/examples/nfhs5-district.png)
 
 ## Example: Pravah dam storage
 
-`examples/pravah_dams/recipe.toml` reads Maharashtra's daily dam report straight from its link: rows keyed by dam name, wrapped names joined, region and district carried down from their headings, with capacity and % checks. See [Pravah dam storage](examples/pravah.md).
+`pdfexorcist/recipes/pravah_dams/recipe.toml` reads Maharashtra's daily dam report straight from its link: rows keyed by dam name, wrapped names joined, region and district carried down from their headings, with capacity and % checks. See [Pravah dam storage](examples/pravah.md).
 
-`pdfexorcist show tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe examples/pravah_dams/recipe.toml --page 4 -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/pravah/pravah_2026-10-03_p5-8.pdf --recipe pdfexorcist/recipes/pravah_dams/recipe.toml --page 4 -o page.png` draws what the recipe reads:
 
 ![Pravah report page with the Thane dams: a row per dam, named in the margin](assets/examples/pravah.png)
 
 ## Example: several tables in one PDF
 
-`examples/nta_notice/recipe.toml` reads the nine tables of the NEET (UG) 2024 result press release with one parser that keys each value by table, row and column; a check catches a misprinted count. See [NEET (UG) 2024 press release](examples/nta-notice.md).
+`pdfexorcist/recipes/nta_notice/recipe.toml` reads the nine tables of the NEET (UG) 2024 result press release with one parser that keys each value by table, row and column; a check catches a misprinted count. See [NEET (UG) 2024 press release](examples/nta-notice.md).
 
-`pdfexorcist show tests/fixtures/nta_notice/nta_notice_2024_p2-6.pdf --recipe examples/nta_notice/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nta_notice/nta_notice_2024_p2-6.pdf --recipe pdfexorcist/recipes/nta_notice/recipe.toml -o page.png` draws what the recipe reads:
 
 ![NEET 2024 press release page: Table 1 boxed, the misprinted 2021 column hatched as failing a check](assets/examples/nta-notice.png)
 
 ## Example: a scanned list
 
-`examples/nta_toppers/recipe.toml` reads a scanned list of NEET toppers with OCR engines: rows keyed by the printed Sr. No., wrapped names, categories and States joined to their row, and checks that ranks rise and percentiles fall. See [NTA NEET toppers](examples/nta.md).
+`pdfexorcist/recipes/nta_toppers/recipe.toml` reads a scanned list of NEET toppers with OCR engines: rows keyed by the printed Sr. No., wrapped names, categories and States joined to their row, and checks that ranks rise and percentiles fall. See [NTA NEET toppers](examples/nta.md).
 
-`pdfexorcist show tests/fixtures/nta/neet_2026_top138_p1-2.pdf --recipe examples/nta_toppers/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nta/neet_2026_top138_p1-2.pdf --recipe pdfexorcist/recipes/nta_toppers/recipe.toml -o page.png` draws what the recipe reads:
 
 ![Scanned NEET toppers list: each row boxed and named by its Sr. No.](assets/examples/nta-toppers.png)
 
@@ -433,7 +457,7 @@ Every example recipe runs on a fixture in `tests/fixtures/`.
 | `[pages] match` | [CRS](examples/crs.md#the-recipe), [NFHS-6](examples/nfhs6-factsheets.md#the-recipe), [NFHS-5](examples/nfhs5-factsheets.md#the-recipe) |
 | `[pages] fit_boxes` | [MCCD 2011, unfitted](examples/settings.md#page-boxes) |
 | `[pages] area` | Crop a table away from running text in another column |
-| `[engines] use` | [lake photo](#example-a-photographed-table), [NFHS-6, all engines](examples/settings.md#every-engine-must-agree) |
+| `[engines] use` | [MyBMC lakes](#example-mybmc-lakes-a-photographed-table), [NFHS-6, all engines](examples/settings.md#every-engine-must-agree) |
 | `[engines] min_agree`, `min_unopposed` | [NFHS-6, all engines](examples/settings.md#every-engine-must-agree) |
 | `[engines] families` | [NFHS-5, pdfminer as one](examples/settings.md#engines-that-vote-once) |
 | `[normalize] remove_commas`, `function` | [NFHS-5, plain numbers](examples/settings.md#cleaning-values) |

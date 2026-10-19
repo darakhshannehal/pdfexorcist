@@ -64,8 +64,8 @@ def extract(
         rich_help_panel=OUT_PANEL,
         show_default=False,
         metavar="PATH",
-        help="Where to write: a file (its ending picks the format) or a folder. Default: next to "
-        "the input.",
+        help="A file or a folder to write to. The file ending sets the format. Default: next "
+        "to the input.",
     ),
     fmt: str | None = typer.Option(
         None,
@@ -83,7 +83,7 @@ def extract(
         show_default=False,
         metavar="table|cells",
         help="table (default): the agreed values as a grid, plus a .review file of cells to check. "
-        "cells: one row per cell with every engine's reading.",
+        "cells: one row per cell, with each engine's reading.",
     ),
     force: Force = False,
     pages: str | None = typer.Option(
@@ -101,8 +101,8 @@ def extract(
         rich_help_panel=ENG_PANEL,
         show_default=False,
         metavar="REGEX",
-        help="Read the pages whose text matches REGEX (case-insensitive), e.g. "
-        '"TABLE - 8". Pages without usable text are matched on OCR of their top strip.',
+        help='Read only the pages whose text matches REGEX, e.g. "TABLE - 8". Case is '
+        "ignored. A page with no usable text is matched by OCR of its top strip.",
     ),
     ocr: Ocr = False,
     engines: Engines = None,
@@ -119,9 +119,9 @@ def extract(
 ) -> None:
     """Read the tables in a PDF or image and write the values most engines agree on.
 
-    Writes [bold]report.csv[/] next to [bold]report.pdf[/]: the agreed values as a grid. Cells
-    the engines disagreed on are left blank and listed, with every reading, in
-    [bold]report.review.csv[/].
+    Writes [bold]report.csv[/] next to [bold]report.pdf[/]. It holds the agreed values as a
+    grid. Cells the engines disagreed on are blank. [bold]report.review.csv[/] lists them,
+    with each engine's reading.
     """
     from ._output import render_summary, summarise, write
     from ._run import EngineProgress, load_recipe, make_plan, run

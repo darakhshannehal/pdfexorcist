@@ -1,5 +1,6 @@
 """Recipes."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from ._recipe_error import RecipeError
@@ -24,13 +25,20 @@ __all__ = [
 ]
 
 
-def page_list(r: Recipe, pdf: Path, n_pages: int, override: str | None = None) -> list[int] | None:
-    """Pages a run reads (None: all). --pages overrides the recipe's page choice."""
+def page_list(
+    r: Recipe,
+    pdf: Path,
+    n_pages: int,
+    override: str | None = None,
+    texts: Sequence[str] | None = None,
+) -> list[int] | None:
+    """Pages a run reads (None: all). --pages overrides the recipe's page choice; texts are the
+    pages' text when already read."""
     from .pages import pages_matching
 
     if override:
         return parse_pages(override, n_pages)
     within = parse_pages(r.select, n_pages) if r.select else None
     if r.has_page_text:
-        return pages_matching(pdf, r.start, r.stop, r.match, within)
+        return pages_matching(pdf, r.start, r.stop, r.match, within, texts=texts)
     return within

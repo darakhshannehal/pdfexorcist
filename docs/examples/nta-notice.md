@@ -20,7 +20,7 @@ NTA's [press release of 4 June 2024](https://www.nta.ac.in/Download/Notice/Notic
 
 The rest of the release lists toppers by name; the recipe stops before them.
 
-The files are in `examples/nta_notice/`: `recipe.toml` and `nta_notice.py`. The fixture is pages 2-6, in `tests/fixtures/nta_notice/`.
+The files are in `pdfexorcist/recipes/nta_notice/`: `recipe.toml` and `nta_notice.py`. The fixture is pages 2-6, in `tests/fixtures/nta_notice/`.
 
 ## The recipe
 
@@ -79,20 +79,20 @@ The table name is part of the key, so one run reads all nine tables and the chec
 ## Run it
 
 ```bash
-pdfexorcist extract https://www.nta.ac.in/Download/Notice/Notice_20240604195244.pdf --recipe examples/nta_notice/recipe.toml -o neet2024.csv
+pdfexorcist extract https://www.nta.ac.in/Download/Notice/Notice_20240604195244.pdf --recipe pdfexorcist/recipes/nta_notice/recipe.toml -o neet2024.csv
 ```
 
 ```
-  pdftotext   615 readings  0.0s
-  pdfplumber  615 readings  0.5s
-  pymupdf     615 readings  0.0s
-  camelot     615 readings  1.5s
-  pdfium      613 readings  0.0s
+✓ pdftotext   615 readings  0.0s
+✓ pdfplumber  615 readings  0.5s
+✓ pymupdf     615 readings  0.0s
+✓ camelot     615 readings  1.5s
+✓ pdfium      613 readings  0.0s
 
-Agreed         615  100.0% of cells
-Unresolved       0
-Failed checks    6  agreed values that break a rule
-  x Table 1: registered >= categories: 6 cells
+✓  Agreed         615  100.0% of cells
+   Unresolved       0
+✗  Failed checks    6  agreed values break a rule
+    ✗ Table 1: registered >= categories: 6 cells
 ```
 
 ```
@@ -130,7 +130,7 @@ qualifying,UR/EWS,1014372,1165904,50th Percentile,720-137,720-164
 qualifying,Total,1145976,1316268,,,
 ```
 
-`pdfexorcist show tests/fixtures/nta_notice/nta_notice_2024_p2-6.pdf --recipe examples/nta_notice/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nta_notice/nta_notice_2024_p2-6.pdf --recipe pdfexorcist/recipes/nta_notice/recipe.toml -o page.png` draws what the recipe reads:
 
 ![NEET 2024 press release page: Table 1 boxed, the misprinted 2021 column hatched as failing a check](../assets/examples/nta-notice.png)
 

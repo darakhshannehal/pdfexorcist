@@ -110,6 +110,7 @@ def pages_matching(
     within: Sequence[int] | None = None,
     ocr_fallback: bool = True,
     strip: float = STRIP,
+    texts: Sequence[str] | None = None,
 ) -> list[int]:
     """Return pages selected by case-insensitive text patterns.
 
@@ -121,9 +122,10 @@ def pages_matching(
         within: Candidate 1-based page numbers.
         ocr_fallback: Read pages without usable text by OCR of their top strip.
         strip: Share of the page height that OCR reads.
+        texts: Every page's text, already read.
     """
     flags = re.IGNORECASE | re.DOTALL
-    texts = page_texts(pdf, ocr_fallback, strip, within)
+    texts = texts if texts is not None else page_texts(pdf, ocr_fallback, strip, within)
     pages = list(within) if within else list(range(1, len(texts) + 1))
     if start:
         rx = re.compile(start, flags)
@@ -170,6 +172,11 @@ def page_kinds(pdf: Path, pages: Sequence[int] | None = None) -> list[dict]:
                 }
             )
     return out
+
+
+def is_scan(kinds: Sequence[dict]) -> bool:
+    """Whether pages read by page_kinds are a scan: no text, and an image across a page."""
+    return all(k["chars"] < 20 for k in kinds) and any(k["scan"] for k in kinds)
 
 
 def ocr_layer(pdf: Path) -> bool:

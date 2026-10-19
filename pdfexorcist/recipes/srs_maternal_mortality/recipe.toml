@@ -1,0 +1,36 @@
+# pdfexorcist recipe: SRS Special Bulletin on Maternal Mortality in India 2021-23, Table 1
+#
+# Maternal Mortality Ratio (MMR) with its 95% CI, Maternal Mortality Rate and lifetime
+# risk by State (Office of the Registrar General of India, September 2025). srs_mmr.py
+# splits each "(79,96)" interval into lower and upper columns and drops the "%" of the
+# lifetime risk. Try it:
+#
+#   pdfexorcist extract tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf --recipe pdfexorcist/recipes/srs_maternal_mortality/recipe.toml
+
+name = "SRS maternal mortality by State"
+description = "MMR, 95% CI, maternal mortality rate and lifetime risk by State (SRS 2021-23)"
+sample = "../../../tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf"
+
+[pages]
+match = 'Table 1: Maternal Mortality Ratio'
+
+[engines]
+ocr = false  # a text layer: the five default engines, 3 must agree
+
+[parser]
+type = "custom"
+function = "srs_mmr.py:parse"
+key = ["page", "row", "column"]
+
+[[checks]]
+function = "srs_mmr.py:within_ci"
+
+# Lifetime risk = 1 - (1 - rate/100000)^35, from the bulletin's paragraph 5
+[[checks]]
+function = "srs_mmr.py:lifetime_risk"
+
+[output]
+layout = "table"
+rows = ["area"]
+columns = "column"
+format = "csv"

@@ -10,26 +10,26 @@ Table 4 of India's annual report on Medical Certification of Cause of Death (MCC
 * The State columns are named only by rotated headers, which sit a little off their columns.
 * A report spreads the table over several pages, after a contents page that names it too.
 
-The files are in `examples/mccd/`: `table4.toml` and `mccd_table4.py`. The fixtures are single pages from three reports, in `tests/fixtures/mccd/`.
+The files are in `pdfexorcist/recipes/mccd/`: `table4.toml` and `mccd_table4.py`. The fixtures are single pages from three reports, in `tests/fixtures/mccd/`.
 
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2009.pdf --recipe examples/mccd/table4.toml -o mccd_2009.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2009.pdf --recipe pdfexorcist/recipes/mccd/table4.toml -o mccd_2009.csv
 ```
 
 ```
 Reading tests/fixtures/mccd/mccd_2009.pdf with 5 engines (a majority must agree), recipe
-examples/mccd/table4.toml
-  pdftotext   1,596 readings  0.0s
-  pdfplumber  1,596 readings  0.2s
-  pymupdf     1,596 readings  0.0s
-  camelot     1,804 readings  1.1s
-  pdfium      1,596 readings  0.1s
+pdfexorcist/recipes/mccd/table4.toml
+✓ pdftotext   1,596 readings  0.0s
+✓ pdfplumber  1,596 readings  0.2s
+✓ pymupdf     1,596 readings  0.0s
+✓ camelot     1,804 readings  1.1s
+✓ pdfium      1,596 readings  0.1s
 
-Agreed        1,596  88.5% of cells
-Unresolved      208  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed        1,596  88.5% of cells
+!  Unresolved      208  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -41,7 +41,7 @@ A37,1,T,25,0,0,0,0,...
 
 One row per cause and sex, one column per State. The unresolved cells are readings only camelot made, under keys no other engine produced; see the review file.
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2014.pdf --recipe examples/mccd/table4.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 4 page: M, F and T rows per cause under rotated State names; some T rows unresolved](../assets/examples/mccd-table4.png)
 
@@ -126,14 +126,14 @@ def name_states(cells: pd.DataFrame, pdf: Path) -> pd.DataFrame:
 The 2014 fixture is the middle page of three, Gujarat to Mizoram, so it has no All States column:
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2014.pdf --recipe examples/mccd/table4.toml -o mccd_2014.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml -o mccd_2014.csv
 ```
 
 ```
-Agreed          693  87.5% of cells
-Unresolved       99  engines disagreed: left blank
-Checks      2 rules  all passed
-Note: check "state 'All States (Total)' >= the rest, within each page, code, pocc, sex"
+✓  Agreed          693  87.5% of cells
+!  Unresolved       99  engines disagreed, left blank
+✓  Checks      2 rules  all passed
+! check "state 'All States (Total)' >= the rest, within each page, code, pocc, sex"
 found no state named 'All States (Total)', so it checked nothing there (state values:
 'Gujarat', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Lakshadweep', 'Madhya
 Pradesh', 'Maharashtra', ...)

@@ -8,7 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parents[2] / "examples" / "nfhs5"))
+sys.path.insert(0, str(HERE.parents[2] / "pdfexorcist" / "recipes" / "nfhs5"))
 from nfhs5_factsheet import DISTRICT_COLUMNS, KEY, checks, parse  # noqa: E402
 
 from pdfexorcist import extract  # noqa: E402

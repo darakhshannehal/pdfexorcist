@@ -8,7 +8,7 @@ The Sample Registration System (SRS) publishes its yearly estimates of births, d
 
 Each page holds one or two blocks. A block is a State name (or `India`), 18 age rows from `0-4` to `85+`, and a `Total` row of `100.0`. Its nine columns sit under a two-level header: Total, Rural and Urban, each split into Total, Males and Females.
 
-The files are in `examples/srs_statistical_report/`: `recipe.toml` and `srs_stat.py`. The fixture is pages 222-224 of the report (India, Andhra Pradesh, Assam, Bihar, Chhattisgarh), in `tests/fixtures/srs_stat/`. The life tables from the same survey have [their own example](srs.md).
+The files are in `pdfexorcist/recipes/srs_statistical_report/`: `recipe.toml` and `srs_stat.py`. The fixture is pages 222-224 of the report (India, Andhra Pradesh, Assam, Bihar, Chhattisgarh), in `tests/fixtures/srs_stat/`. The life tables from the same survey have [their own example](srs.md).
 
 ## The recipe
 
@@ -51,27 +51,27 @@ A cell is keyed by its block on the page (counted by the `0-4` row, which every 
 ## Run it
 
 ```bash
-pdfexorcist extract srs_stat_2024.pdf --recipe examples/srs_statistical_report/recipe.toml -o srs_table1.csv
+pdfexorcist extract srs_stat_2024.pdf --recipe pdfexorcist/recipes/srs_statistical_report/recipe.toml -o srs_table1.csv
 ```
 
 On the whole report, every cell agrees and both checks pass. On the fixture:
 
 ```bash
-pdfexorcist extract tests/fixtures/srs_stat/srs_stat_2024_table1_p222-224.pdf --recipe examples/srs_statistical_report/recipe.toml -o srs_table1.csv
+pdfexorcist extract tests/fixtures/srs_stat/srs_stat_2024_table1_p222-224.pdf --recipe pdfexorcist/recipes/srs_statistical_report/recipe.toml -o srs_table1.csv
 ```
 
 ```
-  pdftotext   855 readings  0.0s
-  pdfplumber  855 readings  0.1s
-  pymupdf     855 readings  0.0s
-  camelot     855 readings  1.4s
-  pdfium      855 readings  0.0s
+✓ pdftotext   855 readings  0.0s
+✓ pdfplumber  855 readings  0.1s
+✓ pymupdf     855 readings  0.0s
+✓ camelot     855 readings  1.4s
+✓ pdfium      855 readings  0.0s
 
-Agreed          855  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          855  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote srs_table1.csv (table layout, 95 rows).
+   Wrote   srs_table1.csv  95 rows, table layout
 ```
 
 ```

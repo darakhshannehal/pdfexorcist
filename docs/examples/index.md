@@ -1,10 +1,10 @@
 ---
-description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, a lake-level photo, NCVBDC's monthly malaria report, NCRB prison statistics, the SRS statistical report and maternal mortality bulletin, MoRTH road accidents, the National Health Profile's malaria table, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, two NTA NEET documents, and the less common recipe settings."
+description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, the MyBMC lakes photo, NCVBDC's monthly malaria report, NCRB prison statistics, the SRS statistical report and maternal mortality bulletin, MoRTH road accidents, the National Health Profile's malaria table, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, the CWC reservoir bulletin, two NTA NEET documents, and the less common recipe settings."
 ---
 
 # Examples
 
-Each example is a recipe in the repository's `examples/` folder and runs on a fixture in `tests/fixtures/`.
+Each example is a recipe in `pdfexorcist/recipes/`, shipped in the wheel, and runs on a fixture in `tests/fixtures/`.
 
 | Document | The table | What the recipe does |
 | --- | --- | --- |
@@ -15,9 +15,9 @@ Each example is a recipe in the repository's `examples/` folder and runs on a fi
 | [MoHFW State projections](census-projections.md#mohfw-state-projections) | Person, Male and Female by age for six years, in thousands. | Keyed by year, age and sex only (one table crosses a page, one is titled PUNJAB); TOML checks with a rounding tolerance. |
 | [CRS State and District Tables](crs.md) | A row per State/UT, age group or district: Rural, Urban and Total by Male, Female and Person. | Fake bold, slanted "Not Available", Type3 fonts without a Unicode map; `placement="both"`; age groups and districts add up to the State. |
 | [Crime in India](../recipes.md#example-a-text-table) | State/UT rows of counts and rates, then total rows. | The generic parser, cleaned numbers, totals that must add up. |
-| [BMC lake levels](../recipes.md#example-a-photographed-table) | A phone photo: seven lakes, this year and the two before. | OCR engines only, with your own parser. |
-| [NFHS-6 fact sheets](nfhs6-factsheets.md) | Key Indicators by State and district. | `examples/nfhs6/` (`state.toml`, `district.toml`): rows by printed indicator number, placeholders kept as printed, one parser for two layouts. |
-| [NFHS-5 fact sheets](nfhs5-factsheets.md) | Key Indicators by State and district, 2019-21. | `examples/nfhs5/` (`state.toml`, `district.toml`): the NFHS-6 parser adapted, checked against an independent extraction. |
+| [MyBMC lakes](../recipes.md#example-mybmc-lakes-a-photographed-table) | A phone photo: seven lakes, this year and the two before. | OCR engines only, with your own parser. |
+| [NFHS-6 fact sheets](nfhs6-factsheets.md) | Key Indicators by State and district. | `pdfexorcist/recipes/nfhs6/` (`state.toml`, `district.toml`): rows by printed indicator number, placeholders kept as printed, one parser for two layouts. |
+| [NFHS-5 fact sheets](nfhs5-factsheets.md) | Key Indicators by State and district, 2019-21. | `pdfexorcist/recipes/nfhs5/` (`state.toml`, `district.toml`): the NFHS-6 parser adapted, checked against an independent extraction. |
 | [NEET (UG) 2024 press release](nta-notice.md) | Nine tables on five pages: highlights by year, language, gender, category, State. | One recipe for every table: cells keyed by table, row and column; a check fails on a misprinted count. |
 | [MMIS monthly malaria situation](mmis.md) | NCVBDC's monthly report: a small table of months under each trend graph, by State and indicator. | Cells keyed by the graph's place on the page; area and indicator from the graph title as extra columns; a TPR check and a check that fails on a table under the wrong graph. |
 | [Prison Statistics India](prison_stats.md) | NCRB's capacity, inmates and occupancy by State/UT, by sex and by jail type; one table runs over three pages by column. | Cells keyed by printed column number, so the three pages join; totals, Table 1.3 against Table 1.2, and an occupancy check. |
@@ -27,12 +27,13 @@ Each example is a recipe in the repository's `examples/` folder and runs on a fi
 | [Road Accidents in India](road_accidents.md) | MoRTH's State/UT accidents, killed and injured, printed sideways, with three-level headers and Indian comma grouping. | Pages turned upright, `fit_boxes = false` for a spread, values placed by x; totals, share and rank checks. |
 | [NHP malaria](nhp_malaria.md) | CBHI National Health Profile: State/UT malaria cases and deaths for five years, the last provisional. | Years read from the header; a wrapped name joined; States/UTs add up to India. |
 | [Pravah dam storage](pravah.md) | Maharashtra's daily report: a row per dam, grouped by region and district. | Rows keyed by dam name, wrapped names joined, region and district carried from the headings; capacity and % checks. |
+| [CWC reservoir storage](cwc.md) | The Central Water Commission's weekly bulletin: 91 reservoirs, grouped by region and state. | Rows keyed by reservoir name, region and state carried from the headings; a total and a storage % check. |
 | [NTA NEET toppers](nta.md) | A scanned list: Sr. No., application number, name, gender, category, percentile, rank, State. | OCR engines only; rows keyed by Sr. No., wrapped cells joined to their row; rank and percentile order checks. |
 | [Other settings](settings.md) | Pages of the documents above. | Small recipes for the settings the others leave at their defaults: the columns parser, column totals, tolerances, page boxes, voting rules, families, a cleaning function, the cells layout and the xlsx, parquet and json formats. |
 
 The [Python library](../library.md) page has short examples for each function, and [Command line](../cli.md) for each command.
 
-`tests/test_examples_gallery.py`, `tests/test_nfhs6_examples.py`, `tests/test_nfhs5_examples.py`, `tests/test_recipe_docs_examples.py` and `tests/test_recipe.py` run the commands on these pages; `test_recipe.py` also checks that every recipe in `examples/` is valid.
+`tests/test_examples_gallery.py`, `tests/test_nfhs6_examples.py`, `tests/test_nfhs5_examples.py`, `tests/test_recipe_docs_examples.py` and `tests/test_recipe.py` run the commands on these pages; `test_recipe.py` also checks that every recipe in `pdfexorcist/recipes/` is valid.
 
 ## Regression tests
 
@@ -56,6 +57,7 @@ Each test pairs a document parser with values checked against the printed page. 
 | `test_road_accidents.py` | MoRTH Road Accidents in India 2022, Annexures 2-4 (sideways) |
 | `test_nhp_malaria.py` | CBHI National Health Profile 2023, Table 3.1.1: malaria by State/UT |
 | `test_pravah_dams.py` | Maharashtra WRD Pravah daily dam storage |
+| `test_cwc_reservoirs.py` | CWC weekly storage bulletin of 91 reservoirs (1 February 2018) |
 | `test_nta_toppers.py` | NTA NEET (UG) 2026 toppers list (a scan, OCR) |
 | `test_nta_notice.py` | NTA NEET (UG) 2024 press release: nine tables in one recipe |
 | `test_crs_state_table.py` | CRS State Tables 1, 4 and 6: births, still births and deaths by age, by State, sex and residence (2010, 2011, 2023) |
@@ -89,6 +91,7 @@ srs_maternal_mortality
 road_accidents
 nhp_malaria
 pravah
+cwc
 nta
 settings
 ```

@@ -16,12 +16,14 @@ Page = tuple[int, list[list[Cell]]]
 # nc: "no cases" (NFHS-5); 2E+05, #####: Excel's display of a number too wide for its cell
 # read as values so columns stay in place; checks.lossy fails them
 LOSSY_FORMS = r"\d(\.\d+)?E\+\d+|#{3,}|#(REF!|VALUE!|DIV/0!|NAME\?)|\d[\d,]*(\.\d+)?%?\)"
-VALUE = re.compile(
-    r"^\(?[-−]?\d[\d,]*([.·]\d+)?%?\)?[*#@$]?$|^(\*|-|–|—|\.\.\.?|…|--|na|NA|nc|NC|n/a|N/A|N\.A\.|n\.a\.|#N/A|"
-    + LOSSY_FORMS
-    + ")$"
-)
+NUMBER = r"[-−]?\d[\d,]*(?:[.·]\d+)?"
+# 9.20±0.40, 1489±10: a value with its uncertainty is one cell
+UNCERTAIN = rf"{NUMBER}(?:±|\+/-|\+-){NUMBER}%?"
+PLACEHOLDERS = r"\*|-|–|—|\.\.\.?|…|--|na|NA|nc|NC|n/a|N/A|N\.A\.|n\.a\.|#N/A"
+PLAIN = rf"\(?{NUMBER}%?\)?[*#@$]?"
+VALUE = re.compile("|".join(f"^(?:{p})$" for p in (PLAIN, UNCERTAIN, PLACEHOLDERS, LOSSY_FORMS)))
 KEY = ["page", "row", "col"]
+FLUSH_PT = 0.5  # words this close were printed as one, split only by a shifted baseline
 PLACEMENTS = ("x", "both")
 
 
@@ -93,7 +95,7 @@ def _fit_width(rows: list[tuple[str, list[str], list]]) -> list[tuple[str, list[
 
 def _left(cell: Cell) -> float:
     """Where a cell starts; x only, so a vote never depends on boxes."""
-    # ponytail: exact for character columns (pdftotext), approximate in points
+    # exact for character columns (pdftotext), approximate in points
     return cell[0] - len(cell[1]) / 2
 
 
@@ -183,7 +185,8 @@ def group_words(words: list[tuple], gap: float = 8.0) -> list[list[Cell]]:
     A word joins a line when it overlaps the line's first word by half the shorter
     height; a word without y_top is 1 pt tall. Copies of a word drawn again within
     COPY_PT (fake bold) count once.
-    Label words within gap pt join one cell; values never join.
+    Label words within gap pt join one cell; values never join. A word printed flush
+    (FLUSH_PT) joins without a space, as subscripts do ("PM2.5").
     """
     boxes = [(w[0], w[1], w[4] if len(w) > 4 else w[2] - 1, w[2], w[3]) for w in words]
     boxes = drop_copies(boxes)
@@ -202,13 +205,14 @@ def group_words(words: list[tuple], gap: float = 8.0) -> list[list[Cell]]:
         row.sort(key=lambda w: w[0])
         cells: list[list] = []  # [x0, x1, text, top, bottom]
         for x0, x1, t, top, bottom in row:
-            joinable = (
+            flush = bool(cells) and x0 - cells[-1][1] <= FLUSH_PT
+            joinable = flush or (
                 cells
                 and x0 - cells[-1][1] <= gap
                 and not (is_value(t) or is_value(cells[-1][2].split()[-1]))
             )
             if joinable:
-                cells[-1][1], cells[-1][2] = x1, cells[-1][2] + " " + t
+                cells[-1][1], cells[-1][2] = x1, cells[-1][2] + ("" if flush else " ") + t
                 cells[-1][3] = min(cells[-1][3], top)
                 cells[-1][4] = max(cells[-1][4], bottom)
             else:

@@ -14,7 +14,7 @@ from cli_helpers import STATES, make_pdf
 import pdfexorcist._ui as ui
 
 # the example parsers, imported by name; appended so none shadows the standard library
-EXAMPLES = Path(__file__).parent.parent / "examples"
+EXAMPLES = Path(__file__).parent.parent / "pdfexorcist" / "recipes"
 sys.path += [str(d) for d in sorted(EXAMPLES.iterdir()) if d.is_dir()]
 
 

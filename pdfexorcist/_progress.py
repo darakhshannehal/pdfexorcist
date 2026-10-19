@@ -10,10 +10,12 @@ from ._ui import err, esc, plural
 
 
 class _Spinner(SpinnerColumn):
-    """Spins only for the engine that is reading."""
+    """Spins for the engine that is reading; a mark once it is done."""
 
     def render(self, task: Task) -> Any:
-        return Text("  ") if not task.started else super().render(task)
+        if task.finished:
+            return Text.from_markup(task.fields.get("mark", " "))
+        return Text(" ") if not task.started else super().render(task)
 
 
 class _Seconds(ProgressColumn):
@@ -36,7 +38,7 @@ class EngineProgress:
         width = max(len(m) for m in methods)
         self.width = width
         self.progress = Progress(
-            _Spinner(finished_text="  "),
+            _Spinner(),
             TextColumn("{task.description}"),
             _Seconds(),
             console=err,
@@ -67,11 +69,14 @@ class EngineProgress:
         self.seconds[name] = time.monotonic() - self.started.get(name, time.monotonic())
         if event == "done":
             self.counts[name] = int(detail)
-            msg = f"{name:<{self.width}}  [green]{plural(int(detail), 'reading')}[/]"
+            mark = "[ok]✓[/]" if detail else "[warn]![/]"
+            msg = f"{name:<{self.width}}  {plural(int(detail), 'reading')}"
         else:
             self.skipped[name] = str(detail)
-            msg = f"{name:<{self.width}}  [yellow]skipped[/] ({esc(str(detail)[:80])})"
+            mark = "[warn]![/]"
+            msg = f"{name:<{self.width}}  [warn]skipped[/] [dim]{esc(str(detail)[:80])}[/]"
         if t is not None and self.live:
-            self.progress.update(t, description=msg, completed=1)
+            self.progress.update(t, description=msg, completed=1, mark=mark)
+            self.progress.stop_task(t)  # freezes its clock
         elif not self.quiet:
-            err.print(f"  {msg}  [dim]{self.seconds[name]:.1f}s[/]")
+            err.print(f"{mark} {msg}  [dim]{self.seconds[name]:.1f}s[/]")

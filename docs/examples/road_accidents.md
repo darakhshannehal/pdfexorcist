@@ -8,7 +8,7 @@ The Ministry of Road Transport and Highways (MoRTH) compiles [Road Accidents in 
 
 The tables are printed sideways on portrait pages with no `/Rotate` flag. The header has three levels (`State/UT-Wise Total Number of Road Accidents during` / `2022` / `Number`, `Rank`), then a row of column numbers, 1 to 18. Counts use Indian grouping (`1,58,984`). Some cells are blank or hold a placeholder: Ladakh has `NA` for 2019 and 2020 and a rank only for persons injured, Daman & Diu is merged into Dadra & Nagar Haveli from 2020 (`$`), and Telangana has no population for 2019 and 2020 (`#`).
 
-The files are in `examples/road_accidents/`: `recipe.toml` and `morth.py`. The fixture is pages 136-138 of the report, in `tests/fixtures/road_accidents/`.
+The files are in `pdfexorcist/recipes/road_accidents/`: `recipe.toml` and `morth.py`. The fixture is pages 136-138 of the report, in `tests/fixtures/road_accidents/`.
 
 ## The recipe
 
@@ -59,28 +59,28 @@ A cell is keyed by table, State/UT and column. camelot misses the titles, so tab
 ## Run it
 
 ```bash
-pdfexorcist extract https://morth.nic.in/sites/default/files/RA_2022_30_Oct.pdf --recipe examples/road_accidents/recipe.toml -o ra.csv
+pdfexorcist extract https://morth.nic.in/sites/default/files/RA_2022_30_Oct.pdf --recipe pdfexorcist/recipes/road_accidents/recipe.toml -o ra.csv
 ```
 
 The whole report and the fixture give the same table:
 
 ```bash
-pdfexorcist extract tests/fixtures/road_accidents/morth_ra_2022_annexure_p136-138.pdf --recipe examples/road_accidents/recipe.toml -o ra.csv
+pdfexorcist extract tests/fixtures/road_accidents/morth_ra_2022_annexure_p136-138.pdf --recipe pdfexorcist/recipes/road_accidents/recipe.toml -o ra.csv
 ```
 
 ```
-  pdftotext   1,774 readings  0.0s
-  pdfplumber  1,774 readings  0.4s
-  pymupdf     1,774 readings  0.0s
-  camelot     1,774 readings  16.6s
-  pdfium      1,774 readings  0.1s
+✓ pdftotext   1,774 readings  0.0s
+✓ pdfplumber  1,774 readings  0.4s
+✓ pymupdf     1,774 readings  0.0s
+✓ camelot     1,774 readings  16.6s
+✓ pdfium      1,774 readings  0.1s
 
-Agreed         1,774  100.0% of cells
-Unresolved         0
-Failed checks      1  agreed values that break a rule
-  x share is not 100 x count / Total: 1 cell
+✓  Agreed         1,774  100.0% of cells
+   Unresolved         0
+✗  Failed checks      1  agreed values break a rule
+    ✗ share is not 100 x count / Total: 1 cell
 
-Wrote ra.csv (table layout, 114 rows).
+   Wrote   ra.csv  114 rows, table layout
 ```
 
 ```

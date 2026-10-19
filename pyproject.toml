@@ -1,6 +1,6 @@
 [project]
 name = "pdfexorcist"
-version = "0.1.2"
+version = "0.2.0"
 description = "Extract tables from PDFs, scans and photos by majority vote across independent engines"
 readme = "README.md"
 license = "MIT"
@@ -40,7 +40,7 @@ chandra = ["chandra-ocr", "torch", "torchvision", "transformers", "accelerate", 
 paddleocr = ["paddleocr>=3", "paddlepaddle", "pillow"]
 ocrmac = ["ocrmac; sys_platform == 'darwin'", "pillow"]
 camelot-ml = ["camelot-py[ml]>=2"]  # Table Transformer flavor
-pypdf = ["pypdf>=5"]
+pypdf = ["pypdf==6.20.0"]  # web/wheels.json's; 6.21 reads two fixtures differently
 doctr = ["onnxtr[cpu]"]  # docTR models on onnxruntime
 glmocr = ["mlx-vlm; sys_platform == 'darwin' and platform_machine == 'arm64'", "pillow"]
 all = ["pdfexorcist[tabula,chandra,paddleocr,ocrmac,glmocr,pypdf,doctr]"]  # ocrmac and glmocr install only where they run
@@ -64,16 +64,18 @@ pdfexorcist = "pdfexorcist.cli:main"
 requires = ["setuptools>=77"]  # license = "MIT" (PEP 639)
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["pdfexorcist"]  # the wheel holds only the package; MANIFEST.in adds tests to the sdist
+[tool.setuptools.packages.find]
+# the recipe folders are namespace packages; MANIFEST.in adds tests to the sdist
+include = ["pdfexorcist", "pdfexorcist.*"]
 
 [tool.setuptools.package-data]
-pdfexorcist = ["py.typed", "_pdfjs.mjs"]
+pdfexorcist = ["py.typed", "_pdfjs.mjs", "_recipe_index.json"]
+"*" = ["*.toml", "*.md"]  # recipes and their notes
 
 [dependency-groups]
 # CI pins these; locally: uv pip install --group dev
 lint = ["ruff==0.16.10", "mypy==2.4.0", "pandas-stubs"]
-dev = ["pytest", "pyarrow", "openpyxl", { include-group = "lint" }]  # parquet and xlsx output tests
+dev = ["pytest", "pytest-xdist", "pyarrow", "openpyxl", { include-group = "lint" }]  # parquet and xlsx output tests
 
 [tool.ruff]
 target-version = "py310"
@@ -105,9 +107,13 @@ allowed-confusables = ["−", "–", "×", "·", "‘", "’"]
 # CSS and JavaScript held in Python strings, shipped verbatim in the HTML view
 "pdfexorcist/show_assets.py" = ["E501"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 [tool.mypy]
 python_version = "3.10"
 files = ["pdfexorcist"]
+exclude = ["pdfexorcist/recipes/"]  # example parsers, loaded by path
 check_untyped_defs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true

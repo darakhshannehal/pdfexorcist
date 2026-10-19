@@ -9,9 +9,11 @@ import pytest
 from cli_helpers import run
 from imd_layout import KEY
 
+from pdfexorcist._shipped import find_shipped
+
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "pdfexorcist" / "recipes"
 
 pytestmark = pytest.mark.usefixtures("wide_console")
 
@@ -141,12 +143,12 @@ def test_imd_1961_1990_abu(tmp_path):
 
 
 # examples the home page leaves out: OCR does not run in the browser; settings shows options
-HIDDEN = {"lake_photo", "nta_toppers", "settings"}
+HIDDEN = {"mybmc_lakes", "nta_toppers", "settings"}
 
 
 def test_home_page_lists_every_example():
     listed = json.loads((ROOT / "web" / "examples.json").read_text())
     for ex in listed:
-        assert (ROOT / ex["pdf"]).exists() and (ROOT / ex["recipe"]).exists(), ex["id"]
+        assert (ROOT / ex["pdf"]).exists() and find_shipped(ex["recipe"]), ex["id"]
     dirs = {p.name for p in EXAMPLES.iterdir() if p.is_dir() and p.name != "__pycache__"}
-    assert dirs - HIDDEN == {ex["recipe"].split("/")[1] for ex in listed}
+    assert dirs - HIDDEN == {ex["recipe"].split("/")[0] for ex in listed}

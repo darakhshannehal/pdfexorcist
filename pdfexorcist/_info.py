@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from rich import box
 from rich.table import Table
 
 from . import doctor
@@ -23,42 +24,49 @@ def show_engines(as_json: bool) -> None:
     if as_json:
         print_json({"engines": [r.__dict__ for r in rows]})
         return
-    t = Table(title="Engines", title_justify="left", header_style="bold")
+    t = Table(box=box.SIMPLE_HEAD, header_style="bold", pad_edge=False, show_edge=False)
+    t.add_column("", no_wrap=True)
     t.add_column("Engine", style="bold", no_wrap=True)
-    t.add_column("Installed", no_wrap=True)
-    t.add_column("Used", no_wrap=True)
+    t.add_column("Used", no_wrap=True, style="accent")
     t.add_column("Reads", no_wrap=True)
-    t.add_column("What it is")
+    t.add_column("What it is", style="dim")
     for r in rows:
         used = "default" if r.default else "--ocr" if r.reads.startswith("pixels") else "--engines"
         t.add_row(
-            r.name,
-            "[green]yes[/]" if r.installed else "[red]no[/]",
+            "[ok]✓[/]" if r.installed else "[dim]✗[/]",  # optional engine; red marks errors
+            r.name if r.installed else f"[dim]{r.name}[/]",
             used,
             r.reads,
             esc(r.about)
             + (
-                f" [dim]({esc(r.fix.removeprefix('not available: '))})[/]"
+                f" ({esc(r.fix.removeprefix('not available: '))})"
                 if r.fix.startswith("not available: ")
                 else ""
             ),
         )
     out.print(t)
     out.print(
-        "[dim]Used: default = always; --ocr = with extract --ocr; --engines = when named, "
-        "e.g. --engines pdfplumber,tabula.[/]"
+        "[dim]✓ installed  ✗ not installed. Used: default = always; --ocr = with --ocr; "
+        "--engines = when named, e.g. --engines pdfplumber,tabula.[/]"
     )
     missing = [r for r in rows if not r.installed and not r.fix.startswith("not available")]
     if missing:
-        out.print("\n[bold]To install the missing engines[/] (copy and paste):")
+        out.print("\n[bold]Install the missing engines[/]")
+        cmds = Table.grid(padding=(0, 2))
+        cmds.add_column(style="dim", no_wrap=True)
+        cmds.add_column(style="command", no_wrap=True)
         for r in missing:
-            out.print(f"  [dim]{r.name}:[/] [cyan]{esc(r.fix)}[/]", soft_wrap=True)
+            cmds.add_row(f"  {r.name}", esc(r.fix))
+        out.print(cmds)
     n_text = sum(r.installed and r.default for r in rows)
     n_ocr = len(doctor.installed_ocr())
-    out.print(
-        f"\n{plural(n_text, 'default engine')} ready: text PDFs need at least 3. "
-        f"{plural(n_ocr, 'OCR engine')} ready: scans and photos need at least 2."
-    )
+    out.print()
+    for n, kind, need, what in (
+        (n_text, "default engine", 3, "Text PDFs"),
+        (n_ocr, "OCR engine", 2, "Scans and photos"),
+    ):
+        mark = "[ok]✓[/]" if n >= need else "[warn]![/]"
+        out.print(f"{mark} {plural(n, kind)} ready. {what} need at least {need}.")
 
 
 def _paper_size(w: float, h: float) -> str:
@@ -106,8 +114,8 @@ def show_inspect(file: str, as_json: bool) -> None:
             )
             return
         out.print(f"[bold]{esc(name)}[/]: an image, {pix.width} x {pix.height} pixels.")
-        out.print("Only OCR engines can read it.\n")
-        out.print(f"Run: [bold cyan]{esc(advice)}[/]", soft_wrap=True)
+        out.print("Only OCR engines can read it.")
+        out.print(f"\n  [dim]Run[/]  [command]{esc(advice)}[/]", soft_wrap=True)
         return
     from ._run import _page_count
 
@@ -146,7 +154,7 @@ def show_inspect(file: str, as_json: bool) -> None:
             }
         )
         return
-    t = Table(header_style="bold", show_edge=False)
+    t = Table(box=box.SIMPLE_HEAD, header_style="bold", pad_edge=False, show_edge=False)
     t.add_column("Pages")
     t.add_column("Content")
     t.add_column("Characters", justify="right")
@@ -168,8 +176,8 @@ def show_inspect(file: str, as_json: bool) -> None:
     out.print(t)
     out.print(f"\n{why}")
     if advice:
-        out.print(f"Run: [bold cyan]{esc(advice)}[/]", soft_wrap=True)
+        out.print(f"\n  [dim]Run[/]  [command]{esc(advice)}[/]", soft_wrap=True)
         if len(kinds) > 1:
             out.print(
-                "[dim]Add --pages (e.g. --pages 3-5) to read only the pages with your table.[/]"
+                "  [dim]Add --pages (e.g. --pages 3-5) to read only the pages with your table.[/]"
             )

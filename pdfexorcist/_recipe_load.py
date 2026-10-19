@@ -104,7 +104,8 @@ def load(path: Path) -> Recipe:
     if not path.is_file():
         raise RecipeError(
             f"recipe file not found: {path}",
-            hint="Create one with: pdfexorcist recipe new",
+            hint="Find a shipped recipe with: pdfexorcist recipe suggest FILE.pdf, "
+            "or create one with: pdfexorcist recipe new",
         )
     raw = path.read_bytes()
     try:
@@ -118,7 +119,7 @@ def load(path: Path) -> Recipe:
             f"not valid TOML: {e}",
             path,
             int(m.group(1)) if m else None,
-            hint='Texts need quotes ("..."), lists need brackets ([...]); see examples/.',
+            hint='Texts need quotes ("..."), lists need brackets ([...]); see the shipped recipes.',
         ) from None
     return _recipe(data, path, text)
 

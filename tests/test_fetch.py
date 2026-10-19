@@ -174,6 +174,15 @@ def test_tweet_cache(server, tmp_path, monkeypatch):
     assert asked == [("123", 2)]  # the second call read nothing
 
 
+def test_missing_tweet(monkeypatch):
+    def gone(opener, url):
+        raise urllib.error.HTTPError(url, 404, "Not Found", None, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(fetch, "_get", gone)
+    with pytest.raises(ValueError, match="no tweet 21080418"):
+        fetch._tweet_image(fetch._opener(), "21080418", 1)
+
+
 @pytest.mark.parametrize(
     "page, link",
     [

@@ -16,7 +16,7 @@ ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "srs_mmr"
 PDF = FIXTURES / "srs_mmr_bulletin_2021-23.pdf"
 COD = FIXTURES / "srs_cod_2021-23_p31.pdf"
-RECIPE = ROOT / "examples" / "srs_maternal_mortality" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "srs_maternal_mortality" / "recipe.toml"
 
 
 def _expected(name: str) -> pd.DataFrame:

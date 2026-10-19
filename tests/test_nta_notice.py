@@ -10,7 +10,7 @@ from cli_helpers import run
 from nta_notice import COLUMNS
 
 FIXTURES = Path(__file__).parent / "fixtures" / "nta_notice"
-RECIPE = Path(__file__).parent.parent / "examples" / "nta_notice" / "recipe.toml"
+RECIPE = Path(__file__).parent.parent / "pdfexorcist" / "recipes" / "nta_notice" / "recipe.toml"
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 
 # agreed-share floor; slack for an engine upgrade that loses a row

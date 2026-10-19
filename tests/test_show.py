@@ -53,12 +53,12 @@ def _data(html: str) -> dict:
 
 @pytest.fixture(scope="module")
 def cii():
-    return _view(CII, ROOT / "examples" / "crime_in_india.toml")
+    return _view(CII, ROOT / "pdfexorcist" / "recipes" / "crime_in_india.toml")
 
 
 @pytest.fixture(scope="module")
 def mccd():
-    return _view(MCCD, ROOT / "examples" / "mccd" / "table4.toml")
+    return _view(MCCD, ROOT / "pdfexorcist" / "recipes" / "mccd" / "table4.toml")
 
 
 def test_box_cell_is_an_x_text_pair():
@@ -138,7 +138,7 @@ def test_html_cells(cii):
     assert not re.search(r"(src|href)\s*=\s*[\"']?https?:", html)
     assert "https://" not in html and "http://" not in html
     data = _data(html)
-    r = recipe.load(ROOT / "examples" / "crime_in_india.toml")
+    r = recipe.load(ROOT / "pdfexorcist" / "recipes" / "crime_in_india.toml")
     parse, key = r.parse_and_key()
     res = extract(CII, parse=parse, key=key, normalize=r.normalizer(), checks=r.check_functions())
     want = {
@@ -241,7 +241,7 @@ def test_tilted_boxes(tmp_path):
         pytest.skip("needs two OCR engines")
     view = _view(
         BMC,
-        ROOT / "examples" / "lake_photo" / "recipe.toml",
+        ROOT / "pdfexorcist" / "recipes" / "mybmc_lakes" / "recipe.toml",
         methods=engines,
         min_agree=max(2, len(engines) // 2 + 1),
     )

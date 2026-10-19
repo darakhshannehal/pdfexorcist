@@ -12,7 +12,7 @@ from pravah_dams import COLS, pct_of_live
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "pravah"
 FIXTURE = "pravah_2026-10-03_p5-8.pdf"
-RECIPE = ROOT / "examples" / "pravah_dams" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "pravah_dams" / "recipe.toml"
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 
 # agreed-share floor; slack for an engine upgrade that loses a row

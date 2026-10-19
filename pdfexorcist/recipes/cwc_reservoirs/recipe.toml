@@ -1,0 +1,45 @@
+# pdfexorcist recipe: Central Water Commission weekly bulletin, 91 important reservoirs
+#
+# From page 5, a row per reservoir under region and state headings: FRL and
+# today's level (m), live capacity at FRL and today's live storage (BCM), the
+# reading date, storage as a % of live capacity this year, last year and the
+# 10-year average, the irrigated area (CCA, thousand ha) and the hydel power
+# capacity (MW).
+# cwc_reservoirs.py keys each value by the reservoir's name and keeps the name,
+# region, state and the hydel star (*) as extra columns. Try it:
+#
+#   pdfexorcist extract https://cwc.gov.in/sites/default/files/01.02.2018cwcbull.pdf --recipe pdfexorcist/recipes/cwc_reservoirs/recipe.toml
+#
+# On the fixture (the same bulletin, 1 February 2018):
+#
+#   pdfexorcist extract tests/fixtures/cwc/cwc_2018-02-01.pdf --recipe pdfexorcist/recipes/cwc_reservoirs/recipe.toml
+
+name = "CWC reservoir storage"
+description = "Weekly live storage of India's important reservoirs (CWC bulletin)"
+sample = "../../../tests/fixtures/cwc/cwc_2018-02-01.pdf"
+
+[engines]
+ocr = false
+
+[parser]
+type = "custom"
+function = "cwc_reservoirs.py:parse"
+key = ["page", "id", "col"]
+
+# the printed total for all reservoirs = the sum of the rows
+[[checks]]
+column = "id"
+rule = "total = rest"
+by = ["col"]
+where = "col in ['live_cap', 'live']"
+abs_tolerance = 0.0015
+
+# this year's % = 100 * live / live capacity, rounded to a whole number
+[[checks]]
+function = "cwc_reservoirs.py:pct_of_live"
+
+[output]
+layout = "table"
+rows = ["reservoir"]  # the printed name; region, state and hydel follow it
+columns = "col"
+format = "csv"

@@ -17,12 +17,23 @@ from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
 from rich.text import Text
+from rich.theme import Theme
 
 from .pages import INPUT_SUFFIXES
 from .recipe import RecipeError
 
-out = Console(highlight=False, soft_wrap=False)
-err = Console(stderr=True, highlight=False)
+# named ANSI colours follow the terminal's light or dark theme
+STYLES = {
+    "ok": "green",
+    "warn": "yellow",
+    "error": "red",
+    "accent": "cyan",
+    "command": "bold cyan",  # a command or name to type
+    "error.title": "bold red",
+}
+THEME = Theme(STYLES)
+out = Console(highlight=False, soft_wrap=False, theme=THEME)
+err = Console(stderr=True, highlight=False, theme=THEME)
 
 EXIT_OK, EXIT_FAILED, EXIT_USAGE = 0, 1, 2
 
@@ -74,16 +85,16 @@ def show_error(message: str, hint: str = "", where: str = "", source: str = "") 
         body.append(where + "\n", style="dim")
     body.append(message)
     if source:
-        body.append("\n\n    " + source.strip(), style="yellow")
+        body.append("\n\n    " + source.strip(), style="warn")
     if hint:
         body.append("\n\nHow to fix: ", style="bold")
         body.append(hint)
     err.print(
         Panel(
             body,
-            title="[bold red]Error[/]",
+            title="[error.title]Error[/]",
             title_align="left",
-            border_style="red",
+            border_style="error",
             expand=False,
         )
     )
@@ -270,6 +281,11 @@ def path_text(p: Path) -> str:
         return str(p.resolve().relative_to(Path.cwd().resolve()))
     except ValueError:
         return str(p)
+
+
+def file_link(p: Path) -> str:
+    """A bold path that opens the file when clicked, in terminals with links."""
+    return f"[bold link={p.resolve().as_uri()}]{esc(path_text(p))}[/]"
 
 
 def cmd_arg(p: Path) -> str:

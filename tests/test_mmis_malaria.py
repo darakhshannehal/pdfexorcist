@@ -12,7 +12,7 @@ from mmis import MONTHS, tpr
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "mmis"
 FIXTURE = "mmis_cat2_2023-10_p3-4_7-8_17-18.pdf"
-RECIPE = ROOT / "examples" / "mmis_malaria" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "mmis_malaria" / "recipe.toml"
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 ROWS = ["area", "indicator", "series"]
 

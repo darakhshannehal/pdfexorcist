@@ -43,11 +43,11 @@ jobs:
       - name: Install
         run: uv pip install -e . --group lint
       - name: ruff check
-        run: ruff check --output-format github pdfexorcist tests examples .github/scripts
+        run: ruff check --output-format github pdfexorcist tests .github/scripts
       # !cancelled(): run every check even if one fails
       - name: ruff format --check
         if: ${{ !cancelled() }}
-        run: ruff format --check --diff pdfexorcist tests examples .github/scripts
+        run: ruff format --check --diff pdfexorcist tests .github/scripts
       - name: mypy
         if: ${{ !cancelled() }}
         run: mypy
@@ -106,7 +106,7 @@ jobs:
 
       - name: Install
         shell: bash
-        run: uv pip install -e . pytest
+        run: uv pip install -e . pytest pytest-xdist
 
       - name: Versions
         shell: bash
@@ -117,7 +117,7 @@ jobs:
 
       - name: pytest
         shell: bash
-        run: python -m pytest -q tests -ra --junitxml=reports/junit.xml
+        run: python -m pytest -q -n auto tests -ra --junitxml=reports/junit.xml
 
       - name: Upload test report
         if: failure()

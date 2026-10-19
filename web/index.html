@@ -152,6 +152,7 @@
     /* work */
     .bar { display: flex; align-items: center; gap: 16px; padding: 12px 0 24px; flex-wrap: wrap; }
     .bar .doc { min-width: 0; }
+    #reuse { margin-left: auto; }
     .bar .doc .title { font-size: clamp(1.4rem, 1rem + 1.4vw, 2rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; display: block; }
     .work { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(20px, 3vw, 40px); align-items: start; padding-bottom: 80px; }
     .pages {
@@ -253,12 +254,14 @@
           <label class="button" for="file">Choose a PDF</label>
           <input type="file" id="file" accept="application/pdf,.pdf" hidden>
         </div>
+        <div class="fields">
+          <label>Read it like an example
+            <select id="recipe"><option value="">None: one row per label</option></select>
+          </label>
+        </div>
         <details class="options">
           <summary>Options</summary>
           <div class="fields">
-            <label>Recipe
-              <select id="recipe"><option value="">None: one row per label</option></select>
-            </label>
             <label>Pages
               <input id="pages" placeholder="All, or e.g. 3-5" inputmode="numeric">
             </label>
@@ -275,6 +278,7 @@
       <div class="bar">
         <button class="ghost" id="back" type="button">← Back</button>
         <div class="doc"><span class="kicker" id="doc-kicker"></span><span class="title" id="doc-title"></span></div>
+        <button class="button quiet" id="reuse" type="button" hidden>Use this recipe on your PDF</button>
       </div>
       <div class="work">
         <div class="pages" id="pages-view" aria-label="The PDF"></div>

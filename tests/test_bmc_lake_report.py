@@ -119,7 +119,7 @@ def test_ocr_values(date):
         parse=parse,
         key=KEY,
         min_agree=need,
-        min_unopposed=2,  # as examples/lake_photo/recipe.toml
+        min_unopposed=2,  # as pdfexorcist/recipes/mybmc_lakes/recipe.toml
     )
     got = {
         tuple(getattr(r, k) for k in KEY): r.value

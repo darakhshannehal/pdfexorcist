@@ -8,7 +8,7 @@ import pandas as pd
 from cli_helpers import run
 
 ROOT = Path(__file__).parent.parent
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "pdfexorcist" / "recipes"
 FIXTURES = Path(__file__).parent / "fixtures"
 
 

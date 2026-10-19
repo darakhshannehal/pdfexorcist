@@ -8,6 +8,7 @@ from typing import Any
 
 from ._bold import COPY_PT
 from ._registry import register
+from ._spaces import overprinted_spaces
 from .cells import _inside
 from .rows import Page, group_words
 
@@ -85,6 +86,8 @@ def _pdfium_words(page: Any, tp: Any) -> list:
             runs[-1].append(glyph)
         else:
             runs.append([glyph])
+    stray = overprinted_spaces(chars)  # "d u c k": spaces drawn over letters
+    chars = [c for c in chars if id(c) not in stray]
     out = [
         (wd["x0"], wd["x1"], wd["bottom"], wd["text"], wd["top"])
         for wd, _ in WordExtractor().iter_extract_tuples(chars)

@@ -1,0 +1,30 @@
+# pdfexorcist recipe: SRS Special Bulletin on Maternal Mortality in India 2021-23, Table 2
+#
+# Share of maternal and non-maternal deaths by age group, each with its 95% CI.
+# The same parser as recipe.toml; only the page differs. Try it:
+#
+#   pdfexorcist extract tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf --recipe pdfexorcist/recipes/srs_maternal_mortality/age.toml
+
+name = "SRS maternal deaths by age"
+description = "Age distribution of maternal and non-maternal deaths with 95% CI (SRS 2021-23)"
+sample = "../../../tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf"
+
+[pages]
+match = 'Table 2: Age Distribution'
+
+[engines]
+ocr = false
+
+[parser]
+type = "custom"
+function = "srs_mmr.py:parse"
+key = ["page", "row", "column"]
+
+[[checks]]
+function = "srs_mmr.py:within_ci"
+
+[output]
+layout = "table"
+rows = ["area"]
+columns = "column"
+format = "csv"

@@ -3,7 +3,8 @@
     python web/build.py site          # after: sphinx-build -b html docs site/cli
     python web/build.py --manifest    # what Pyodide gets, as [path, source] JSON
 
-It also writes files.json: the path, content-versioned URL and size of each file.
+It also writes files.json: the path, content-versioned URL and size of each file,
+and recipes.json: the short name and name of each shipped recipe.
 It also writes a redirect at the old address of each docs page.
 """
 
@@ -16,6 +17,7 @@ from pathlib import Path
 
 WEB = Path(__file__).resolve().parent
 ROOT = WEB.parent
+RECIPES = ROOT / "pdfexorcist" / "recipes"
 APP = [
     "index.html",
     "app.js",
@@ -77,12 +79,29 @@ def python_files() -> list[tuple[str, Path]]:
     for d in ("vendor", "pymupdf"):
         out += [(f"wheel/{p.name}", p) for p in sorted((WEB / d).glob("*.whl"))]
     out += [(f"wheel/{p.name}", p) for p in fetch_wheels(WHEELS)]
-    # recipes and parsers only; samples load on demand
+    # recipes go in the package, as in the wheel; samples load on demand
     out += [
-        (str(p.relative_to(ROOT)), p)
-        for p in sorted((ROOT / "examples").rglob("*"))
+        (f"site/{p.relative_to(ROOT)}", p)
+        for p in sorted(RECIPES.rglob("*"))
         if p.suffix in (".toml", ".py") and "__pycache__" not in p.parts
     ]
+    return out
+
+
+def recipe_names() -> list[list[str]]:
+    """[short name, name] of each shipped recipe, for the page's recipe picker."""
+    import importlib.util
+
+    import tomllib
+
+    # by file: importing the package would need its dependencies
+    spec = importlib.util.spec_from_file_location("_shipped", ROOT / "pdfexorcist" / "_shipped.py")
+    shipped = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(shipped)
+    out = []
+    for p in shipped.shipped_recipes():  # loaded from the repo, so these are its recipes
+        short = shipped.recipe_name(p)
+        out.append([short, tomllib.loads(p.read_text(encoding="utf-8")).get("name") or short])
     return out
 
 
@@ -135,6 +154,7 @@ def main(site: Path) -> None:
     kept = [n for n in VENDOR if not n.endswith(".js")]  # worker.js imports pdftotext.js directly
     manifest += [_entry(f"vendor/{n}", f"vendor/{n}", WEB / "vendor" / n) for n in kept]
     (site / "files.json").write_text(json.dumps(manifest))
+    (site / "recipes.json").write_text(json.dumps(recipe_names()))
     for ex in json.loads((WEB / "examples.json").read_text()):
         _copy(ROOT / ex["pdf"], site / "samples" / Path(ex["pdf"]).name)
     (site / ".nojekyll").touch()  # else Pages hides Sphinx's _static

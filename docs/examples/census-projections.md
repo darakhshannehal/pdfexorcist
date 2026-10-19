@@ -10,7 +10,7 @@ Two reports that censusindia uses for its projections. Both have a text layer, s
 
 "Projection of District-Level Annual Population by Quinquennial Age-Group and Sex from 2012 to 2031" (IIPS, 2022) prints each district on two pages, two blocks a page. A block is headed "State: X (NN) District: Y (NN)", then five years of Males and Females for 30 rows: All ages, single ages 0-14, and five-year groups 15-19 to 80+.
 
-The files are in `examples/census_iips_district/`: `recipe.toml` and `iips_district_projection.py`. The fixtures are four pages, in `tests/fixtures/iips/`.
+The files are in `pdfexorcist/recipes/census_iips_district/`: `recipe.toml` and `iips_district_projection.py`. The fixtures are four pages, in `tests/fixtures/iips/`.
 
 ```toml
 name = "IIPS district projection"
@@ -39,13 +39,13 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe examples/census_iips_district/recipe.toml -o sirohi.csv
+pdfexorcist extract tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe pdfexorcist/recipes/census_iips_district/recipe.toml -o sirohi.csv
 ```
 
 ```
-Agreed         600  100.0% of cells
-Unresolved       0
-Checks      1 rule  all passed
+✓  Agreed         600  100.0% of cells
+   Unresolved       0
+✓  Checks      1 rule  all passed
 ```
 
 ```
@@ -77,7 +77,7 @@ def parse(pages):
 
 Sirohi's first block is headed 2027-2031 but holds 2012-2016, so cells are keyed by the block's place on the page and the year as printed. Prakasam's second block is headed "District: Guntur", and Imphal East's blocks "District: Ukhrul", so the district comes from the table title and the printed header is kept as `header`.
 
-`pdfexorcist show tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe examples/census_iips_district/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/iips/iips_p281_rajasthan_sirohi.pdf --recipe pdfexorcist/recipes/census_iips_district/recipe.toml -o page.png` draws what the recipe reads:
 
 ![IIPS projection page: two blocks of Males and Females by single age](../assets/examples/iips.png)
 
@@ -85,7 +85,7 @@ Sirohi's first block is headed 2027-2031 but holds 2012-2016, so cells are keyed
 
 Table 18 of "Population Projections for India and States 2011-2036" (MoHFW, 2019) gives one State a page: two blocks of three years (2011, 2016, 2021, then 2026, 2031, 2036), each year a Person, Male and Female column, rows 0-1, 0-4, 5-9 ... 80+ and Total, in thousands with Indian digit grouping (1,19,827).
 
-The files are in `examples/census_mohfw_state/`: `recipe.toml` and `mohfw_state_projection.py`. The fixtures are India and two States, in `tests/fixtures/mohfw/`.
+The files are in `pdfexorcist/recipes/census_mohfw_state/`: `recipe.toml` and `mohfw_state_projection.py`. The fixtures are India and two States, in `tests/fixtures/mohfw/`.
 
 ```toml
 name = "MoHFW State projection"
@@ -126,19 +126,19 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/mohfw/mohfw_india_p165-166.pdf --recipe examples/census_mohfw_state/recipe.toml -o india.csv
+pdfexorcist extract tests/fixtures/mohfw/mohfw_india_p165-166.pdf --recipe pdfexorcist/recipes/census_mohfw_state/recipe.toml -o india.csv
 ```
 
 ```
-  pdftotext   342 readings  0.0s
-  pdfplumber  342 readings  0.2s
-  pymupdf     342 readings  0.0s
-  camelot     504 readings  0.5s
-  pdfium      342 readings  0.0s
+✓ pdftotext   342 readings  0.0s
+✓ pdfplumber  342 readings  0.2s
+✓ pymupdf     342 readings  0.0s
+✓ camelot     504 readings  0.5s
+✓ pdfium      342 readings  0.0s
 
-Agreed          342  100.0% of cells
-Unresolved        0
-Checks      3 rules  all passed
+✓  Agreed          342  100.0% of cells
+   Unresolved        0
+✓  Checks      3 rules  all passed
 ```
 
 ```
@@ -172,7 +172,7 @@ year,age,title,page,Person,Male,Female
 
 `tests/test_iips_district_projection.py` and `tests/test_mohfw_state_projection.py` compare every agreed value with the printed pages, including the cells where censusindia's data differs.
 
-`pdfexorcist show tests/fixtures/mohfw/mohfw_uttarakhand_p182.pdf --recipe examples/census_mohfw_state/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mohfw/mohfw_uttarakhand_p182.pdf --recipe pdfexorcist/recipes/census_mohfw_state/recipe.toml -o page.png` draws what the recipe reads:
 
 ![MoHFW projection page: Person, Male and Female by age for six years](../assets/examples/mohfw.png)
 

@@ -7,16 +7,17 @@ description: "pdfexorcist show and compare: a page with a box on every extracted
 `show` draws one page with a box on every cell the vote produced. A shifted column or a skipped row shows as boxes out of line or missing.
 
 ```bash
-pdfexorcist show mccd_2014.pdf --recipe examples/mccd/table4.toml
+pdfexorcist show mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml
 ```
 
 ```
-Agreed             693  boxed solid
-Unresolved          99  dashed, dotted fill
-Failed checks        0  thick, hatched
-Not read as cells  259  words outlined in grey
-Wrote mccd_2014.p1.show.html
-Open it in a browser (or add --open); it works offline.
+✓  Agreed             693  boxed solid
+!  Unresolved          99  dashed, dotted fill
+   Failed checks        0  thick, hatched
+   Not read as cells  259  words outlined in grey
+
+   Wrote   mccd_2014.p1.show.html
+   Open it in a browser (or add --open). It works offline.
 ```
 
 The HTML file is self-contained and has three views. The screenshots below are of this file: `tests/fixtures/mccd/mccd_2014.pdf`, the MCCD Table 4 recipe, five text engines.
@@ -45,7 +46,7 @@ One panel per engine, with its own readings before the vote. Zoom and scroll mov
 `compare` opens the same file on this view:
 
 ```bash
-pdfexorcist compare mccd_2014.pdf --recipe examples/mccd/table4.toml
+pdfexorcist compare mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml
 ```
 
 ## Grid
@@ -59,7 +60,7 @@ One row per cell, one column per engine. Sort by any column, search by key, valu
 A photographed page is shown levelled, as the OCR engines read it:
 
 ```bash
-pdfexorcist show tests/fixtures/bmc/2026-07-28.jpg --recipe examples/lake_photo/recipe.toml
+pdfexorcist show tests/fixtures/bmc/2026-07-28.jpg --recipe pdfexorcist/recipes/mybmc_lakes/recipe.toml
 ```
 
 ![The Page view of a photographed lake-level table, with green boxes on the agreed values](assets/show-photo.png)
@@ -69,7 +70,7 @@ pdfexorcist show tests/fixtures/bmc/2026-07-28.jpg --recipe examples/lake_photo/
 `--png` also writes an annotated PNG, and `-o page.png` writes only the PNG. Use it in a report or an issue.
 
 ```bash
-pdfexorcist show mccd_2014.pdf --recipe examples/mccd/table4.toml --png
+pdfexorcist show mccd_2014.pdf --recipe pdfexorcist/recipes/mccd/table4.toml --png
 ```
 
 ![The static PNG: the same boxes drawn on the page](assets/show-static.png)

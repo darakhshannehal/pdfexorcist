@@ -10,7 +10,7 @@ from cli_helpers import run
 
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures"
-EXAMPLES = ROOT / "examples"
+EXAMPLES = ROOT / "pdfexorcist" / "recipes"
 
 pytestmark = pytest.mark.usefixtures("wide_console")
 

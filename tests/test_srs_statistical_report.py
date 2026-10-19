@@ -15,7 +15,7 @@ from pdfexorcist.recipe import load
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "srs_stat"
 FIXTURE = "srs_stat_2024_table1_p222-224.pdf"
-RECIPE = ROOT / "examples" / "srs_statistical_report" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "srs_statistical_report" / "recipe.toml"
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 
 pytestmark = pytest.mark.usefixtures("wide_console")

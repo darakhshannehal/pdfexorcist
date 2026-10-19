@@ -8,7 +8,7 @@ import pandas as pd
 import pymupdf
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parents[2] / "examples" / "census_mohfw_state"))
+sys.path.insert(0, str(HERE.parents[2] / "pdfexorcist" / "recipes" / "census_mohfw_state"))
 
 from mohfw_state_projection import parse  # noqa: E402
 

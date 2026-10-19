@@ -6,7 +6,7 @@ description: "The SRS Special Bulletin on Maternal Mortality 2021-23 read with a
 
 The Registrar General of India's 4-page [Special Bulletin on Maternal Mortality in India 2021-23](https://censusindia.gov.in/nada/index.php/catalog/46177/download/50425) comes from the Sample Registration System (SRS). Table 1 on page 3 gives, for India, 19 States, the other States together and three subtotals, the Maternal Mortality Ratio (MMR, maternal deaths per 100,000 live births) with its 95% confidence interval, the Maternal Mortality Rate (per 100,000 women aged 15-49) and the lifetime risk. Table 2 on page 4 gives the age distribution of maternal and non-maternal deaths, also with intervals.
 
-The files are in `examples/srs_maternal_mortality/`: `recipe.toml` (Table 1), `age.toml` (Table 2), `cod_top10.toml` (see [below](#the-cause-of-death-report)), and the parsers `srs_mmr.py` and `srs_cod_top10.py`. The fixtures are the whole bulletin and one page of the Cause of Death report, in `tests/fixtures/srs_mmr/`.
+The files are in `pdfexorcist/recipes/srs_maternal_mortality/`: `recipe.toml` (Table 1), `age.toml` (Table 2), `cod_top10.toml` (see [below](#the-cause-of-death-report)), and the parsers `srs_mmr.py` and `srs_cod_top10.py`. The fixtures are the whole bulletin and one page of the Cause of Death report, in `tests/fixtures/srs_mmr/`.
 
 ## Intervals and percents
 
@@ -55,19 +55,19 @@ format = "csv"
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf --recipe examples/srs_maternal_mortality/recipe.toml -o mmr.csv
+pdfexorcist extract tests/fixtures/srs_mmr/srs_mmr_bulletin_2021-23.pdf --recipe pdfexorcist/recipes/srs_maternal_mortality/recipe.toml -o mmr.csv
 ```
 
 ```
-  pdftotext   120 readings  0.0s
-  pdfplumber  120 readings  0.1s
-  pymupdf     120 readings  0.0s
-  camelot     120 readings  0.5s
-  pdfium      120 readings  0.0s
+✓ pdftotext   120 readings  0.0s
+✓ pdfplumber  120 readings  0.1s
+✓ pymupdf     120 readings  0.0s
+✓ camelot     120 readings  0.5s
+✓ pdfium      120 readings  0.0s
 
-Agreed          120  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          120  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -122,7 +122,7 @@ Both checks pass on every row.
 `cod_top10.toml` reads Table 2.3A of the companion [SRS Cause of Death Statistics 2021-23](https://censusindia.gov.in/nada/index.php/catalog/46176/download/50424) (page 31 of the PDF): the top 10 causes of death in India, as shares of deaths for males, females and persons.
 
 ```bash
-pdfexorcist extract tests/fixtures/srs_mmr/srs_cod_2021-23_p31.pdf --recipe examples/srs_maternal_mortality/cod_top10.toml -o cod.csv
+pdfexorcist extract tests/fixtures/srs_mmr/srs_cod_2021-23_p31.pdf --recipe pdfexorcist/recipes/srs_maternal_mortality/cod_top10.toml -o cod.csv
 ```
 
 ```

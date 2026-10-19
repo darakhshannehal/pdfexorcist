@@ -6,7 +6,7 @@ description: "CRS State Tables 1-4 and 6 and District Tables 7-10: registered bi
 
 The annual Civil Registration System (CRS) report prints four State/UT tables of one shape: registered births, deaths, infant deaths and still births. Each row is a State/UT, then Male, Female and Person for Rural, Urban and Total.
 
-The files are in `examples/crs_state_tables/`: `recipe.toml` and `crs_state_table.py`. The fixture holds Table 1 and Table 4 of the 2023 report, in `tests/fixtures/crs/`.
+The files are in `pdfexorcist/recipes/crs_state_tables/`: `recipe.toml` and `crs_state_table.py`. The fixture holds Table 1 and Table 4 of the 2023 report, in `tests/fixtures/crs/`.
 
 ## The recipe
 
@@ -61,19 +61,19 @@ def parse(pages):
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe examples/crs_state_tables/recipe.toml -o crs_2023.csv
+pdfexorcist extract tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe pdfexorcist/recipes/crs_state_tables/recipe.toml -o crs_2023.csv
 ```
 
 ```
-  pdftotext   666 readings  0.0s
-  pdfplumber  666 readings  0.4s
-  pymupdf     666 readings  0.0s
-  camelot     666 readings  2.5s
-  pdfium      666 readings  0.0s
+✓ pdftotext   666 readings  0.0s
+✓ pdfplumber  666 readings  0.4s
+✓ pymupdf     666 readings  0.0s
+✓ camelot     666 readings  2.5s
+✓ pdfium      666 readings  0.0s
 
-Agreed          666  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          666  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -86,7 +86,7 @@ page,label,Rural_Male,Rural_Female,Rural_Person,Urban_Male,Urban_Female,Urban_Pe
 1,Lakshadweep,423,384,807,-,-,-,423,384,807
 ```
 
-`pdfexorcist show tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe examples/crs_state_tables/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/crs/crs_2023_t1_t4.pdf --recipe pdfexorcist/recipes/crs_state_tables/recipe.toml -o page.png` draws what the recipe reads:
 
 ![CRS Table 1 page with its agreed values boxed and each row named by State](../assets/examples/crs.png)
 
@@ -112,18 +112,18 @@ by = ["state", "col"]
 An age label holds numbers ("1 Year - 4 Year"), so the parser joins it into one cell before the values are placed. The values are placed by `parse_by_columns(placement="both")`: by their order and by their position, kept only where the two agree. In the 2010 report, "Not Available" is printed diagonally over the Rural and Urban cells of Andhra Pradesh, so its rows have only the three Total values. By order they are Rural, by position Total, so the cells are left for review.
 
 ```bash
-pdfexorcist extract tests/fixtures/crs/crs_2023_t6_fakebold.pdf --recipe examples/crs_state_tables/table6.toml
+pdfexorcist extract tests/fixtures/crs/crs_2023_t6_fakebold.pdf --recipe pdfexorcist/recipes/crs_state_tables/table6.toml
 ```
 
 ```
-Agreed          540  100.0% of cells
-Unresolved        0
-Checks      3 rules  all passed
+✓  Agreed          540  100.0% of cells
+   Unresolved        0
+✓  Checks      3 rules  all passed
 ```
 
 ## District Tables 7-10
 
-`examples/crs_district_tables/` reads the district tables: a State's row, then its numbered districts; Table 7 adds the sex ratio at birth (SRB). The parser takes a row without a serial number as a State. A page that starts with district 5 goes on with the last page's State only when the last page ended at district 4; otherwise the State is not known (`""`). The third check is that a State's row is at least the sum of the districts read:
+`pdfexorcist/recipes/crs_district_tables/` reads the district tables: a State's row, then its numbered districts; Table 7 adds the sex ratio at birth (SRB). The parser takes a row without a serial number as a State. A page that starts with district 5 goes on with the last page's State only when the last page ended at district 4; otherwise the State is not known (`""`). The third check is that a State's row is at least the sum of the districts read:
 
 ```toml
 [[checks]]
@@ -134,13 +134,13 @@ where = "col != 'SRB'"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/crs/crs_2016_district_rotated.pdf --recipe examples/crs_district_tables/recipe.toml
+pdfexorcist extract tests/fixtures/crs/crs_2016_district_rotated.pdf --recipe pdfexorcist/recipes/crs_district_tables/recipe.toml
 ```
 
 ```
-Agreed        1,047  98.0% of cells
-Unresolved       21  engines disagreed: left blank
-Checks      3 rules  all passed
+✓  Agreed        1,047  98.0% of cells
+!  Unresolved       21  engines disagreed, left blank
+✓  Checks      3 rules  all passed
 ```
 
 The 2016 pages print "Not Available" at 45 degrees over blank cells. Before the engines read a page, pdfexorcist drops slanted text without digits, so it cannot join the rows it crosses. The unresolved cells are hidden "N.A." text under Manipur's blank rows, which the engines place in different lines.

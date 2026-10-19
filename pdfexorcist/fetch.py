@@ -174,7 +174,14 @@ def _tweet_image(opener: urllib.request.OpenerDirector, tweet_id: str, n: int) -
         f"https://cdn.syndication.twimg.com/tweet-result?id={tweet_id}"
         f"&token={tweet_token(tweet_id)}&lang=en"
     )
-    tweet = json.loads(_get(opener, api)[0])
+    try:
+        tweet = json.loads(_get(opener, api)[0])
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            raise
+        raise ValueError(
+            f"X has no tweet {tweet_id}; it was deleted or made private, or the link lost a digit"
+        ) from e
     photos = [
         m["media_url_https"] for m in tweet.get("mediaDetails", []) if m.get("type") == "photo"
     ]

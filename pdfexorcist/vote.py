@@ -9,14 +9,12 @@ from typing import Any, Literal, overload
 
 import pandas as pd
 
-from ._glyphs import decode_type3
-from ._prepare import _pages, _photo_pdf, fit_page_boxes
+from ._clean import clean_pdf, cut
+from ._prepare import _pages, as_pdf, fit_page_boxes
 from ._registry import IN_PROCESS
-from ._slanted import drop_slanted
-from ._upright import upright_pages
 from .checks import Check, lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
-from .pages import IMAGE_SUFFIXES, ocr_layer
+from .pages import ocr_layer
 from .readings import Readings
 from .rows import KEY, Page, parse_rows
 
@@ -25,6 +23,10 @@ logger = logging.getLogger(__name__)
 __all__ = ["_pages", "extract", "fit_page_boxes", "vote"]
 
 Parser = Callable[[Iterable[Page]], Iterator[dict]]
+
+
+class TooFewReadings(RuntimeError):
+    """Fewer independent readings produced output than min_agree needs."""
 
 
 def _family(families: dict[str, list[str]]) -> Callable[[str], str]:
@@ -211,21 +213,27 @@ def _read_tasks(
 ) -> dict[tuple[str, int], list | Exception]:
     """Read engine chunks in the process pool."""
     from concurrent.futures import as_completed
-    from concurrent.futures.process import BrokenProcessPool
+    from functools import partial
 
     # absolute: a pool's workers keep the directory they started in
     futures = {_pool(workers).submit(_read, n, chunks[f].resolve()): (n, f) for n, f in tasks}
     out: dict[tuple[str, int], list | Exception] = {}
     for fut in as_completed(futures):
         n, f = futures[fut]
-        e = fut.exception()
-        if isinstance(e, BrokenProcessPool):  # a worker could not start or died: read here
-            if _POOLS.pop(workers, None):
-                logger.warning("worker processes failed (%s); reading in this process", e)
-            out[(n, f)] = _read_local(n, chunks[f])
-        else:
-            out[(n, f)] = e if isinstance(e, Exception) else fut.result()
+        out[(n, f)] = or_here(fut, workers, partial(_read_local, n, chunks[f]))
     return out
+
+
+def or_here(future: Any, workers: int, here: Callable[[], Any]) -> Any:
+    """A pool task's result, or its exception; here() when a worker could not start or died."""
+    from concurrent.futures.process import BrokenProcessPool
+
+    e = future.exception()
+    if not isinstance(e, BrokenProcessPool):
+        return e if isinstance(e, Exception) else future.result()
+    if _POOLS.pop(workers, None):
+        logger.warning("worker processes failed (%s); working in this process", e)
+    return here()
 
 
 def _read_local(name: str, pdf: Path) -> list | Exception:
@@ -258,6 +266,7 @@ def extract(
     return_readings: Literal[False] = ...,
     jobs: int = ...,
     decode_fonts: bool = ...,
+    cleaned: bool = ...,
 ) -> pd.DataFrame: ...
 
 
@@ -279,6 +288,7 @@ def extract(
     return_readings: Literal[True],
     jobs: int = ...,
     decode_fonts: bool = ...,
+    cleaned: bool = ...,
 ) -> tuple[pd.DataFrame, Readings]: ...
 
 
@@ -298,6 +308,7 @@ def extract(
     return_readings: bool = False,
     jobs: int = 1,
     decode_fonts: bool = True,
+    cleaned: bool = False,
 ) -> pd.DataFrame | tuple[pd.DataFrame, Readings]:
     """Read pdf with each engine, parse, vote and check.
 
@@ -329,6 +340,7 @@ def extract(
         decode_fonts: Give Type3 fonts without a Unicode map one, read by OCR of their
             glyphs (needs tesseract), so the text engines read text, not control
             codes. Raises GlyphMapError when a glyph reads unclearly.
+        cleaned: pdf already went through _clean.clean_pdf; read it as it is.
 
     Returns:
         One row per key with its value, status and failed checks; with
@@ -342,15 +354,10 @@ def extract(
     readings = []
     kept = Readings()
     with tempfile.TemporaryDirectory() as tmp:
-        if Path(pdf).suffix.lower() in IMAGE_SUFFIXES:
-            pdf = _photo_pdf(Path(pdf), Path(tmp))
-        pdf = _pages(Path(pdf), pages, Path(tmp)) if pages else Path(pdf)
-        if decode_fonts:
-            pdf = decode_type3(pdf, Path(tmp) / "decoded")
-        if fit_boxes:
-            pdf = fit_page_boxes(pdf, Path(tmp) / "fit")
-        pdf = upright_pages(pdf, Path(tmp) / "upright")
-        pdf = drop_slanted(pdf, Path(tmp) / "level")
+        pdf = as_pdf(Path(pdf), Path(tmp))
+        pdf = cut(pdf, list(pages) if pages else None, None, Path(tmp))
+        if not cleaned:
+            pdf = clean_pdf(pdf, Path(tmp), decode_fonts, fit_boxes)
         if return_readings:
             kept.pdf = pdf.read_bytes()
         if not families and ocr_layer(pdf):
@@ -392,7 +399,7 @@ def extract(
         voters = set(map(_family(families), voters))
     need = min_agree or (2 if families else 3)
     if len(voters) < need:
-        raise RuntimeError(f"{len(voters)} independent readings produced output; need >= {need}")
+        raise TooFewReadings(f"{len(voters)} independent readings produced output; need >= {need}")
     res = vote(pd.concat(readings, ignore_index=True), key, min_agree, min_unopposed, families)
     ok = res.status == "verified"
     res["failed"] = validate(res[ok], [*checks, lossy])["failed"].reindex(res.index, fill_value="")

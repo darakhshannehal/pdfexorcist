@@ -6,7 +6,7 @@ description: "SRS abridged life tables read with a recipe: one State per page, T
 
 The Sample Registration System (SRS) life-table report prints one State a page, titled like "Kerala, 2019-23". Each page has Total, Rural and Urban blocks of 19 age rows (0-1, 1-5, 5-10 ... 85+), and each row has 12 values: nqx, lx, nLx and ex for total, male and female.
 
-The files are in `examples/srs_life_table/`: `recipe.toml` and `srs_life_table.py`. The fixtures are pages of the 2019-23 and 2010-14 reports, in `tests/fixtures/srs/`.
+The files are in `pdfexorcist/recipes/srs_life_table/`: `recipe.toml` and `srs_life_table.py`. The fixtures are pages of the 2019-23 and 2010-14 reports, in `tests/fixtures/srs/`.
 
 ## The recipe
 
@@ -37,19 +37,19 @@ The key holds the block and age. camelot returns the table without the title abo
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/srs/srs_2019-23.pdf --recipe examples/srs_life_table/recipe.toml -o srs.csv
+pdfexorcist extract tests/fixtures/srs/srs_2019-23.pdf --recipe pdfexorcist/recipes/srs_life_table/recipe.toml -o srs.csv
 ```
 
 ```
-  pdftotext   2,052 readings  0.1s
-  pdfplumber  2,052 readings  0.2s
-  pymupdf     2,052 readings  0.0s
-  camelot     2,052 readings  4.5s
-  pdfium      2,052 readings  0.0s
+✓ pdftotext   2,052 readings  0.1s
+✓ pdfplumber  2,052 readings  0.2s
+✓ pymupdf     2,052 readings  0.0s
+✓ camelot     2,052 readings  4.5s
+✓ pdfium      2,052 readings  0.0s
 
-Agreed       2,052  100.0% of cells
-Unresolved       0
-Checks      1 rule  all passed
+✓  Agreed       2,052  100.0% of cells
+   Unresolved       0
+✓  Checks      1 rule  all passed
 ```
 
 ```
@@ -60,7 +60,7 @@ India,Total,1-5,0.00420,97127,387516,71.4,0.00411,97145,387606,69.5,0.00429,9710
 West Bengal,Urban,0-1,0.01623,100000,98522,74.8,0.01636,100000,98511,73.5,0.01609,100000,98549,76.3
 ```
 
-`pdfexorcist show tests/fixtures/srs/srs_2019-23.pdf --recipe examples/srs_life_table/recipe.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/srs/srs_2019-23.pdf --recipe pdfexorcist/recipes/srs_life_table/recipe.toml -o page.png` draws what the recipe reads:
 
 ![SRS life table page: every value boxed green, the row names (State, block, age) down the left margin](../assets/examples/srs.png)
 

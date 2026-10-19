@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from ._prepare import redact_dots, save_copy
+from ._prepare import redact_dots, replace_each
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def _levelled(doc: Any, page: Any) -> Any:
     """A one-page copy of page without its slanted text, or None to keep the page."""
     import pymupdf
 
-    if page.rotation or not _has_slanted(page):  # ponytail: /Rotate pages keep their text
+    if page.rotation or not _has_slanted(page):  # /Rotate pages keep their text
         return None
     _, slanted, boxes = _chars(page)
     dots = [(x, y) for _, x, y in slanted]
@@ -89,22 +89,4 @@ def drop_slanted(pdf: Path, out_dir: Path) -> Path:
     redacted; if that changes the level text, only those clear of level text are;
     if that changes it too, the page is kept as printed.
     """
-    import pymupdf
-
-    with pymupdf.open(pdf) as doc:
-        copies = {page.number: one for page in doc if (one := _levelled(doc, page))}
-        if not copies:
-            return pdf
-        with pymupdf.open() as out:
-            done = 0  # pages before this are in out
-            for i, one in sorted(copies.items()):
-                if i > done:
-                    out.insert_pdf(doc, from_page=done, to_page=i - 1)
-                out.insert_pdf(one)
-                one.close()
-                done = i + 1
-            if done < doc.page_count:
-                out.insert_pdf(doc, from_page=done, to_page=doc.page_count - 1)
-            logger.info("%d pages: slanted text dropped", len(copies))
-            path = save_copy(out, out_dir, pdf.name)
-    return path
+    return replace_each(pdf, out_dir, _levelled, "slanted text dropped")

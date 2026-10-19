@@ -100,7 +100,7 @@ def one_value(text: str, is_value: Callable[[str], bool]) -> str:
     each cell can repeat a different number of times. Needs two tokens or more,
     so a printed 366366 stays.
     """
-    # ponytail: also merges equal values of merged columns ("0 0"); that engine loses its vote
+    # also merges equal values of merged columns ("0 0"); that engine loses its vote
     toks = text.split()
     if len(toks) < 2 or not all(is_value(t) for t in toks):
         return text

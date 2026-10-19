@@ -30,22 +30,25 @@ pdfexorcist engines
 ```
 
 ```
-┏━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Engine     ┃ Installed ┃ Used      ┃ Reads        ┃ What it is                         ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ pdftotext  │ yes       │ default   │ text layer   │ poppler's pdftotext                │
-│ pdfplumber │ yes       │ default   │ text layer   │ pdfminer word boxes                │
-│ pymupdf    │ yes       │ default   │ text layer   │ MuPDF word boxes                   │
-│ camelot    │ yes       │ default   │ text layer   │ camelot table finder               │
-│ pdfium     │ yes       │ default   │ text layer   │ PDFium, Chrome's PDF engine        │
-│ tabula     │ no        │ --engines │ text layer   │ tabula-java (needs Java)           │
-│ tesseract  │ yes       │ --ocr     │ pixels (OCR) │ Tesseract OCR, CPU                 │
+    Engine       Used        Reads          What it is
+────────────────────────────────────────────────────────────────────────────
+✓   pdftotext    default     text layer     poppler's pdftotext
+✓   pdfplumber   default     text layer     pdfminer word boxes
+✓   pymupdf      default     text layer     MuPDF word boxes
+✓   camelot      default     text layer     camelot table finder
+✓   pdfium       default     text layer     PDFium, Chrome's PDF engine
+✗   tabula       --engines   text layer     tabula-java (needs Java)
+✓   tesseract    --ocr       pixels (OCR)   Tesseract OCR, CPU
 ...
-To install the missing engines (copy and paste):
-  tabula: pip install "pdfexorcist[tabula]"
 
-5 default engines ready: text PDFs need at least 3. 5 OCR engines ready: scans and photos
-need at least 2.
+✓ installed  ✗ not installed. Used: default = always; --ocr = with --ocr; --engines = when
+named, e.g. --engines pdfplumber,tabula.
+
+Install the missing engines
+  tabula  pip install "pdfexorcist[tabula]"
+
+✓ 5 default engines ready. Text PDFs need at least 3.
+✓ 5 OCR engines ready. Scans and photos need at least 2.
 ```
 
 The last lines print the exact command for each missing engine on your system. `pdfexorcist doctor` is the same command.

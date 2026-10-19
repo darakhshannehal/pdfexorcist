@@ -41,3 +41,10 @@ if [ "$n" -lt 1 ]; then
   exit 1
 fi
 echo "OK: $n non-empty CSV files"
+
+echo "::group::recipe suggest ${pdf##*/}"
+# the wheel ships the recipes and their index; a shipped recipe loads by name
+"$bin/pdfexorcist" recipe suggest "$pdf" --json >suggest.json
+"$bin/python" -c "import json; r = json.load(open('suggest.json'))['recipes']; assert r and r[0]['fits'], r[:1]; print(r[0]['recipe'])"
+"$bin/pdfexorcist" extract "$pdf" --recipe "$("$bin/python" -c "import json; print(json.load(open('suggest.json'))['recipes'][0]['recipe'])")" -o named
+echo "::endgroup::"

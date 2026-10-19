@@ -8,7 +8,7 @@ The National Center for Vector Borne Diseases Control (NCVBDC) publishes a Month
 
 The table names no State or indicator; the graph's title above it names both: `GRAPH 2: MONTH WISE TREND OF TPC IN CHHATTISGARH`.
 
-The files are in `examples/mmis_malaria/`: `recipe.toml` and `mmis.py`. The fixture is pages 3-4, 7-8 and 17-18 of the October 2023 report (Category II, Chhattisgarh and West Bengal), in `tests/fixtures/mmis/`.
+The files are in `pdfexorcist/recipes/mmis_malaria/`: `recipe.toml` and `mmis.py`. The fixture is pages 3-4, 7-8 and 17-18 of the October 2023 report (Category II, Chhattisgarh and West Bengal), in `tests/fixtures/mmis/`.
 
 ## The recipe
 
@@ -51,28 +51,28 @@ The key leaves out the area and indicator. camelot reads each table without the 
 ## Run it
 
 ```bash
-pdfexorcist extract https://ncvbdc.mohfw.gov.in/Doc/MMIS/October-2023/MMISReport-Category-II-October-2023.pdf --recipe examples/mmis_malaria/recipe.toml -o mmis.csv
+pdfexorcist extract https://ncvbdc.mohfw.gov.in/Doc/MMIS/October-2023/MMISReport-Category-II-October-2023.pdf --recipe pdfexorcist/recipes/mmis_malaria/recipe.toml -o mmis.csv
 ```
 
 On the whole report, 568 cells across pages 3-4 and 7-18 all agree. On the fixture:
 
 ```bash
-pdfexorcist extract tests/fixtures/mmis/mmis_cat2_2023-10_p3-4_7-8_17-18.pdf --recipe examples/mmis_malaria/recipe.toml -o mmis.csv
+pdfexorcist extract tests/fixtures/mmis/mmis_cat2_2023-10_p3-4_7-8_17-18.pdf --recipe pdfexorcist/recipes/mmis_malaria/recipe.toml -o mmis.csv
 ```
 
 ```
-  pdftotext   232 readings  0.0s
-  pdfplumber  232 readings  0.2s
-  pymupdf     232 readings  0.0s
-  camelot     232 readings  1.1s
-  pdfium      232 readings  0.0s
+✓ pdftotext   232 readings  0.0s
+✓ pdfplumber  232 readings  0.2s
+✓ pymupdf     232 readings  0.0s
+✓ camelot     232 readings  1.1s
+✓ pdfium      232 readings  0.0s
 
-Agreed         232  100.0% of cells
-Unresolved       0
-Failed checks   21  agreed values that break a rule
-  x row label matches the graph title: 21 cells
+✓  Agreed         232  100.0% of cells
+   Unresolved       0
+✗  Failed checks   21  agreed values break a rule
+    ✗ row label matches the graph title: 21 cells
 
-Wrote mmis.csv (table layout, 24 rows).
+   Wrote   mmis.csv  24 rows, table layout
 ```
 
 ```
@@ -88,7 +88,7 @@ WEST BENGAL,PF,current,PF,GRAPH 4: ...,122,56,66,82,,,,,,,,
 
 The current year runs to September (to April in West Bengal); the October cells are empty, as printed.
 
-`pdfexorcist show tests/fixtures/mmis/mmis_cat2_2023-10_p3-4_7-8_17-18.pdf --recipe examples/mmis_malaria/recipe.toml --page 4 -o page.png` draws what the recipe reads on Chhattisgarh's second page:
+`pdfexorcist show tests/fixtures/mmis/mmis_cat2_2023-10_p3-4_7-8_17-18.pdf --recipe pdfexorcist/recipes/mmis_malaria/recipe.toml --page 4 -o page.png` draws what the recipe reads on Chhattisgarh's second page:
 
 ![MMIS page with Chhattisgarh's TPR and PF graphs: the TPR table agreed, the PF graph's table hatched because its rows are labelled TPC](../assets/examples/mmis.png)
 

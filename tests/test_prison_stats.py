@@ -11,7 +11,7 @@ from pdfexorcist.recipe import load
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "prison_stats"
 FIXTURE = FIXTURES / "psi_2023_p58-61.pdf"
-RECIPE = ROOT / "examples" / "prison_stats" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "prison_stats" / "recipe.toml"
 
 WANT = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 

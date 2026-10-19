@@ -74,7 +74,7 @@ def new_recipe(o: WizardOptions) -> None:
                 f"New recipe for [bold]{esc(path_text(src))}[/] ({plural(n_pages, 'page')}).\n"
                 "Answer a few questions; press Enter to take the suggestion in (brackets).\n"
                 "Nothing is saved until the end, and you can edit the file afterwards.",
-                border_style="cyan",
+                border_style="accent",
             )
         )
     a = Answers(sample=path_text(src))
@@ -213,12 +213,12 @@ def new_recipe(o: WizardOptions) -> None:
     recipes.loads(text, output.resolve())  # never write a recipe that would not load
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(text, encoding="utf-8")
-    out.print(f"\n[green]Saved[/] [bold]{esc(path_text(output))}[/]. Next:")
+    out.print(f"\n[ok]Saved[/] [bold]{esc(path_text(output))}[/]. Next:")
     out.print(
-        f"  run it:      [cyan]pdfexorcist extract {esc(cmd_arg(src))} --recipe "
+        f"  run it:      [command]pdfexorcist extract {esc(cmd_arg(src))} --recipe "
         f"{esc(cmd_arg(output))}[/]"
     )
-    out.print(f"  read it:     [cyan]pdfexorcist recipe show {esc(cmd_arg(output))}[/]")
+    out.print(f"  read it:     [command]pdfexorcist recipe show {esc(cmd_arg(output))}[/]")
     out.print("  edit it in any text editor; every line is commented.")
 
 
@@ -235,4 +235,4 @@ def _ask_page_range(
         except ValueError as e:
             if not interactive:
                 raise
-            out.print(f"[red]{esc(e)}[/] ({src.name} has {plural(n_pages, 'page')})")
+            out.print(f"[error]{esc(e)}[/] ({src.name} has {plural(n_pages, 'page')})")

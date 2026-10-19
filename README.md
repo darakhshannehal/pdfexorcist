@@ -45,23 +45,23 @@ URL='https://www.nfhsiips.in/downloadFile.php?link=NFHS-6_StateFact_Chandigarh+%
 
 pdfexorcist inspect "$URL"                    # which pages are text, and what to run
 pdfexorcist extract "$URL" --pages 9-12       # generic parser
-pdfexorcist extract "$URL" --recipe examples/nfhs6/district.toml   # from a checkout
+pdfexorcist extract "$URL" --recipe nfhs6/district
 ```
 
 The recipe keys rows by printed indicator number and names the columns.
 
 ```
-  pdftotext   404 readings  0.0s
-  pdfplumber  404 readings  0.4s
-  pymupdf     404 readings  0.0s
-  camelot     384 readings  1.1s
-  pdfium      384 readings  0.1s
+✓ pdftotext   404 readings  0.0s
+✓ pdfplumber  404 readings  0.4s
+✓ pymupdf     404 readings  0.0s
+✓ camelot     384 readings  1.1s
+✓ pdfium      384 readings  0.1s
 
-Agreed          404  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          404  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote NFHS-6_StateFact_Chandigarh (UT)__Chandigarh Compendium.csv (table layout, 101 rows).
+   Wrote   NFHS-6_StateFact_Chandigarh (UT)__Chandigarh Compendium.csv  101 rows, table layout
 ```
 
 ```
@@ -71,21 +71,21 @@ Chandigarh,2,state,20.6,21.2,20.7,23.3
 Chandigarh,3,state,11.0,8.6,10.9,10.9
 ```
 
-`examples/nfhs5/state.toml` reads NFHS-5 fact sheets.
+`--recipe nfhs5/state` reads NFHS-5 fact sheets.
 
 ### A tweeted photo
 
-BMC posts Mumbai lake levels as a photo:
+BMC posts Mumbai lake levels as a photo on X (@mybmc); the `mybmc_lakes` recipe reads it:
 
 ```bash
 pdfexorcist extract https://x.com/mybmc/status/2106224821864698086 \
-    --recipe examples/lake_photo/recipe.toml          # needs OCR engines: [all]
+    --recipe mybmc_lakes          # needs OCR engines: [all]
 ```
 
 ```
 Reading tweet_2106224821864698086_1.jpg with 4 engines (3 must agree)
-Agreed      125  100.0% of cells
-Unresolved    0
+✓  Agreed      125  100.0% of cells
+   Unresolved    0
 ```
 
 ```
@@ -104,13 +104,13 @@ Maharashtra's Water Resources Department publishes dam storage at one link:
 
 ```bash
 pdfexorcist extract https://mwrdpravah.in/damsafety/control/pdfLatestReportEng \
-    --recipe examples/pravah_dams/recipe.toml -o pravah.csv
+    --recipe pravah_dams -o pravah.csv
 ```
 
 ```
-Agreed        1,380  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed        1,380  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -128,14 +128,14 @@ One recipe reads the NEET (UG) 2024 result press release tables.
 
 ```bash
 pdfexorcist extract https://www.nta.ac.in/Download/Notice/Notice_20240604195244.pdf \
-    --recipe examples/nta_notice/recipe.toml -o neet2024.csv
+    --recipe nta_notice -o neet2024.csv
 ```
 
 ```
-Agreed         615  100.0% of cells
-Unresolved       0
-Failed checks    6  agreed values that break a rule
-  x Table 1: registered >= categories: 6 cells
+✓  Agreed         615  100.0% of cells
+   Unresolved       0
+✗  Failed checks    6  agreed values break a rule
+    ✗ Table 1: registered >= categories: 6 cells
 ```
 
 ```
@@ -158,17 +158,17 @@ OCR reads the NTA NEET (UG) 2026 toppers scan.
 
 ```bash
 pdfexorcist extract https://cdnbbsr.s3waas.gov.in/s37bc1ec1d9c3426357e69acd5bf320061/uploads/2026/07/20260716180970800.pdf \
-    --recipe examples/nta_toppers/recipe.toml --pages 1-6 -o neet_top138.csv
+    --recipe nta_toppers --pages 1-6 -o neet_top138.csv
 ```
 
 ```
-  paddleocr  966 readings  253.2s
-  ocrmac     928 readings  7.5s
-  glmocr     845 readings  5.4s
+✓ paddleocr  966 readings  253.2s
+✓ ocrmac     928 readings  7.5s
+✓ glmocr     845 readings  5.4s
 
-Agreed          965  99.9% of cells
-Unresolved        1  engines disagreed: left blank
-Checks      2 rules  all passed
+✓  Agreed          965  99.9% of cells
+!  Unresolved        1  engines disagreed, left blank
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -196,9 +196,13 @@ pdfexorcist                 # a welcome screen with the common commands
 Common commands:
 
 ```bash
-pdfexorcist inspect report.pdf            # text or scan? and which command to run
-pdfexorcist extract report.pdf            # writes report.csv next to the PDF
-pdfexorcist engines                       # which engines are installed, and how to add more
+pdfexorcist inspect report.pdf            # show which pages have text and which are scans
+pdfexorcist extract report.pdf            # write the agreed values to report.csv
+pdfexorcist extract photo.jpg --ocr       # read a scan or a photo with OCR
+pdfexorcist show report.pdf --page 3      # show what the engines read on page 3
+pdfexorcist recipe suggest report.pdf     # find a shipped recipe for this PDF
+pdfexorcist recipe new report.pdf         # save the settings for one kind of table
+pdfexorcist engines                       # list the engines and how to install more
 ```
 
 `extract` writes an agreed-value grid and a `report.review.csv` file for
@@ -208,7 +212,7 @@ unresolved cells. It requires `--force` to overwrite an output file.
 |---|---|
 | `--pages 3-5` | read only these pages (`"1-3,7"`, `"10-"`) |
 | `--pages-matching "TABLE - 8"` | read only the pages whose text matches; a page without usable text is matched on OCR of its top strip (needs tesseract) |
-| `--ocr` | also read the pixels with the installed OCR engines: use it for scans and photos (an image turns it on by itself) |
+| `--ocr` | also read the page images with the installed OCR engines; use it for scans and photos (an image input turns it on) |
 | `-o out.xlsx` | where to write; the ending picks the format (csv, xlsx, parquet, json); a name without one is a folder |
 | `--layout cells` | one row per cell with every engine's reading |
 | `--engines a,b,c` / `--min-agree 3` | choose the engines, and how many must agree |
@@ -218,7 +222,7 @@ unresolved cells. It requires `--force` to overwrite an output file.
 `python -m pdfexorcist` also works. `pdfexorcist report.pdf` means
 `pdfexorcist extract report.pdf`.
 
-### Recipes: save the settings for a tricky table
+### Recipes: save the settings for one kind of table
 
 A recipe is a TOML file with parsing and validation settings:
 
@@ -469,7 +473,7 @@ Your own Python: `function = "file.py:name"` loads `name` from a `.py`
 file in the recipe's folder (or below it); that file may import its
 neighbours. The functions have the library's signatures: a parser takes
 `(page_no, lines)` pairs and yields dicts with the key columns and `value`
-(see `examples/mccd/mccd_table4.py`); a check takes the agreed cells
+(see `pdfexorcist/recipes/mccd/mccd_table4.py`); a check takes the agreed cells
 and returns True where a row fails (see `checks.py`); a postprocess step takes
 the cells and the PDF the engines read (only the recipe's pages, numbered from
 1) and returns the cells. Page numbers in the output are the original ones. A
@@ -520,14 +524,14 @@ uv venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 uv pip install -e . --group dev          # editable install + pytest, ruff, mypy, parquet/xlsx writers
 uv pip install -e ".[paddleocr,ocrmac]"        # optional: OCR engines to test
 
-pdfexorcist extract tests/fixtures/srs/srs_2019-23.pdf --recipe examples/srs_life_table/recipe.toml
+pdfexorcist extract tests/fixtures/srs/srs_2019-23.pdf --recipe srs_life_table
 uvx --from . pdfexorcist --help          # or run the checkout without a venv
 
 pytest -q tests                          # the suite; OCR tests are skipped
 PDFEXORCIST_OCR_TESTS=1 pytest -q tests  # also the slow OCR tests (needs the OCR extras)
-ruff check pdfexorcist tests examples .github/scripts      # lint, as CI runs it
-ruff format --check pdfexorcist tests examples .github/scripts
+ruff check pdfexorcist tests .github/scripts      # lint, as CI runs it
+ruff format --check pdfexorcist tests .github/scripts
 mypy pdfexorcist
 ```
 
-Each `examples/` recipe runs on a fixture in `tests/fixtures/`.
+Each recipe in `pdfexorcist/recipes/` runs on a fixture in `tests/fixtures/`.

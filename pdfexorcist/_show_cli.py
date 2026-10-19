@@ -8,7 +8,17 @@ from pathlib import Path
 from rich.table import Table
 
 from ._run import EngineProgress, load_recipe, make_plan
-from ._ui import CliError, err, esc, path_text, plural, refuse_overwrite, resolve_input
+from ._ui import (
+    CliError,
+    err,
+    esc,
+    file_link,
+    path_text,
+    plural,
+    refuse_overwrite,
+    resolve_input,
+)
+from .vote import TooFewReadings
 
 
 @dataclass(frozen=True)
@@ -101,9 +111,7 @@ def run_show(o: ShowOptions) -> None:
                 n_pages=plan.n_pages,
                 jobs=o.jobs,
             )
-        except RuntimeError as e:
-            if "independent readings" not in str(e):
-                raise
+        except TooFewReadings as e:
             raise CliError(
                 f"Too few engines read anything from page {page} ({e}).",
                 "Check that the page holds a table (pdfexorcist inspect), or add OCR engines with "
@@ -124,18 +132,27 @@ def run_show(o: ShowOptions) -> None:
 def _view_summary(view, written: list[Path]) -> None:  # type: ignore[no-untyped-def]
     c = view.counts()
     t = Table.grid(padding=(0, 2))
+    t.add_column(width=1)
     t.add_column(style="bold")
     t.add_column(justify="right")
-    t.add_column()
-    t.add_row("Agreed", f"{c['agreed']:,}", "[green]boxed solid[/]")
-    t.add_row("Unresolved", f"{c['unresolved']:,}", "[yellow]dashed, dotted fill[/]")
-    t.add_row("Failed checks", f"{c['failed']:,}", "[red]thick, hatched[/]")
-    t.add_row("Not read as cells", f"{c['skipped']:,}", "[dim]words outlined in grey[/]")
+    t.add_column(style="dim")
+    t.add_row("[ok]✓[/]" if c["agreed"] else "", "Agreed", f"{c['agreed']:,}", "boxed solid")
+    t.add_row(
+        "[warn]![/]" if c["unresolved"] else "",
+        "Unresolved",
+        f"{c['unresolved']:,}",
+        "dashed, dotted fill",
+    )
+    t.add_row(
+        "[error]✗[/]" if c["failed"] else "", "Failed checks", f"{c['failed']:,}", "thick, hatched"
+    )
+    t.add_row("", "Not read as cells", f"{c['skipped']:,}", "words outlined in grey")
     err.print()
     err.print(t)
     for note in view.notes:
-        err.print(f"[yellow]Note:[/] {esc(note)}", soft_wrap=True)
+        err.print(f"[warn]![/] {esc(note)}", soft_wrap=True)
+    err.print()
     for p in written:
-        err.print(f"Wrote [bold]{esc(path_text(p))}[/]", soft_wrap=True)
+        err.print(f"   Wrote   {file_link(p)}", soft_wrap=True)
     if written[0].suffix.lower() == ".html":
-        err.print("[dim]Open it in a browser (or add --open); it works offline.[/]")
+        err.print("   [dim]Open it in a browser (or add --open). It works offline.[/]")

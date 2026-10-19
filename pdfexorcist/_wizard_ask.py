@@ -81,7 +81,7 @@ class Asker:
             n = IntPrompt.ask(question, default=default, console=out)
             if n >= 1:
                 return n
-            out.print("[red]Please enter 1 or more.[/]")
+            out.print("[error]Please enter 1 or more.[/]")
 
 
 def _preview(
@@ -123,7 +123,7 @@ def _preview(
     if table is not None and len(table):
         _show_frame(table, "First rows of the result (blank = engines disagreed)")
     elif verified == 0:
-        out.print("[yellow]No value was agreed on. Try other pages, the other parser, or OCR.[/]")
+        out.print("[warn]No value was agreed on. Try other pages, the other parser, or OCR.[/]")
     return res
 
 
@@ -180,7 +180,7 @@ def _ask_checks(a: Answers, ask: Asker, res: pd.DataFrame) -> None:
             recipes.parse_rule(rule)
             a.checks.append({"column": column, "rule": rule, "by": by})
         except ValueError as e:
-            out.print(f"[red]{esc(e)}[/]")
+            out.print(f"[error]{esc(e)}[/]")
         if not ask.yes("Add another total?", False):
             return
 
@@ -194,13 +194,13 @@ def _check_preview(a: Answers, res: pd.DataFrame, output: Path) -> None:
     try:
         failed = validate(ok, rec.check_functions())["failed"]
     except recipes.RecipeError as e:
-        out.print(f"[red]{esc(e.message)}[/]")
+        out.print(f"[error]{esc(e.message)}[/]")
         return
     bad = failed[failed != ""]
     if bad.empty:
-        out.print("[green]The totals add up on the sample pages.[/]")
+        out.print("[ok]The totals add up on the sample pages.[/]")
     else:
         out.print(
-            f"[yellow]{plural(len(bad), 'value')} break a rule on the sample pages[/] (marked in "
+            f"[warn]{plural(len(bad), 'value')} break a rule on the sample pages[/] (marked in "
             "the failed column when you run it)."
         )

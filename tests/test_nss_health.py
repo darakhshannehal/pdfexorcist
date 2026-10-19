@@ -17,7 +17,7 @@ ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "nss_health"
 FIXTURE = "nss_ki75_appendix_p68-73.pdf"
 REPORT_446 = "nss_446_p18.pdf"
-RECIPE = ROOT / "examples" / "nss_health" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "nss_health" / "recipe.toml"
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 TEXT_ENGINES = ["pdftotext", "pdfplumber", "pymupdf", "pdfium"]
 

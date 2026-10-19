@@ -8,8 +8,8 @@ India's National Family Health Survey 2019-21 (NFHS-5) publishes "Key Indicators
 
 | Example | Reads |
 | --- | --- |
-| `examples/nfhs5/state.toml` | The India and State/UT sheet: 131 indicators over four pages, NFHS-5 Urban, Rural and Total, and NFHS-4 Total. |
-| `examples/nfhs5/district.toml` | A State's compendium: 104 indicators per district over three pages, NFHS-5 Total and NFHS-4 Total, or NFHS-5 Total alone where NFHS-4 has no comparable estimate. |
+| `pdfexorcist/recipes/nfhs5/state.toml` | The India and State/UT sheet: 131 indicators over four pages, NFHS-5 Urban, Rural and Total, and NFHS-4 Total. |
+| `pdfexorcist/recipes/nfhs5/district.toml` | A State's compendium: 104 indicators per district over three pages, NFHS-5 Total and NFHS-4 Total, or NFHS-5 Total alone where NFHS-4 has no comparable estimate. |
 
 The parser is the NFHS-6 one adapted (see [NFHS-6 fact sheets](nfhs6-factsheets.md)): rows by their printed indicator number, a wrapped label's values on a line of their own, and a row yields values only when it holds exactly the page's number of columns. The NFHS-5 sheets add:
 
@@ -23,23 +23,23 @@ The fixtures are pages of the IIPS PDFs in `tests/fixtures/nfhs5_state/` and `te
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe examples/nfhs5/state.toml -o chandigarh.csv
+pdfexorcist extract tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf --recipe pdfexorcist/recipes/nfhs5/state.toml -o chandigarh.csv
 ```
 
 ```
 Reading tests/fixtures/nfhs5_state/nfhs5_chandigarh_p3-6.pdf with 5 engines (a majority must agree),
-recipe examples/nfhs5/state.toml
-  pdftotext   476 readings  0.0s
-  pdfplumber  524 readings  0.5s
-  pymupdf     524 readings  0.0s
-  camelot     524 readings  4.7s
-  pdfium      68 readings  0.1s
+recipe pdfexorcist/recipes/nfhs5/state.toml
+✓ pdftotext   476 readings  0.0s
+✓ pdfplumber  524 readings  0.5s
+✓ pymupdf     524 readings  0.0s
+✓ camelot     524 readings  4.7s
+✓ pdfium      68 readings  0.1s
 
-Agreed          524  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          524  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote chandigarh.csv (table layout, 131 rows).
+   Wrote   chandigarh.csv  131 rows, table layout
 ```
 
 ```
@@ -53,15 +53,15 @@ Chandigarh,68,state,(7.2),*,(7.1),(6.9)
 A district sheet, with the district recipe:
 
 ```bash
-pdfexorcist extract tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe examples/nfhs5/district.toml -o kangra.csv
+pdfexorcist extract tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe pdfexorcist/recipes/nfhs5/district.toml -o kangra.csv
 ```
 
 ```
-Agreed          208  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed          208  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 
-Wrote kangra.csv (table layout, 104 rows).
+   Wrote   kangra.csv  104 rows, table layout
 ```
 
 ```
@@ -71,11 +71,11 @@ geo,indicator_no,level,nfhs5_total,nfhs4_total
 "Kangra, Himachal Pradesh",49,district,(83.9),(68.6)
 ```
 
-`pdfexorcist show tests/fixtures/nfhs5_state/nfhs5_india_p3-6.pdf --recipe examples/nfhs5/state.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nfhs5_state/nfhs5_india_p3-6.pdf --recipe pdfexorcist/recipes/nfhs5/state.toml -o page.png` draws what the recipe reads:
 
 ![NFHS-5 State fact sheet page](../assets/examples/nfhs5-state.png)
 
-`pdfexorcist show tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe examples/nfhs5/district.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/nfhs5_district/nfhs5_kangra_p31-33.pdf --recipe pdfexorcist/recipes/nfhs5/district.toml -o page.png` draws what the recipe reads:
 
 ![NFHS-5 district fact sheet page](../assets/examples/nfhs5-district.png)
 

@@ -6,7 +6,7 @@ description: "CBHI's National Health Profile 2023 read with a recipe: State/UT w
 
 The Central Bureau of Health Intelligence (CBHI) publishes the National Health Profile each year. Table 3.1.1 of [NHP 2023](https://cbhidghs.mohfw.gov.in/sites/default/files/2024-09/Final-Central-Bureau-of-Health-Intelligene-July-2024.pdf), on page 120 of the PDF, gives malaria cases and deaths by State/UT for 2018-2022, from NCVBDC (whose monthly counts are in the [MMIS report](mmis.md)). The 2022 header reads `2022 (till Dec-Prov.)`.
 
-The files are in `examples/nhp_malaria/`: `recipe.toml` and `nhp_malaria.py`. The fixture is page 120 of the report, in `tests/fixtures/nhp/`.
+The files are in `pdfexorcist/recipes/nhp_malaria/`: `recipe.toml` and `nhp_malaria.py`. The fixture is page 120 of the report, in `tests/fixtures/nhp/`.
 
 ## The recipe
 
@@ -46,27 +46,27 @@ A cell is keyed by State/UT and column, `2018 Cases` to `2022 (Prov.) Deaths`. T
 ## Run it
 
 ```bash
-pdfexorcist extract https://cbhidghs.mohfw.gov.in/sites/default/files/2024-09/Final-Central-Bureau-of-Health-Intelligene-July-2024.pdf --recipe examples/nhp_malaria/recipe.toml -o nhp.csv
+pdfexorcist extract https://cbhidghs.mohfw.gov.in/sites/default/files/2024-09/Final-Central-Bureau-of-Health-Intelligene-July-2024.pdf --recipe pdfexorcist/recipes/nhp_malaria/recipe.toml -o nhp.csv
 ```
 
 The whole report gives the same table as the fixture:
 
 ```bash
-pdfexorcist extract tests/fixtures/nhp/nhp_2023_p120.pdf --recipe examples/nhp_malaria/recipe.toml -o nhp.csv
+pdfexorcist extract tests/fixtures/nhp/nhp_2023_p120.pdf --recipe pdfexorcist/recipes/nhp_malaria/recipe.toml -o nhp.csv
 ```
 
 ```
-  pdftotext   374 readings  0.0s
-  pdfplumber  374 readings  0.1s
-  pymupdf     374 readings  0.0s
-  camelot     374 readings  1.5s
-  pdfium      374 readings  0.0s
+✓ pdftotext   374 readings  0.0s
+✓ pdfplumber  374 readings  0.1s
+✓ pymupdf     374 readings  0.0s
+✓ camelot     374 readings  1.5s
+✓ pdfium      374 readings  0.0s
 
-Agreed         374  100.0% of cells
-Unresolved       0
-Checks      1 rule  all passed
+✓  Agreed         374  100.0% of cells
+   Unresolved       0
+✓  Checks      1 rule  all passed
 
-Wrote nhp.csv (table layout, 38 rows).
+   Wrote   nhp.csv  38 rows, table layout
 ```
 
 ```

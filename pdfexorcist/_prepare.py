@@ -16,6 +16,36 @@ def save_copy(doc: Any, out_dir: Path, name: str) -> Path:
     return path
 
 
+def replace_pages(pdf: Path, doc: Any, copies: dict[int, Any], out_dir: Path) -> Path:
+    """Save doc with each page i replaced by the one-page doc copies[i], which are closed."""
+    import pymupdf
+
+    with pymupdf.open() as out:
+        done = 0  # pages before this are in out
+        for i, one in sorted(copies.items()):
+            if i > done:
+                out.insert_pdf(doc, from_page=done, to_page=i - 1)
+            out.insert_pdf(one)
+            one.close()
+            done = i + 1
+        if done < doc.page_count:
+            out.insert_pdf(doc, from_page=done, to_page=doc.page_count - 1)
+        return save_copy(out, out_dir, pdf.name)
+
+
+def replace_each(pdf: Path, out_dir: Path, one_page: Any, what: str) -> Path:
+    """Copy of pdf with each page one_page(doc, page) returns a one-page doc for replaced by it,
+    or pdf itself when it returns None for every page."""
+    import pymupdf
+
+    with pymupdf.open(pdf) as doc:
+        copies = {page.number: one for page in doc if (one := one_page(doc, page))}
+        if not copies:
+            return pdf
+        logger.info("%d pages: %s", len(copies), what)
+        return replace_pages(pdf, doc, copies, out_dir)
+
+
 def redact(page: Any, rects: Iterable[Any]) -> None:
     """Remove the text in each rect, keeping images and rules."""
     for rect in rects:
@@ -99,6 +129,13 @@ def crop_pages(pdf: Path, out_dir: Path, area: tuple[float, float, float, float]
             redact(page, (b for b in bands if not b.is_empty))
             page.set_cropbox(rect)
         return save_copy(doc, out_dir, f"area_{Path(pdf).name}")
+
+
+def as_pdf(path: Path, out_dir: Path) -> Path:
+    """path, or an image wrapped in a one-page PDF in out_dir."""
+    from .pages import IMAGE_SUFFIXES
+
+    return _photo_pdf(path, out_dir) if path.suffix.lower() in IMAGE_SUFFIXES else path
 
 
 def _photo_pdf(img: Path, out_dir: Path) -> Path:

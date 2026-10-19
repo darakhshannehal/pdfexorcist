@@ -13,7 +13,7 @@ India's annual report on Medical Certification of Cause of Death (MCCD) prints m
 | [5](#table-5-chapters-by-age) | chapter, by Roman numeral | age group, flat header | `mccd_tables.py` | `name_ages` |
 | [9](#table-9-chapters-by-year) | chapter, by Roman numeral | year, flat header | `mccd_tables.py` | `name_years` |
 
-The recipes are in `examples/mccd/`, next to both parsers. The fixtures are in `tests/fixtures/mccd/`, and `mccd_tables_manifest.csv` names the report pages they were cut from. In every recipe, `[pages]` finds the table by its title, so the recipe also works on a full report.
+The recipes are in `pdfexorcist/recipes/mccd/`, next to both parsers. The fixtures are in `tests/fixtures/mccd/`, and `mccd_tables_manifest.csv` names the report pages they were cut from. In every recipe, `[pages]` finds the table by its title, so the recipe also works on a full report.
 
 ## Table 2: chapters by State
 
@@ -38,13 +38,13 @@ function = "mccd_table4.py:name_states"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2019_t2_p68-69.pdf --recipe examples/mccd/table2.toml -o table2.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2019_t2_p68-69.pdf --recipe pdfexorcist/recipes/mccd/table2.toml -o table2.csv
 ```
 
 ```
-Agreed        2,124  100.0% of cells
-Unresolved        0
-Checks      2 rules  all passed
+✓  Agreed        2,124  100.0% of cells
+   Unresolved        0
+✓  Checks      2 rules  all passed
 ```
 
 ```
@@ -57,7 +57,7 @@ C00-D48,1,M,50061,490,85,83,2871,...
 
 The fixture is the whole 2019 spread: All States to Kerala on page 68, Lakshadweep to West Bengal on page 69. The ALL CAUSES block has no ICD range, so its key is `ALL`.
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2019_t2_p68-69.pdf --recipe examples/mccd/table2.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2019_t2_p68-69.pdf --recipe pdfexorcist/recipes/mccd/table2.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 2 page: chapter blocks by State](../assets/examples/mccd-table2.png)
 
@@ -120,13 +120,13 @@ format = "csv"
 `name_ages()` takes the first line of the page with five or more words like `<1`, `15-24` or `TOTAL`, and names the columns left to right when the count matches. It is a column named after the vote, as `name_states()` is for Table 4.
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe examples/mccd/table5.toml -o table5.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe pdfexorcist/recipes/mccd/table5.toml -o table5.csv
 ```
 
 ```
-Agreed          708  100.0% of cells
-Unresolved        0
-Checks      3 rules  all passed
+✓  Agreed          708  100.0% of cells
+   Unresolved        0
+✓  Checks      3 rules  all passed
 ```
 
 ```
@@ -138,7 +138,7 @@ I,T,7471,3433,5120,10049,14292,18024,21461,21751,10809,22547,1791,136748
 ALL,T,114955,16332,22993,57366,86911,127381,201342,264399,151802,390183,22359,1456023
 ```
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe examples/mccd/table5.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2018_t5_p104.pdf --recipe pdfexorcist/recipes/mccd/table5.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 5 page: chapter blocks by age group](../assets/examples/mccd-table5.png)
 
@@ -172,19 +172,20 @@ format = "csv"
 ```
 
 ```bash
-pdfexorcist extract tests/fixtures/mccd/mccd_2019_t9_p194.pdf --recipe examples/mccd/table9.toml -o table9.csv
+pdfexorcist extract tests/fixtures/mccd/mccd_2019_t9_p194.pdf --recipe pdfexorcist/recipes/mccd/table9.toml -o table9.csv
 ```
 
 ```
-Agreed         708  100.0% of cells
-Unresolved       0
-Failed checks   22  agreed values that break a rule
-  x group 'ALL' = the rest, within each page, sex, col: 20 cells
-  x sex 'T' = M + F, within each page, group, col: 3 cells
+✓  Agreed         708  100.0% of cells
+   Unresolved       0
+✗  Failed checks   22  agreed values break a rule
+    ✗ group 'ALL' = the rest, within each page, sex, col: 20 cells
+    ✗ sex 'T' = M + F, within each page, group, col: 3 cells
 
-Wrote table9.csv (table layout, 59 rows).
-Cells to review, with the reason and every engine's reading: table9.review.csv
-Some agreed values break a rule (see the failed column), so the exit code is 1.
+   Wrote   table9.csv  59 rows, table layout
+   Review  table9.review.csv  cells to check, with each engine's reading
+
+Some agreed values break a rule (see the failed column). The exit code is 1.
 ```
 
 ```
@@ -196,7 +197,7 @@ XII,T,1644,1590,1752,1886,1743,2380,2500,2784,2888,3872,4910,4349
 
 All five engines read 4910, and the page prints 4910. But M + F is 4510, the 2018 report prints 4510, and ALL CAUSES T for 2018 is 400 below the sum of the chapters. 4910 is a misprint in the report. The cell fails the sex check; pdfexorcist keeps the value and lists it for review.
 
-`pdfexorcist show tests/fixtures/mccd/mccd_2019_t9_p194.pdf --recipe examples/mccd/table9.toml -o page.png` draws what the recipe reads:
+`pdfexorcist show tests/fixtures/mccd/mccd_2019_t9_p194.pdf --recipe pdfexorcist/recipes/mccd/table9.toml -o page.png` draws what the recipe reads:
 
 ![MCCD Table 9 page: chapter blocks by year](../assets/examples/mccd-table9.png)
 

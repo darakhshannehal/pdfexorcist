@@ -14,7 +14,7 @@ from pdfexorcist.recipe import load
 ROOT = Path(__file__).parent.parent
 FIXTURES = Path(__file__).parent / "fixtures" / "nhp"
 FIXTURE = "nhp_2023_p120.pdf"
-RECIPE = ROOT / "examples" / "nhp_malaria" / "recipe.toml"
+RECIPE = ROOT / "pdfexorcist" / "recipes" / "nhp_malaria" / "recipe.toml"
 # from pdftotext -layout with a regex, independent of the parser
 EXPECTED = pd.read_csv(FIXTURES / "expected.csv", dtype=str, keep_default_na=False)
 

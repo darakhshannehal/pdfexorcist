@@ -28,17 +28,17 @@ pdfexorcist extract report.pdf
 
 ```
 Reading report.pdf with 5 engines (a majority must agree)
-  pdftotext   242 readings  0.0s
-  pdfplumber  242 readings  0.1s
-  pymupdf     242 readings  0.0s
-  camelot     237 readings  0.3s
-  pdfium      243 readings  0.0s
+✓ pdftotext   242 readings  0.0s
+✓ pdfplumber  242 readings  0.1s
+✓ pymupdf     242 readings  0.0s
+✓ camelot     237 readings  0.3s
+✓ pdfium      243 readings  0.0s
 
-Agreed      242  99.6% of cells
-Unresolved    1  engines disagreed: left blank
+✓  Agreed      242  99.6% of cells
+!  Unresolved    1  engines disagreed, left blank
 
-Wrote report.csv (table layout, 48 rows).
-Cells to review, with the reason and every engine's reading: report.review.csv
+   Wrote   report.csv  48 rows, table layout
+   Review  report.review.csv  cells to check, with each engine's reading
 ```
 
 It writes two files:
@@ -59,12 +59,12 @@ engines disagreed,1,#3,0,,,unresolved,,1,9×1,pdfium,camelot=<missing>|pdfplumbe
 | --- | --- |
 | `-p`, `--pages` | Pages to read: `"3"`, `"1-3,7"`, `"10-"`. Default: all, or the recipe's. |
 | `--pages-matching` | Read the pages whose text matches this regular expression (case-insensitive). A page without usable text, such as a font without a Unicode map, is matched on OCR of its top strip when tesseract is installed. `--pages` wins over it. |
-| `--ocr` | Also read the page pixels with the installed OCR engines. Use it for scans and photos. An image turns it on by itself. |
+| `--ocr` | Also read the page image with the installed OCR engines. Use it for scans and photos. An image turns it on by itself. |
 | `-e`, `--engines` | Engines to use, comma-separated, e.g. `pdfplumber,pymupdf,pdfium`. |
-| `-k`, `--min-agree` | Engines that must read a value identically. Default: a strict majority, at least 3 (2 when only OCR engines read). |
+| `-k`, `--min-agree` | Number of engines that must read the same value. Default: more than half, at least 3 (2 when only OCR engines read). |
 | `-j`, `--jobs` | Use up to N worker processes: engines run at once, and each splits its pages into up to N chunks, so one engine on a long PDF gets faster too. Chandra and GLM-OCR read in this process. The result is the same. Default: 1. |
-| `-r`, `--recipe` | Settings saved in a [recipe](recipes.md). Command-line options override it. |
-| `-o`, `--output` | A file (its ending picks the format) or a folder (a name without an ending). Default: next to the input. |
+| `-r`, `--recipe` | Settings saved in a [recipe](recipes.md): a file, or the name of a shipped recipe (`cpcb_aqi`). Command-line options override it. |
+| `-o`, `--output` | A file or a folder (a name without an ending). The file ending sets the format. Default: next to the input. |
 | `-f`, `--format` | `csv` (default), `xlsx`, `parquet` or `json`. |
 | `--layout` | `table` (default): the grid plus the review file. `cells`: one row per cell with every engine's reading. |
 | `--force` | Replace existing output files. |
@@ -94,10 +94,10 @@ page,row,col,label,value,status,failed,n_agree,votes,sources,dissent
 
 ```bash
 pdfexorcist extract scan.pdf --ocr
-pdfexorcist extract photo.jpg --recipe examples/lake_photo/recipe.toml
+pdfexorcist extract photo.jpg --recipe pdfexorcist/recipes/mybmc_lakes/recipe.toml
 ```
 
-On a photo the generic parser rarely lines up the OCR engines' rows. A recipe with a parser for that layout does; see [Recipes](recipes.md#example-a-photographed-table).
+On a photo the generic parser rarely lines up the OCR engines' rows. A recipe with a parser for that layout does; see [Recipes](recipes.md#example-mybmc-lakes-a-photographed-table).
 
 
 ## inspect
@@ -110,12 +110,13 @@ pdfexorcist inspect report.pdf
 
 ```
 report.pdf: 1 page
- Pages ┃ Content ┃ Characters ┃ Size
-━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━
- 1     │ text    │      2,196 │ A4 portrait
+Pages   Content   Characters   Size
+───────────────────────────────────────────
+1       text           2,196   A4 portrait
 
 It has a text layer, which the default engines read fast and exactly.
-Run: pdfexorcist extract report.pdf
+
+  Run  pdfexorcist extract report.pdf
 ```
 
 ```bash
@@ -126,7 +127,7 @@ pdfexorcist inspect photo.jpg
 photo.jpg: an image, 949 x 1146 pixels.
 Only OCR engines can read it.
 
-Run: pdfexorcist extract photo.jpg --ocr
+  Run  pdfexorcist extract photo.jpg --ocr
 ```
 
 `--json` prints the per-page details, including whether the text layer came from ocrmypdf.
@@ -158,7 +159,7 @@ pdfexorcist show report.pdf -p 3 -o page3.png        # only the PNG
 | Option | Description |
 | --- | --- |
 | `-p`, `--page` | The page to show. Default: the recipe's first page, or page 1. |
-| `-r`, `--recipe` | Use a recipe's parser, checks and engines. |
+| `-r`, `--recipe` | Use a recipe's parser, checks and engines: a file, or the name of a shipped recipe. |
 | `-o`, `--output` | `.html`, `.png`, or a folder. Default: `<name>.p<page>.show.html`. |
 | `--png` | Also write a static annotated PNG. |
 | `--open` | Open the result in the default browser. |
@@ -237,6 +238,54 @@ OK: states.toml is a valid recipe.
 Use it with: pdfexorcist extract YOUR.pdf --recipe states.toml
 ```
 
+### recipe suggest
+
+`recipe suggest` finds the shipped recipe for a PDF. It takes three steps:
+
+1. It compares the PDF's words with each recipe's sample. A recipe whose page text is in the PDF gets a bonus.
+2. It compares the layout: the shapes of the lines (text, whole numbers, decimals, dates) and the column positions.
+3. It runs the best recipes from each step with one engine. A recipe fits when its checks pass and it reads at least a fifth of the numbers on its pages.
+
+```bash
+pdfexorcist recipe suggest bulletin.pdf
+```
+
+```
+Shipped recipes for bulletin.pdf
+
+Recipe                      ┃ Words      ┃ Layout     ┃ Pages ┃ Trial run (one engine)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cpcb_aqi                    │ █████ 100% │ █████  99% │   ✓   │ fits: 318 cells, 100% of the
+CPCB AQI bulletin           │            │            │       │ numbers
+srs_maternal_mortality/age  │ █░░░░  17% │ █░░░░  24% │   ✗   │ reads nothing
+SRS maternal deaths by age  │            │            │       │
+karnataka_idsp              │ ░░░░░   9% │ █░░░░  30% │   –   │ reads nothing
+Karnataka IDSP weekly report│            │            │       │
+
+Fits: CPCB AQI bulletin. Use it with:
+  pdfexorcist extract bulletin.pdf --recipe cpcb_aqi
+```
+
+When no recipe fits, it names the recipe with the closest layout and suggests `recipe new`. The closest recipe's parser may look for headings this PDF does not print.
+
+A photo, a link to one, or a scanned PDF has no text layer. Tesseract reads its words and layout, and the trial runs with an installed OCR engine that the recipe names. When none of them is installed, the trial does not run and `suggest` names the engines to install:
+
+```bash
+pdfexorcist recipe suggest https://x.com/mybmc/status/2108041806676148568
+```
+
+```
+mybmc_lakes  │ ████░  75% │ ████░  78% │   –   │ fits: 119 cells, 100% of the numbers
+MyBMC lakes  │            │            │       │
+...
+No text layer: tesseract reads the words and layout, and each trial runs with an OCR engine its recipe names.
+```
+
+| Option | Description |
+| --- | --- |
+| `-j`, `--jobs` | Try up to N recipes at once, each in its own process. Default: 1. |
+| `--json` | Print the scores and trial runs as JSON. |
+
 ### recipe show
 
 `recipe show` explains a recipe in plain words. It runs none of its code. `--raw` prints the file with colours; `--json` prints the settings.
@@ -276,14 +325,15 @@ pdfexorcist extract report.pdf --recipe states.toml
 ```
 
 ```
-Agreed         234  100.0% of cells
-Unresolved       0
-Failed checks    9  agreed values that break a rule
-  x label 'TOTAL ALL INDIA' = TOTAL STATE(S) + TOTAL UT(S), within each page, col: 9 cells
+✓  Agreed         234  100.0% of cells
+   Unresolved       0
+✗  Failed checks    9  agreed values break a rule
+    ✗ label 'TOTAL ALL INDIA' = TOTAL STATE(S) + TOTAL UT(S), within each page, col: 9 cells
 
-Wrote report.csv (table layout, 39 rows).
-Cells to review, with the reason and every engine's reading: report.review.csv
-Some agreed values break a rule (see the failed column), so the exit code is 1.
+   Wrote   report.csv  39 rows, table layout
+   Review  report.review.csv  cells to check, with each engine's reading
+
+Some agreed values break a rule (see the failed column). The exit code is 1.
 ```
 
 Adding `where = "col <= 2"` to the check limits it to the count columns; see [Recipes](recipes.md#checks).

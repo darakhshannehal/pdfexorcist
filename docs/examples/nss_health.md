@@ -8,7 +8,7 @@ The National Sample Survey (NSS) 75th round asked households about health care i
 
 Most tables repeat their rows for Rural, Urban and Rural + Urban. The sector is printed once, beside the middle of its block. Table A26 also repeats them for Male, Female and All, and puts the sector in the page header. The tables by State/UT (A8, A13, ...) print the State beside the first row of its block.
 
-The files are in `examples/nss_health/`: `recipe.toml` and `nss_ki75.py`. The fixture is pages A-28 to A-33 of the report (Tables A23 to A32), in `tests/fixtures/nss_health/`.
+The files are in `pdfexorcist/recipes/nss_health/`: `recipe.toml` and `nss_ki75.py`. The fixture is pages A-28 to A-33 of the report (Tables A23 to A32), in `tests/fixtures/nss_health/`.
 
 ## The recipe
 
@@ -65,12 +65,12 @@ A block starts where the table's first row label comes back. The side labels rea
 ## Run it
 
 ```bash
-pdfexorcist extract tests/fixtures/nss_health/nss_ki75_appendix_p68-73.pdf --recipe examples/nss_health/recipe.toml -o ki75.csv
+pdfexorcist extract tests/fixtures/nss_health/nss_ki75_appendix_p68-73.pdf --recipe pdfexorcist/recipes/nss_health/recipe.toml -o ki75.csv
 ```
 
 ```
-Agreed      801  100.0% of cells
-Unresolved    0
+✓  Agreed      801  100.0% of cells
+   Unresolved    0
 ```
 
 ```

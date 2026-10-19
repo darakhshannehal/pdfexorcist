@@ -1,0 +1,35 @@
+# pdfexorcist recipe: NSS KI 75/25.0 (Health), Appendix A
+#
+# Key Indicators of Social Consumption in India: Health, NSS 75th round
+# (2017-18, MoSPI). Most detailed tables repeat their rows for Rural, Urban and
+# Rural + Urban (A26 also for Male, Female and All), with the side label printed
+# once beside the block. Engines read that label on a line of its own, in the
+# first cell of a row, or joined to the row label, so nss_ki75.py keys rows by
+# block and names the block from the side labels it holds. Try it:
+#
+#   pdfexorcist extract tests/fixtures/nss_health/nss_ki75_appendix_p68-73.pdf --recipe pdfexorcist/recipes/nss_health/recipe.toml
+
+name = "NSS KI 75: health detailed tables"
+description = "Appendix A tables by sector (NSS KI 75/25.0, Health)"
+sample = "../../../tests/fixtures/nss_health/nss_ki75_appendix_p68-73.pdf"
+
+[pages]
+match = 'Table A\d+:'
+
+[engines]
+ocr = false  # a text layer: the fast text engines, 3 must agree
+use = ["pdftotext", "pdfplumber", "pymupdf", "pdfium"]
+
+[parser]
+type = "custom"
+function = "nss_ki75.py:parse"
+key = ["table", "block", "row", "col"]
+
+[[checks]]
+function = "nss_ki75.py:shares_add_up"
+
+[output]
+layout = "table"
+rows = ["table", "block", "sector", "group", "area", "label", "n"]
+columns = "col"
+format = "csv"

@@ -10,7 +10,7 @@ import pandas as pd
 import pymupdf
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parents[2] / "examples" / "nfhs5"))
+sys.path.insert(0, str(HERE.parents[2] / "pdfexorcist" / "recipes" / "nfhs5"))
 from nfhs5_factsheet import KEY, STATE_COLUMNS, checks, parse  # noqa: E402
 
 from pdfexorcist import extract  # noqa: E402

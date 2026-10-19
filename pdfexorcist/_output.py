@@ -8,7 +8,7 @@ from typing import Any
 import pandas as pd
 from rich.table import Table
 
-from ._ui import EXIT_FAILED, err, esc, path_text, plural
+from ._ui import EXIT_FAILED, err, esc, file_link, plural
 from .recipe import RecipeError
 
 META = ["value", "status", "failed", "n_agree", "votes", "sources", "dissent"]
@@ -208,62 +208,63 @@ def render_summary(s: dict[str, Any]) -> None:
     """Render the human summary to stderr."""
     for m, why in s["engines"]["skipped"].items():
         if why.startswith("not installed"):
-            err.print(f"  {m:<11} [yellow]skipped[/], {esc(why)}", soft_wrap=True)
+            err.print(f"  {m:<11} [warn]skipped[/], {esc(why)}", soft_wrap=True)
     for m, n in s["engines"]["used"].items():
         if not n:
-            err.print(f"  [yellow]{m} read no values on these pages.[/]")
+            err.print(f"  [warn]{m} read no values on these pages.[/]")
     c = s["cells"]
     pct = 100 * c["verified"] / max(c["total"], 1)
     t = Table.grid(padding=(0, 2))
+    t.add_column(width=1)
     t.add_column(style="bold")
     t.add_column(justify="right")
-    t.add_column()
-    t.add_row("Agreed", f"{c['verified']:,}", f"[green]{pct:.1f}% of cells[/]")
+    t.add_column(style="dim")
     t.add_row(
+        "[ok]✓[/]" if c["verified"] else "[error]✗[/]",
+        "Agreed",
+        f"{c['verified']:,}",
+        f"{pct:.1f}% of cells",
+    )
+    t.add_row(
+        "[warn]![/]" if c["unresolved"] else "",
         "Unresolved",
         f"{c['unresolved']:,}",
-        "[yellow]engines disagreed: left blank[/]" if c["unresolved"] else "",
+        "engines disagreed, left blank" if c["unresolved"] else "",
     )
     if s["checks_run"] and not c["failed_checks"]:
-        t.add_row("Checks", plural(len(s["checks_run"]), "rule"), "[green]all passed[/]")
+        t.add_row("[ok]✓[/]", "Checks", plural(len(s["checks_run"]), "rule"), "all passed")
     if s["checks"] or c["failed_checks"]:
         t.add_row(
-            "Failed checks",
-            f"{c['failed_checks']:,}",
-            "[red]agreed values that break a rule[/]",
+            "[error]✗[/]", "Failed checks", f"{c['failed_checks']:,}", "agreed values break a rule"
         )
     err.print()
     err.print(t)
     for name, n in s["checks"].items():
-        err.print(f"  [red]x[/] {esc(name)}: {plural(n, 'cell')}")
+        err.print(f"    [error]✗[/] {esc(name)}: {plural(n, 'cell')}")
     for note in s["notes"]:
-        err.print(f"[yellow]Note:[/] {esc(note)}")
+        err.print(f"[warn]![/] {esc(note)}", soft_wrap=True)
     outs = [Path(p) for p in s["outputs"]]
-    shape = f", {plural(s['table']['rows'], 'row')}" if s["table"] else ""
+    shape = f"{plural(s['table']['rows'], 'row')}, " if s["table"] else ""
+    err.print()
     err.print(
-        f"\nWrote [bold]{esc(path_text(outs[0]))}[/] ({s['layout']} layout{shape}).",
-        soft_wrap=True,
+        f"   Wrote   {file_link(outs[0])}  [dim]{shape}{s['layout']} layout[/]", soft_wrap=True
     )
     if len(outs) > 1:
         err.print(
-            "Cells to review, with the reason and every engine's reading: "
-            f"[bold]{esc(path_text(outs[1]))}[/]",
+            f"   Review  {file_link(outs[1])}  [dim]cells to check, with each engine's reading[/]",
             soft_wrap=True,
         )
     elif (
         s["layout"] == "table" and s["format"] == "xlsx" and (c["unresolved"] or c["failed_checks"])
     ):
-        err.print(
-            "Cells to review, with the reason and every engine's reading: the [bold]review[/] "
-            "sheet."
-        )
+        err.print("   Review  the [bold]review[/] sheet  [dim]cells to check[/]")
     if c["verified"] == 0:
         err.print(
-            "[red]No value was agreed on.[/] For scans add --ocr; check the pages with "
+            "\n[error]No value was agreed on.[/] For scans add --ocr; check the pages with "
             "pdfexorcist inspect."
         )
     elif c["failed_checks"]:
         err.print(
-            "[red]Some agreed values break a rule[/] (see the failed column), so the exit code is "
-            "1."
+            "\n[error]Some agreed values break a rule[/] (see the failed column). "
+            "The exit code is 1."
         )

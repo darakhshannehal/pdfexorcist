@@ -23,6 +23,11 @@ export async function nodeBoot() {
   const manifest = JSON.parse(execFileSync('python3', [join(WEB, 'build.py'), '--manifest'], { encoding: 'utf8' }));
   const files = Object.fromEntries(manifest.map(([path, src]) => [path, readFileSync(src)]));
   for (const f of tree(join(ROOT, 'tests'))) files[relative(ROOT, f)] = readFileSync(f);
+  // the tests read the recipes from the repo; the package's copy comes from the manifest
+  for (const f of tree(join(ROOT, 'pdfexorcist', 'recipes'))) files[relative(ROOT, f)] = readFileSync(f);
+  files['pyproject.toml'] = readFileSync(join(ROOT, 'pyproject.toml')); // testpaths, packaging test
+  // recipe suggest's index: the site does not ship it
+  files['site/pdfexorcist/_recipe_index.json'] = readFileSync(join(ROOT, 'pdfexorcist', '_recipe_index.json'));
   files['web/examples.json'] = readFileSync(join(WEB, 'examples.json')); // test_examples_gallery
   const pdfium = createRequire(import.meta.url)('./vendor/pdfium.cjs');
   await new Promise((resolve) => {

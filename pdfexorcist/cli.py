@@ -113,9 +113,9 @@ def _show_command(start: str, kind: str):  # type: ignore[no-untyped-def]
 
 app.command(
     "show",
-    help="Draw one page with a box on every cell the vote produced: agreed, unresolved, or "
-    "failing a check, plus the text left out. Writes one offline HTML file with three views: "
-    "the page, the engines side by side, and a grid of every engine's reading.",
+    help="Draw a box on each voted cell of one page. A box shows if the cell was agreed, "
+    "unresolved, or failed a check. Text that was left out is also shown. Writes one offline "
+    "HTML file with three views: the page, the engines side by side, and a grid of all readings.",
     epilog="[bold]Examples[/]\n\n"
     "  pdfexorcist show report.pdf --page 3            [dim]# writes report.p3.show.html[/]\n\n"
     "  pdfexorcist show report.pdf -p 3 --recipe mccd.toml --open\n\n"
@@ -124,7 +124,7 @@ app.command(
 )(_show_command("page", "show"))
 app.command(
     "compare",
-    help="Compare what each engine reads on one page, side by side: the same file as "
+    help="Show what each engine reads on one page, side by side. Writes the same file as "
     "[cyan]show[/], opened on its Compare engines view.",
     epilog="[bold]Examples[/]\n\n"
     "  pdfexorcist compare report.pdf --page 3          [dim]# writes report.p3.compare.html[/]\n\n"
@@ -136,7 +136,7 @@ app.command(
 def engines(
     as_json: bool = typer.Option(False, "--json", help="Print the table as JSON."),
 ) -> None:
-    """List every engine: installed or not, what it reads, and the exact command to install it."""
+    """List all engines. Shows if each is installed, what it reads, and how to install it."""
     with guard(False, as_json):
         from ._info import show_engines
 
@@ -157,7 +157,7 @@ def inspect(
     as_json: bool = typer.Option(False, "--json", help="Print per-page details as JSON."),
     debug: bool = typer.Option(False, "--debug", help="Show full error details."),
 ) -> None:
-    """Look at a file without extracting: text layer or scan, page sizes, and the command to run."""
+    """Look at a file without extracting. Shows text layer or scan, page sizes, and what to run."""
     from ._info import show_inspect
 
     with guard(debug, as_json):

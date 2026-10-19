@@ -140,6 +140,25 @@ def test_fake_bold():
     assert is_value("2E+05")  # Excel's display of a number too wide for its cell (MCCD 2013)
 
 
+def test_value_with_uncertainty():
+    from pdfexorcist._text_engines import _layout_lines
+    from pdfexorcist.rows import group_words, is_value
+
+    for t in ["9.20±0.40", "1489±10", "-1.2±0.3", "12+/-3", "1,234.5±6.7%"]:
+        assert is_value(t), t
+    for t in ["±", "1±", "±2", "a±b"]:
+        assert not is_value(t), t
+    # narrow columns 3 pt apart (IFCT 2017) hold two values
+    words = [
+        (0, 20, 100, "O006", 90),
+        (30, 60, 100, "0.041±0.031", 90),
+        (63, 93, 100, "0.001±0.000", 90),
+    ]
+    assert [t for _, t in group_words(words)[0]] == ["O006", "0.041±0.031", "0.001±0.000"]
+    line = _layout_lines("M004  Egg   1.31±0.11 0.04±0.01")[0]
+    assert [t for _, t in line] == ["M004", "Egg", "1.31±0.11", "0.04±0.01"]
+
+
 def test_missing_parts_can_fail():
     from pdfexorcist import total_check, validate
 

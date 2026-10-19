@@ -1,0 +1,39 @@
+# pdfexorcist recipe: Karnataka IDSP weekly infectious disease report
+#
+# Two pages of boxes, one per disease, beside a trend chart each: last week (last
+# month for malaria and JE) and the current year, as cases, bites and deaths, or
+# tested and positives. idsp.py keys each value by the disease's name as printed,
+# the period and the measure, and leaves out the charts' axis labels. Try it:
+#
+#   pdfexorcist extract 'https://hfwcom.karnataka.gov.in/uploads/41st%20IDSP%20Weekly%20Infectious%20Diseases%20Report_1792161404.pdf' --recipe pdfexorcist/recipes/karnataka_idsp/recipe.toml
+#
+# On the fixture (week 41 of 2026, images shrunk):
+#
+#   pdfexorcist extract tests/fixtures/karnataka_idsp/karnataka_idsp_2026_week41.pdf --recipe pdfexorcist/recipes/karnataka_idsp/recipe.toml
+
+name = "Karnataka IDSP weekly report"
+description = "Cases, tests and positives by disease, last week and the current year (Karnataka State Surveillance Unit)"
+sample = "../../../tests/fixtures/karnataka_idsp/karnataka_idsp_2026_week41.pdf"
+
+[engines]
+ocr = false
+
+[normalize]
+remove_commas = true  # malaria tested: 95,29,475
+
+[parser]
+type = "custom"
+function = "idsp.py:parse"
+key = ["disease", "period", "measure"]
+
+# positives are among those tested
+[[checks]]
+column = "measure"
+rule = "tested >= positives"
+by = ["disease", "period"]
+
+[output]
+layout = "table"
+rows = ["disease", "measure"]
+columns = "period"
+format = "csv"

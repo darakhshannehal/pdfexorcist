@@ -11,7 +11,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "assets" / "examples"
-OCR = {"lake-photo", "nta-toppers"}
+OCR = {"mybmc-lakes", "nta-toppers"}
 IMAGES = {
     "mccd-table4": ("mccd/table4.toml", None),
     "mccd-table2": ("mccd/table2.toml", None),
@@ -26,15 +26,16 @@ IMAGES = {
     "nfhs5-state": ("nfhs5/state.toml", None),
     "nfhs5-district": ("nfhs5/district.toml", None),
     "pravah": ("pravah_dams/recipe.toml", 4),  # the Mumbai dams
+    "cwc": ("cwc_reservoirs/recipe.toml", 5),
     "nta-notice": ("nta_notice/recipe.toml", None),
     "nta-toppers": ("nta_toppers/recipe.toml", None),
     "cii-rows": ("settings/cii_rows.toml", None),
-    "lake-photo": ("lake_photo/recipe.toml", None),
+    "mybmc-lakes": ("mybmc_lakes/recipe.toml", None),
 }
 
 
 def render(name: str, recipe: str, page: int | None) -> Path:
-    path = ROOT / "examples" / recipe
+    path = ROOT / "pdfexorcist" / "recipes" / recipe
     sample = (path.parent / tomllib.loads(path.read_text())["sample"]).resolve()
     out = OUT / f"{name}.png"
     with tempfile.TemporaryDirectory() as tmp:

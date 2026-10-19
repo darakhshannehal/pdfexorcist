@@ -27,17 +27,17 @@ pdfexorcist extract report.pdf
 
 ```
 Reading report.pdf with 5 engines (a majority must agree)
-  pdftotext   242 readings  0.0s
-  pdfplumber  242 readings  0.1s
-  pymupdf     242 readings  0.0s
-  camelot     237 readings  0.3s
-  pdfium      243 readings  0.0s
+✓ pdftotext   242 readings  0.0s
+✓ pdfplumber  242 readings  0.1s
+✓ pymupdf     242 readings  0.0s
+✓ camelot     237 readings  0.3s
+✓ pdfium      243 readings  0.0s
 
-Agreed      242  99.6% of cells
-Unresolved    1  engines disagreed: left blank
+✓  Agreed      242  99.6% of cells
+!  Unresolved    1  engines disagreed, left blank
 
-Wrote report.csv (table layout, 48 rows).
-Cells to review, with the reason and every engine's reading: report.review.csv
+   Wrote   report.csv  48 rows, table layout
+   Review  report.review.csv  cells to check, with each engine's reading
 ```
 
 `report.csv` holds the agreed values as a grid:

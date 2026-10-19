@@ -8,7 +8,7 @@ import pandas as pd
 import pymupdf
 
 HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE.parents[2] / "examples" / "census_iips_district"))
+sys.path.insert(0, str(HERE.parents[2] / "pdfexorcist" / "recipes" / "census_iips_district"))
 from iips_district_projection import KEY, TOTAL, parse  # noqa: E402
 
 from pdfexorcist import extract  # noqa: E402

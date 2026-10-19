@@ -23,6 +23,6 @@ class Shard:
         config.hook.pytest_deselected(items=[t for t in items if t not in keep])
         items[:] = keep
 
-pytest.main(['-p', 'no:cacheprovider', 'tests', *ARGS], plugins=[Shard()] if SHARD else [])
+pytest.main(['-p', 'no:cacheprovider', *ARGS], plugins=[Shard()] if SHARD else [])  # testpaths: pyproject.toml
 `);
 process.exit(Number(code));

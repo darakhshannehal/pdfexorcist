@@ -1,0 +1,31 @@
+# pdfexorcist recipe: SRS Cause of Death Statistics 2021-23, Table 2.3A
+#
+# Top 10 causes of death in India, share of deaths by sex (Office of the Registrar
+# General of India). srs_cod_top10.py keys each row by its rank. Try it on the page cut:
+#
+#   pdfexorcist extract tests/fixtures/srs_mmr/srs_cod_2021-23_p31.pdf --recipe pdfexorcist/recipes/srs_maternal_mortality/cod_top10.toml
+
+name = "SRS top 10 causes of death"
+description = "Top 10 causes of death in India by sex, Table 2.3A (SRS Cause of Death 2021-23)"
+sample = "../../../tests/fixtures/srs_mmr/srs_cod_2021-23_p31.pdf"
+
+[pages]
+# skips the list of tables, which repeats the title
+match = 'Table 2\.3A\s*.\s*Top 10 Causes of Deaths in India'
+
+[engines]
+ocr = false
+
+[parser]
+type = "custom"
+function = "srs_cod_top10.py:parse"
+key = ["page", "rank", "sex"]
+
+[[checks]]
+function = "srs_cod_top10.py:adds_to_100"
+
+[output]
+layout = "table"
+rows = ["rank", "cause"]
+columns = "sex"
+format = "csv"
