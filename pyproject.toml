@@ -26,7 +26,9 @@ classifiers = [
 dependencies = [
     "pandas",
     "pdfplumber",
-    "pymupdf",
+    # pymupdf 2.0 has wheels for these only (Python 3.11+); its sdist does not build
+    "pymupdf>=2.0; python_version >= '3.11' and (sys_platform == 'darwin' and platform_machine == 'arm64' or sys_platform == 'linux' and platform_machine in 'x86_64 aarch64' or sys_platform == 'win32' and platform_machine in 'AMD64 x86_64')",
+    "pymupdf<2; python_version < '3.11' or sys_platform == 'darwin' and platform_machine != 'arm64' or sys_platform == 'linux' and platform_machine not in 'x86_64 aarch64' or sys_platform == 'win32' and platform_machine not in 'AMD64 x86_64' or sys_platform != 'darwin' and sys_platform != 'linux' and sys_platform != 'win32'",
     "pypdfium2",
     "camelot-py>=2",  # network, hybrid and ml flavors
     "typer>=0.12",  

@@ -131,9 +131,10 @@ def word_score(words: Mapping[str, int], entry: dict[str, Any], idf: Mapping[str
     return sum(idf[w] for w in entry["words"] if w in words) / total if total else 0.0
 
 
-def file_sha(path: Path) -> str:
-    """The first 16 hex digits of a file's SHA-256."""
-    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+def file_sha(path: Path, text: bool = False) -> str:
+    """The first 16 hex digits of a file's SHA-256; text with LF line ends, as Windows has CRLF."""
+    data = path.read_bytes()
+    return hashlib.sha256(data.replace(b"\r\n", b"\n") if text else data).hexdigest()[:16]
 
 
 def recipe_sample(rec: Any) -> Path | None:
@@ -165,7 +166,12 @@ def build_index(root: Path | None = None) -> dict[str, Any]:
                 top = Counter(fp["words"]).most_common(TOP_WORDS)
                 seen[key] = {k: fp[k] for k in INDEX_KEYS} | {"words": sorted(w for w, _ in top)}
             rel = path.relative_to(root).as_posix()
-            entry = {"path": rel, "recipe_sha": file_sha(path), "sample_sha": sha, "pages": pages}
+            entry = {
+                "path": rel,
+                "recipe_sha": file_sha(path, text=True),
+                "sample_sha": sha,
+                "pages": pages,
+            }
             entries.append({**entry, **seen[key]})
     return {"entries": entries}
 

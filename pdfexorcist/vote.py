@@ -3,7 +3,7 @@
 import logging
 import tempfile
 from collections import Counter
-from collections.abc import Callable, Iterable, Iterator, Sequence
+from collections.abc import Callable, Generator, Iterable, Iterator, Sequence
 from pathlib import Path
 from typing import Any, Literal, overload
 
@@ -366,8 +366,8 @@ def extract(
         names = list(methods or DEFAULTS)
         read = _read_all(names, pdf, jobs, report, Path(tmp)) if jobs > 1 else {}
         for name in names:
+            lines: Iterable[Page] = ()
             try:
-                lines: Iterable[Page]
                 if name in read:
                     got = read.pop(name)  # free each engine's pages once parsed
                     if isinstance(got, Exception):
@@ -383,6 +383,9 @@ def extract(
                 logger.warning("skipping %s: %s: %s", name, type(e).__name__, e)
                 report(name, "skipped", f"{type(e).__name__}: {e}")
                 continue
+            finally:  # an early-stopping parser leaves the PDF open; Windows cannot delete it
+                if isinstance(lines, Generator):
+                    lines.close()
             if normalize:
                 rows = [
                     {**r, "value": v} for r in rows if (v := normalize(str(r["value"]))) is not None

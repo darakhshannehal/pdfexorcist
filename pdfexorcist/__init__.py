@@ -12,6 +12,15 @@ if TYPE_CHECKING:
     from .rows import KEY, group_words, parse_by_columns, parse_rows
     from .vote import extract, fit_page_boxes, vote
 
+# import pymupdf 2.0 without its add-ons: pymupdf4llm moves glyph boxes, onnxruntime warns
+_held = [n for n in ("pymupdf.layout", "pymupdf4llm") if n not in sys.modules]
+sys.modules.update(dict.fromkeys(_held))  # type: ignore[arg-type]
+try:
+    importlib.import_module("pymupdf").TOOLS.unset_quad_corrections(False)
+finally:
+    for _name in _held:  # the caller may still import them
+        del sys.modules[_name]
+
 _MODULE = {
     "EXTRACTORS": "extractors",
     "KEY": "rows",
