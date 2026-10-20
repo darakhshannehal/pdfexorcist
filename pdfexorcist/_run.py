@@ -13,13 +13,14 @@ from . import doctor
 from . import recipe as recipes
 from ._clean import cut
 from ._progress import EngineProgress as EngineProgress  # used via _run by callers
+from ._registry import lab_families, one_per_lab
 from ._shipped import resolve_recipe
 from ._ui import EXIT_FAILED, CliError, cmd_arg, plural, refuse_overwrite
 from .checks import lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
 from .pages import IMAGE_SUFFIXES, is_scan, ocr_layer, page_kinds
 from .recipe import Recipe, page_list
-from .vote import TooFewReadings, extract
+from .vote import TooFewReadings, _family, extract
 
 EXT = {"csv": ".csv", "xlsx": ".xlsx", "parquet": ".parquet", "json": ".json"}
 FORMAT_DEPS = {"xlsx": [("openpyxl",)], "parquet": [("pyarrow",), ("fastparquet",)]}
@@ -174,7 +175,7 @@ def make_plan(
     explicit = _engines(engines_opt) or (list(rec.engines) if rec.engines else None)
     ocr = ocr_opt or rec.ocr
     status = {n: doctor.status(n) for n in EXTRACTORS}
-    ocr_ok = doctor.installed_ocr()
+    ocr_ok = one_per_lab(doctor.installed_ocr())
     scanned = False
     if not is_image:
         read = list(pages or range(1, n_pages + 1))
@@ -223,19 +224,21 @@ def make_plan(
     }
     runnable = [m for m in methods if status[m].installed]
     ocr_only = bool(runnable) and all(m in doctor.OCR_ENGINES for m in runnable)
+    families = lab_families(runnable, rec.families)
+    voters = len({_family(families)(m) for m in runnable})
 
     min_agree = min_agree_opt or rec.min_agree
     if min_agree is None and ocr_only:
-        if len(runnable) < 2:
+        if voters < 2:
             raise CliError(
-                f"Only one OCR engine ({runnable[0]}) can run here; a vote needs at least two "
-                "independent readings.",
+                f"Only one independent OCR engine ({', '.join(runnable)}) can run here; a vote "
+                "needs at least two independent readings.",
                 "Install another OCR engine; pdfexorcist engines shows how.",
                 code=EXIT_FAILED,
             )
-        min_agree = max(2, len(runnable) // 2 + 1)
-    need = min_agree or (2 if rec.families else 3)
-    if len(runnable) < need:
+        min_agree = max(2, voters // 2 + 1)
+    need = min_agree or (2 if families else 3)
+    if voters < need:
         raise CliError(
             f"Only {plural(len(runnable), 'engine')} can run here "
             f"({', '.join(runnable) or 'none'}), "

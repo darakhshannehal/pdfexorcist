@@ -11,6 +11,21 @@ EXTRACTORS: dict[str, Extractor] = {}
 DEFAULTS: list[str] = []
 IN_PROCESS: set[str] = set()  # engines --jobs keeps in the calling process
 OCR_DPI = 300
+LABS = {"datalab": ["indra", "chandra"]}  # one lab's models share misreads; --ocr runs the first
+
+
+def lab_families(names: list[str], families: dict[str, list[str]] | None) -> dict[str, list[str]]:
+    """families, plus a family for each lab with two or more engines in names and in no family."""
+    given = families or {}
+    taken = {m for ms in given.values() for m in ms}
+    labs = {f: ms for f, ms in LABS.items() if sum(m in names and m not in taken for m in ms) > 1}
+    return {**labs, **given}
+
+
+def one_per_lab(names: list[str]) -> list[str]:
+    """names, with only the first engine of each lab."""
+    later = {m for ms in LABS.values() for m in [m for m in ms if m in names][1:]}
+    return [n for n in names if n not in later]
 
 
 def register(

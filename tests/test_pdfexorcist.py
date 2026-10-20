@@ -1,5 +1,7 @@
 """Voting and extraction."""
 
+import sys
+import types
 from pathlib import Path
 
 import pandas as pd
@@ -7,7 +9,9 @@ import pymupdf
 import pytest
 from cli_helpers import make_pdf
 
-from pdfexorcist import extract, parse_rows, vote
+from pdfexorcist import EXTRACTORS, extract, parse_rows, vote
+from pdfexorcist._ocr_engines import _indra
+from pdfexorcist._registry import lab_families, one_per_lab
 
 ROWS = [("Tamil Nadu", "12.3", "(45.6)", "*"), ("Kerala", "1,020", "7", "8.0")]
 
@@ -124,6 +128,47 @@ def test_family_vote():
         (80, 90, 100, "16.3", 90),
     ]
     assert [t for _, t in group_words(words)[0]] == ["Goa", "532.2", "16.3"]
+
+
+def test_lab_votes_once(states_pdf, monkeypatch):
+    """Pin LABS: when chandra and indra read the same wrong value, they count as one vote."""
+
+    def misread(pdf):
+        for page, lines in EXTRACTORS["pdfplumber"](pdf):
+            yield page, [[(x, "1,021" if t == "1,020" else t) for x, t in ln] for ln in lines]
+
+    monkeypatch.setitem(EXTRACTORS, "chandra", misread)
+    monkeypatch.setitem(EXTRACTORS, "indra", misread)
+    res = extract(states_pdf, methods=["pdfplumber", "pymupdf", "chandra", "indra"])
+    cell = res[res.votes.str.contains("1,021")].iloc[0]
+    assert (cell.value, cell.status) == ("1,020", "verified")
+
+
+def test_ocr_runs_one_engine_per_lab():
+    assert one_per_lab(["tesseract", "chandra", "indra"]) == ["tesseract", "indra"]
+    given = {"pdfminer": ["pdfplumber", "camelot"]}
+    assert lab_families(["chandra", "indra", "pdfplumber"], given) == {
+        "datalab": ["indra", "chandra"],
+        **given,
+    }
+
+
+@pytest.mark.parametrize("cuda", [True, False])
+def test_indra_uses_cuda_when_onnxruntime_has_it(monkeypatch, cuda):
+    providers = (
+        ["CUDAExecutionProvider", "CPUExecutionProvider"] if cuda else ["CPUExecutionProvider"]
+    )
+    loaded = {}
+    monkeypatch.setitem(
+        sys.modules, "onnxruntime", types.SimpleNamespace(get_available_providers=lambda: providers)
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "indra_ocr",
+        types.SimpleNamespace(load=lambda **kw: types.SimpleNamespace(ocr=loaded.update(kw))),
+    )
+    _indra.__wrapped__()
+    assert loaded["providers"] == (providers if cuda else None)
 
 
 def test_fake_bold():

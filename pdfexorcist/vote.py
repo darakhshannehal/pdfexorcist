@@ -11,7 +11,7 @@ import pandas as pd
 
 from ._clean import clean_pdf, cut
 from ._prepare import _pages, as_pdf, fit_page_boxes
-from ._registry import IN_PROCESS
+from ._registry import IN_PROCESS, lab_families
 from .checks import Check, lossy, validate
 from .extractors import DEFAULTS, EXTRACTORS
 from .pages import ocr_layer
@@ -325,7 +325,8 @@ def extract(
             always runs: a value printed as 2E+05, ##### or #REF! fails it.
         min_unopposed: Also accept a value this many engines read when none read another.
         families: Engines that are not independent vote once per family. A text
-            layer made by ocrmypdf makes the text engines one family.
+            layer made by ocrmypdf makes the text engines one family. Two engines from
+            one lab (LABS) make one more family.
         normalize: Rewrites each value before the vote; None drops it.
         pages: 1-based pages to read; result pages are renumbered 1..len(pages).
         on_engine: Called as (name, event, detail) with "start", "done" (readings)
@@ -360,10 +361,11 @@ def extract(
             pdf = clean_pdf(pdf, Path(tmp), decode_fonts, fit_boxes)
         if return_readings:
             kept.pdf = pdf.read_bytes()
+        names = list(methods or DEFAULTS)
         if not families and ocr_layer(pdf):
             families = {"text layer": TEXT_ENGINES}
             logger.warning("text layer made by ocrmypdf: text engines vote once, as 'text layer'")
-        names = list(methods or DEFAULTS)
+        families = lab_families(names, families)
         read = _read_all(names, pdf, jobs, report, Path(tmp)) if jobs > 1 else {}
         for name in names:
             lines: Iterable[Page] = ()

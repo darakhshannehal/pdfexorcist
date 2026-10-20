@@ -9,6 +9,12 @@ workflow moves those entries into a dated section.
 
 ## [Unreleased]
 
+### Added
+
+- Opt-in OCR engine `indra` (Datalab's Indra OCR on onnxruntime, CPU; extra `indra`, also in `.[all]`); the model weights have a separate licence
+- `indra` and `chandra` come from one lab, Datalab; `--ocr` runs only `indra` when both are installed, and `--engines chandra,indra` gives them one vote, as the family `datalab`
+- `indra` runs on an NVIDIA GPU when `onnxruntime-gpu` is installed
+
 ## [0.2.0] - 2026-10-19
 
 ### Added

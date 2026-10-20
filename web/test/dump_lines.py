@@ -7,7 +7,7 @@ from pathlib import Path
 from pdfexorcist.extractors import EXTRACTORS
 
 # need native binaries or models Pyodide lacks; every other engine must match native
-NATIVE_ONLY = {"tabula", "tesseract", "doctr", "paddleocr", "ocrmac", "chandra", "glmocr"}
+NATIVE_ONLY = {"tabula", "tesseract", "doctr", "indra", "paddleocr", "ocrmac", "chandra", "glmocr"}
 
 
 def main(root: Path) -> None:

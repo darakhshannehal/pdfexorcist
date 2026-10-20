@@ -492,6 +492,7 @@ recipe that names a `.py` file runs that code: only use recipes you trust.
 | `pdfjs` (Mozilla pdf.js) | text layer | opt-in, needs Node and `npm install -g pdfjs-dist` |
 | `tesseract` | rendered page (OCR, CPU) | opt-in |
 | `doctr` (docTR models on onnxruntime, CPU) | rendered page | opt-in, `pip install "pdfexorcist[doctr]"` |
+| `indra` (Datalab's Indra OCR on onnxruntime, CPU; separate licence for the model weights) | rendered page | opt-in, `pip install "pdfexorcist[indra]"` |
 | `chandra` (Chandra OCR 2 VLM, MPS/CUDA) | rendered page | opt-in, `pip install "pdfexorcist[chandra]"` |
 | `paddleocr` (PP-OCR, Linux/macOS/Windows, CPU) | rendered page | opt-in, `pip install "pdfexorcist[paddleocr]"` |
 | `ocrmac` (Apple Vision, macOS only) | rendered page | opt-in, `pip install "pdfexorcist[ocrmac]"` |

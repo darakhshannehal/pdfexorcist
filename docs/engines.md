@@ -22,6 +22,7 @@ An engine reads a page and returns lines of text with their x positions. pdfexor
 | `chandra` (Chandra OCR 2 model) | pixels | `--ocr` | CUDA or Apple GPU, extra `ocr` | no |
 | `paddleocr` (PP-OCR) | pixels | `--ocr` | all, CPU, extra `paddle` | yes |
 | `doctr` (docTR models on onnxruntime) | pixels | `--ocr` | all, CPU, extra `doctr` | yes |
+| `indra` (Datalab's Indra OCR on onnxruntime) | pixels | `--ocr` | all, CPU, extra `indra` | yes |
 | `ocrmac` (Apple Vision) | pixels | `--ocr` | macOS, extra `mac` | yes |
 | `glmocr` (GLM-OCR model via MLX) | pixels | `--ocr` | Apple Silicon, extra `mlx` | no |
 
@@ -90,7 +91,37 @@ pdfexorcist extract scan.pdf
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-For the same reason, the OCR engines come from different labs. Surya (the Chandra lab) and PaddleOCR-VL (the PaddleOCR lab) are not included.
+For the same reason, each OCR lab gets one vote. `indra` and `chandra` both come from Datalab. `--ocr` runs `indra` when both are installed. When you name both in `--engines`, they vote once, as the family `datalab`. Surya (also from Datalab) and PaddleOCR-VL (the PaddleOCR lab) are not included.
+
+The Indra OCR model weights have a separate licence, a modified OpenRAIL-M. Read it on the [model page](https://huggingface.co/datalab-to/indra-ocr) before you use `indra` for commercial work.
+
+## Chandra or Indra
+
+`chandra` and `indra` both come from Datalab, so a run uses one of them.
+
+| | `indra` | `chandra` |
+| --- | --- | --- |
+| Runs on | CPU; an NVIDIA GPU with `onnxruntime-gpu` | GPU (CUDA or Apple) |
+| Download | 76 MB of ONNX models | the Chandra OCR 2 model |
+| Positions | yes, a box for each line | no |
+
+Each engine ran alone on the 16 BMC lake-level phone photos in `tests/fixtures/bmc`. The photos have 1,322 hand-checked cells.
+
+| Engine | Right | Wrong | Not read |
+| --- | --- | --- | --- |
+| `chandra` | 1,277 | 1 | 44 |
+| `indra` | 1,026 | 1 | 295 |
+| `ocrmac` | 882 | 2 | 438 |
+| `tesseract` | 10 | 2 | 1,003 |
+
+Tesseract read nothing on 4 photos. Its row shows the other 12 photos.
+
+On an Apple M4 Max, `indra` read each photo in about 0.5 s. This time includes the model load. On the faded 1995 ADSI scan (`tests/fixtures/adsi/1995_t2A_p6.pdf`), `indra` misread the state names. The ADSI parser placed none of its rows.
+
+`indra` uses CUDA when `onnxruntime-gpu` is installed in place of `onnxruntime` (`pip uninstall onnxruntime && pip install onnxruntime-gpu`). On a Mac, `indra` stays on the CPU. Through CoreML, it took 0.56 s for each photo. On the CPU, it took 0.20 s. Both read the same cells.
+
+* Use `indra` when you have no GPU, when you read many pages, or when `show` needs boxes.
+* Use `chandra` for phone photos. Datalab also suggests it for handwriting and faded scans. When both engines are installed, name the engines to use `chandra`: `pdfexorcist extract photo.jpg --engines chandra,ocrmac,paddleocr`.
 
 ## When to use --ocr
 

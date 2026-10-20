@@ -87,6 +87,13 @@ KNOWN: dict[str, EngineInfo] = {
             extra="doctr",
         ),
         EngineInfo(
+            "indra",
+            "pixels (OCR)",
+            "Indra OCR on onnxruntime, CPU (separate weights licence)",
+            modules=("indra_ocr",),
+            extra="indra",
+        ),
+        EngineInfo(
             "paddleocr",
             "pixels (OCR)",
             "PaddleOCR, CPU",

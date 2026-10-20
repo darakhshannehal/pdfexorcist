@@ -7,7 +7,7 @@ from ._ocr_engines import _paddle as _paddle
 from ._ocr_engines import _render as _render
 from ._ocr_engines import _skew as _skew
 from ._ocr_engines import _words as _words
-from ._ocr_engines import doctr_, ocrmac_, paddleocr_, tesseract_
+from ._ocr_engines import doctr_, indra_, ocrmac_, paddleocr_, tesseract_
 from ._registry import DEFAULTS, EXTRACTORS, OCR_DPI, Extractor, register
 from ._text_engines import _n_values as _n_values
 from ._text_engines import _space_ids as _space_ids
@@ -40,6 +40,7 @@ __all__ = [
     "chandra_",
     "doctr_",
     "glmocr_",
+    "indra_",
     "ocrmac_",
     "paddleocr_",
     "pdfium_",

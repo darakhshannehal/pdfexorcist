@@ -44,8 +44,9 @@ ocrmac = ["ocrmac; sys_platform == 'darwin'", "pillow"]
 camelot-ml = ["camelot-py[ml]>=2"]  # Table Transformer flavor
 pypdf = ["pypdf==6.20.0"]  # web/wheels.json's; 6.21 reads two fixtures differently
 doctr = ["onnxtr[cpu]"]  # docTR models on onnxruntime
+indra = ["indra-ocr"]  # Datalab's Indra OCR; the model weights have a separate licence
 glmocr = ["mlx-vlm; sys_platform == 'darwin' and platform_machine == 'arm64'", "pillow"]
-all = ["pdfexorcist[tabula,chandra,paddleocr,ocrmac,glmocr,pypdf,doctr]"]  # ocrmac and glmocr install only where they run
+all = ["pdfexorcist[tabula,chandra,paddleocr,ocrmac,glmocr,pypdf,doctr,indra]"]  # ocrmac and glmocr install only where they run
 # older names
 ocr = ["pdfexorcist[chandra]"]
 paddle = ["pdfexorcist[paddleocr]"]
@@ -130,7 +131,7 @@ warn_unused_configs = true
 module = [
     "camelot.*", "chandra.*", "mlx_vlm.*", "ocrmac.*", "paddleocr.*", "pdfplumber.*",
     "pypdfium2.*", "tabula.*", "torch.*", "transformers.*",
-    "onnxtr.*", "pypdf.*",  # optional extras; not installed where mypy runs
+    "onnxtr.*", "indra_ocr.*", "onnxruntime.*", "pypdf.*",  # optional extras; not installed where mypy runs
     "tomli",  # Python 3.10 only; not installed where mypy runs
 ]
 ignore_missing_imports = true

@@ -196,6 +196,34 @@ def doctr_(pdf: Path) -> Iterator[Page]:
         yield i, group_words(words)
 
 
+@register("indra", default=False)
+def indra_(pdf: Path) -> Iterator[Page]:
+    """Run Datalab's Indra OCR on onnxruntime."""
+    import numpy as np
+
+    ocr = _indra()
+    for i, img, scale in _images(pdf):
+        words = []
+        for line in ocr(np.array(img.convert("L")), turn=False).lines:  # the page is upright
+            x0, y0, x1, y1 = (v * scale for v in line.box)
+            words += _words(x0, x1, y0, y1, line.text)
+        yield i, group_words(words)
+
+
+@functools.lru_cache(maxsize=1)
+def _indra() -> Any:
+    """Load Indra OCR models once per process."""
+    import multiprocessing
+
+    import indra_ocr
+    import onnxruntime
+
+    threads = 1 if multiprocessing.parent_process() else 4  # a --jobs worker gets one core
+    cuda = "CUDAExecutionProvider"  # only onnxruntime-gpu has it; CoreML was slower than the CPU
+    gpu = [cuda, "CPUExecutionProvider"] if cuda in onnxruntime.get_available_providers() else None
+    return indra_ocr.load(threads=threads, providers=gpu).ocr
+
+
 @functools.lru_cache(maxsize=1)
 def _doctr() -> Any:
     """Load docTR models once per process."""
