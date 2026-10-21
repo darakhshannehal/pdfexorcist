@@ -8,8 +8,8 @@ By default, it runs pdftotext, pdfplumber, pymupdf and pdfium. It runs camelot, 
 only when you select them. The page downloads the camelot wheels and opencv when you first select
 camelot. pdf.js runs in the page, and the page loads it when you first select it.
 
-"What to read: Line charts" runs `pdfexorcist charts`: it reads the points of Excel line charts from where
-the lines are drawn, runs no engines, and shows one table per chart.
+The option "What to read: Line charts" uses `pdfexorcist charts`. It reads the points of Excel line charts
+from the positions of the lines. It uses no engines, and it shows one table for each chart.
 
 The browser keeps each file in Cache Storage with its content hash. Thus, the next visit downloads
 only the files that changed. The OCR engines cannot run, because they must have native libraries that

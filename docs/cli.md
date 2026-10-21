@@ -1,5 +1,5 @@
 ---
-description: "Every pdfexorcist command: extract, inspect, engines, show, compare and recipe, with options, examples and exit codes."
+description: "Every pdfexorcist command: extract, inspect, engines, show, compare, charts and recipe, with options, examples and exit codes."
 ---
 
 # Command line
@@ -179,6 +179,27 @@ pdfexorcist compare scan.pdf -p 2 --ocr --open
 ```
 
 It takes the same options as `show`.
+
+
+## charts
+
+`charts` reads the points of line charts that are vector paths, for example Excel charts in a Word document. It writes one row for each point: `page`, `chart`, `title`, `series`, `category`, `value`, `pm` and `status`.
+
+```bash
+pdfexorcist charts report.pdf                        # writes report.charts.csv
+pdfexorcist charts report.pdf -p 3,4 -o out.json
+```
+
+| Option | Description |
+| --- | --- |
+| `-p`, `--pages` | Pages to read, for example `"3"` or `"1-3,7"` or `"10-"`. Default: all. |
+| `-o`, `--output` | `.csv`, `.json` or `.parquet`. Default: `<name>.charts.csv`. |
+| `--json` | Print a summary as JSON: `outputs`, `points`, `charts`, `skipped`. |
+| `--force`, `--debug` | As for `extract`. |
+
+A value comes from a position. Thus, it is an approximate value. `pm` gives the maximum error, and `status` is always `estimated`. The engines do not vote on chart values.
+
+If pdfexorcist cannot find the axis or the points of a chart, it does not read that chart. The output gives the chart and the cause. If the command finds no chart, the exit code is 1. Refer to [NCVBDC line charts](examples/ncvbdc_charts.md) for an example.
 
 
 ## recipe

@@ -1,10 +1,10 @@
 ---
-description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, the MyBMC lakes photo, NCVBDC's monthly malaria report, NCRB prison statistics, the SRS statistical report and maternal mortality bulletin, MoRTH road accidents, the National Health Profile's malaria table, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, the CWC reservoir bulletin, two NTA NEET documents, and the less common recipe settings."
+description: "Runnable pdfexorcist recipes for real reports: MCCD, SRS, IIPS and MoHFW projections, CRS, Crime in India, the MyBMC lakes photo, NCVBDC's monthly malaria report, NCRB prison statistics, the SRS statistical report and maternal mortality bulletin, MoRTH road accidents, the National Health Profile's malaria table, the NFHS-5 and NFHS-6 fact sheets, Maharashtra's Pravah dam report, the CWC reservoir bulletin, two NTA NEET documents, NCVBDC's line charts, and the less common recipe settings."
 ---
 
 # Examples
 
-Each example is a recipe in `pdfexorcist/recipes/`, shipped in the wheel, and runs on a fixture in `tests/fixtures/`.
+Each example is a recipe in `pdfexorcist/recipes/`, shipped in the wheel, and runs on a fixture in `tests/fixtures/`. The NCVBDC line charts use the `charts` command and no recipe.
 
 | Document | The table | What the recipe does |
 | --- | --- | --- |
@@ -20,6 +20,7 @@ Each example is a recipe in `pdfexorcist/recipes/`, shipped in the wheel, and ru
 | [NFHS-5 fact sheets](nfhs5-factsheets.md) | Key Indicators by State and district, 2019-21. | `pdfexorcist/recipes/nfhs5/` (`state.toml`, `district.toml`): the NFHS-6 parser adapted, checked against an independent extraction. |
 | [NEET (UG) 2024 press release](nta-notice.md) | Nine tables on five pages: highlights by year, language, gender, category, State. | One recipe for every table: cells keyed by table, row and column; a check fails on a misprinted count. |
 | [MMIS monthly malaria situation](mmis.md) | NCVBDC's monthly report: a small table of months under each trend graph, by State and indicator. | Cells keyed by the graph's place on the page; area and indicator from the graph title as extra columns; a TPR check and a check that fails on a table under the wrong graph. |
+| [NCVBDC line charts](ncvbdc_charts.md) | NCVBDC's monthly report: Excel line charts of Tested, Positive, TPR and Pf by month, with no values on the charts. | `pdfexorcist charts` reads the values from the positions of the lines. Each value has a `pm`. A check compares the TPR with Positive / Tested and with the text. |
 | [Prison Statistics India](prison_stats.md) | NCRB's capacity, inmates and occupancy by State/UT, by sex and by jail type; one table runs over three pages by column. | Cells keyed by printed column number, so the three pages join; totals, Table 1.3 against Table 1.2, and an occupancy check. |
 | [SRS Statistical Report](srs_statistical_report.md) | Table 1: percent distribution of the population by age, sex and residence, one or two State blocks a page. | Keyed by block on the page, the State an extra column; age groups add up to 100 and a total lies between its parts. |
 | [NSS health Key Indicators](nss_health.md) | KI 75/25.0 Appendix A: spending, childbirth and the aged, in Rural, Urban and Rural + Urban blocks. | The sector side label dropped wherever an engine puts it; rows keyed by block and a space-free label. |
@@ -50,6 +51,7 @@ Each test pairs a document parser with values checked against the printed page. 
 | `test_mohfw_state_projection.py` | MoHFW population projections by age and sex |
 | `test_iips_district_projection.py` | IIPS district projections by single age and sex |
 | `test_mmis_malaria.py` | NCVBDC Monthly Malaria Situation, Category II (October 2023) |
+| `test_charts.py` | NCVBDC Monthly Malaria Situation line charts: national and Category III (August 2026) |
 | `test_prison_stats.py` | NCRB Prison Statistics India 2023, Tables 1.2 and 1.3 |
 | `test_srs_statistical_report.py` | SRS Statistical Report 2024, Table 1: age distribution by State |
 | `test_nss_health.py` | NSS KI 75/25.0 (Health), Appendix A Tables A23-A32 |
@@ -84,6 +86,7 @@ nfhs6-factsheets
 nfhs5-factsheets
 nta-notice
 mmis
+ncvbdc_charts
 prison_stats
 srs_statistical_report
 nss_health

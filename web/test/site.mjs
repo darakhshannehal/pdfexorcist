@@ -18,6 +18,11 @@ async function native(ex, engines = WEB_ENGINES) {
   const dir = mkdtempSync(join(tmpdir(), 'site-'));
   try {
     copyFileSync(join(ROOT, ex.pdf), join(dir, 'doc.pdf'));
+    if (ex.charts) {
+      const args = ['run', 'pdfexorcist', 'charts', join(dir, 'doc.pdf'), '-o', join(dir, 'doc.csv'), '--json'];
+      const { points, charts } = JSON.parse((await promisify(execFile)('uv', args, { cwd: ROOT })).stdout);
+      return { cells: { points, charts }, csv: readFileSync(join(dir, 'doc.csv'), 'utf8') };
+    }
     let out;
     try {
       const args = ['run', 'pdfexorcist', 'extract', join(dir, 'doc.pdf'), '--recipe', ex.recipe, '--json', '-q', '--engines', engines.join(',')];
@@ -70,7 +75,6 @@ out.save(${JSON.stringify(pdf)})`], { cwd: ROOT });
   }
 }
 
-/** A first visit with an empty cache on a slow network. The example cards must show their pages before the engines can run. */
 async function slowFirstVisit(browser) {
   const context = await browser.newContext({ viewport: { width: 1360, height: 900 } });
   try {
@@ -92,8 +96,6 @@ async function slowFirstVisit(browser) {
   }
 }
 
-/** Reads an example again with camelot selected. Camelot must download and run.
- * The result must be the same as the CLI result with five engines. */
 async function withCamelot(page) {
   const ex = examples[0];
   const want = native(ex, [...WEB_ENGINES, 'camelot']);
@@ -111,7 +113,6 @@ async function withCamelot(page) {
   await page.locator('#back').click();
 }
 
-/** Opens the site again in the same browser. All engine files must come from Cache Storage, not from the network. */
 async function secondVisit(context) {
   const page = await context.newPage();
   const fetched = [];
@@ -128,6 +129,24 @@ async function secondVisit(context) {
 }
 
 const natives = examples.map((ex) => native(ex)); // these runs occur while Chrome starts the engines
+
+async function chartsExample(page, i) {
+  await page.waitForSelector('#result .say >> text=/points from/', { timeout: 300_000 });
+  const say = await page.locator('#result .say').innerText();
+  const num = (re) => Number((say.match(re)?.[1] ?? '0').replaceAll(',', ''));
+  const web = { points: num(/^([\d,]+) points/), charts: num(/from ([\d,]+) charts?/) };
+  const want = await natives[i];
+  const csv = await downloaded(page, 'text=Download CSV');
+  const tables = await page.locator('#result table').count();
+  console.log(`${examples[i].title}: ${say} | ${tables} tables\n  browser ${JSON.stringify(web)}\n  native  ${JSON.stringify(want.cells)}`);
+  console.log(`  CSV ${csv === want.csv ? 'identical to' : 'DIFFERS from'} the CLI's (${csv.length} bytes)`);
+  if (new URL(page.url()).hash !== `#${examples[i].id}`) failures.push(`example ${i}: URL is ${page.url()}`);
+  if (JSON.stringify(web) !== JSON.stringify(want.cells)) failures.push(`example ${i}: counts differ from the CLI`);
+  if (tables !== want.cells.charts) failures.push(`example ${i}: ${tables} tables for ${want.cells.charts} charts`);
+  if (csv !== want.csv) failures.push(`example ${i}: CSV differs from the CLI`);
+  if (shots) await page.screenshot({ path: `${shots}/example-${i}.png`, fullPage: true });
+  await page.locator('#back').click();
+}
 const browser = await chromium.launch({ executablePath: CHROME });
 const downloaded = async (page, button) => {
   const [d] = await Promise.all([page.waitForEvent('download'), page.locator(button).click()]);
@@ -156,6 +175,10 @@ try {
   if (shots) await page.screenshot({ path: `${shots}/home-light.png`, fullPage: true });
   for (let i = 0; i < examples.length; i++) {
     await page.locator('.example').nth(i).click();
+    if (examples[i].charts) {
+      await chartsExample(page, i);
+      continue;
+    }
     await page.waitForSelector('#result .say >> text=/values agreed/', { timeout: 300_000 });
     await page.waitForSelector('#pages-view canvas');
     const say = await page.locator('#result .say').innerText();

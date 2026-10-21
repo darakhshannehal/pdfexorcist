@@ -22,6 +22,7 @@ COMMON = [  # the start screen's commands; README.md lists the same
     ("pdfexorcist show report.pdf --page 3", "show what the engines read on page 3"),
     ("pdfexorcist recipe suggest report.pdf", "find a shipped recipe for this PDF"),
     ("pdfexorcist recipe new report.pdf", "save the settings for one kind of table"),
+    ("pdfexorcist charts report.pdf", "read the points of line charts"),
     ("pdfexorcist engines", "list the engines and how to install more"),
 ]
 HELP = [

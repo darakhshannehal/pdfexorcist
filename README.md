@@ -202,6 +202,7 @@ pdfexorcist extract photo.jpg --ocr       # read a scan or a photo with OCR
 pdfexorcist show report.pdf --page 3      # show what the engines read on page 3
 pdfexorcist recipe suggest report.pdf     # find a shipped recipe for this PDF
 pdfexorcist recipe new report.pdf         # save the settings for one kind of table
+pdfexorcist charts report.pdf             # read the points of line charts
 pdfexorcist engines                       # list the engines and how to install more
 ```
 
@@ -243,6 +244,17 @@ pdfexorcist show report.pdf -p 3 --recipe mccd.toml --open
 pdfexorcist show photo.jpg --png                      # also a static annotated PNG
 pdfexorcist compare report.pdf --page 3               # opens on the engines side by side
 ```
+
+### Line charts
+
+```bash
+pdfexorcist charts report.pdf                         # writes report.charts.csv
+```
+
+`charts` reads the points of line charts that are vector paths, for example Excel charts in
+a Word document. A value comes from the position of its line. Thus, each value has a `pm`
+(plus or minus) and the status `estimated`. The engines do not vote on these values. Refer to
+the [NCVBDC line charts](https://pdfexorcist.in/cli/examples/ncvbdc_charts.html) example.
 
 ## Plug-in points
 
