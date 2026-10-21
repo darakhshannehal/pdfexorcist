@@ -1,8 +1,9 @@
 // in: {open: pdf, name} -> {doc}; {doc, recipe, pages, engines} -> extract(); {show: doc, page} -> {html}; {close: doc}
+// {charts: doc, pages} -> charts()
 // engines: the names of the engines to run. If there is no list, the worker uses the engines installed at boot.
 // The worker downloads each LATER engine in the list before the run.
 
-import { add, boot, close, extract, LATER, laterEngine, open, show } from './core.js';
+import { add, boot, charts, close, extract, LATER, laterEngine, open, show } from './core.js';
 import { canPause, emscriptenProgram, pdfjsProgram } from './engines.js';
 import { kept, keptWasm, manifest, missing, prune } from './net.js';
 import { serve } from './pdfium.js';
@@ -96,6 +97,7 @@ function answer(msg) {
     if (cancelled.delete(msg.id)) return [{ cancelled: true }];
     const progress = (engine, page, pages) => postMessage({ type: 'progress', id: msg.id, engine, page, pages });
     const ctx = await env;
+    if (msg.charts) return [await charts(ctx, { doc: msg.charts, pages: msg.pages })]; // runs no engines
     const engines = msg.engines ?? defaults;
     const downloading = (engine) => postMessage({ type: 'progress', id: msg.id, engine, downloading: true });
     await add(ctx, engines, Object.keys(await urls), fetchKept, downloading);

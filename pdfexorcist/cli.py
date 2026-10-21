@@ -165,6 +165,90 @@ def inspect(
         show_inspect(file, as_json)
 
 
+@app.command(
+    epilog="[bold]Examples[/]\n\n"
+    "  pdfexorcist charts report.pdf                 [dim]# writes report.charts.csv[/]\n\n"
+    "  pdfexorcist charts report.pdf -p 3,4 -o out.json"
+)
+def charts(
+    file: str = typer.Argument(
+        ...,
+        metavar="FILE",
+        help="The PDF to read, or a link to one.",
+        show_default=False,
+    ),
+    pages: str | None = typer.Option(
+        None,
+        "--pages",
+        "-p",
+        metavar="PAGES",
+        show_default=False,
+        help='Pages to read, e.g. "3" or "1-3,7" or "10-". Default: all.',
+    ),
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        metavar="PATH",
+        rich_help_panel=OUT_PANEL,
+        show_default=False,
+        help="File to write (.csv, .json or .parquet). Default: <name>.charts.csv next to the "
+        "input.",
+    ),
+    as_json: bool = typer.Option(
+        False, "--json", help="Print a summary as JSON: outputs, points, charts, skipped charts."
+    ),
+    force: Force = False,
+    debug: Debug = False,
+) -> None:
+    """Read the points of line charts drawn as vector paths (Excel charts in Word). A value comes
+    from a position, so each has a [cyan]pm[/] (plus or minus) and the status estimated."""
+    from ._output import _write_one
+    from ._run import _page_count, need_format
+    from ._ui import CliError, err, path_text, plural, print_json, refuse_overwrite, resolve_input
+    from .charts import read_charts
+    from .pages import parse_pages
+
+    with guard(debug, as_json):
+        setup_logging(debug)
+        src = resolve_input(file)
+        dest = output or src.with_suffix(".charts.csv")
+        fmt = dest.suffix.lower().lstrip(".")
+        if fmt not in ("csv", "json", "parquet"):
+            raise CliError(
+                f"Cannot write {dest.name}.", "Use a .csv, .json or .parquet name with -o."
+            )
+        need_format(fmt)
+        refuse_overwrite([dest], force)
+        try:
+            numbers = parse_pages(pages, _page_count(src, False)) if pages else None
+        except ValueError as e:
+            raise CliError(f"--pages: {e}") from e
+        df = read_charts(src, numbers)
+        if df.empty:
+            raise CliError(f"Found no line chart in {src.name}.", code=1)
+        _write_one(df, dest, fmt)
+        skipped = [{"page": no, "chart": n, "reason": why} for no, n, why in df.attrs["skipped"]]
+        n = df.groupby(["page", "chart"]).ngroups
+        if as_json:
+            print_json(
+                {
+                    "input": str(src),
+                    "outputs": [str(dest)],
+                    "points": len(df),
+                    "charts": n,
+                    "skipped": skipped,
+                    "exit_code": 0,
+                }
+            )
+            return
+        for k in skipped:
+            err.print(f"[warn]Skipped page {k['page']}, chart {k['chart']}:[/] {k['reason']}")
+        err.print(
+            f"Wrote {plural(len(df), 'point')} from {plural(n, 'chart')} to {path_text(dest)}."
+        )
+
+
 def main(argv: list[str] | None = None, prog_name: str = "pdfexorcist") -> None:
     """Console-script entry point."""
     args = list(sys.argv[1:] if argv is None else argv)

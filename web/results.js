@@ -1,15 +1,12 @@
 import { button, el, fmt, minutes, plural } from './ui.js';
 
+const named = (path) => path.split('/').pop(); // the names the CLI wrote
+const refused = (s) => [el('p', { className: 'say' }, s.error), s.hint ? el('p', { className: 'sub' }, s.hint) : null];
+
 export function outcome(res, job, seconds, pane, again, openGrid) {
   const s = res.summary;
-  if (s.error) {
-    return [
-      el('p', { className: 'say' }, s.error),
-      s.hint ? el('p', { className: 'sub' }, s.hint) : null,
-    ];
-  }
+  if (s.error) return refused(s);
   const c = s.cells;
-  const named = (path) => path.split('/').pop(); // the names the CLI wrote
   const { table, review: reviewCsv } = res;
   const review = reviewCsv && parseCsv(reviewCsv);
   const share = c.total ? Math.round((1000 * c.verified) / c.total) / 10 : 0;
@@ -65,6 +62,46 @@ export function outcome(res, job, seconds, pane, again, openGrid) {
     table ? [el('h3', {}, 'Table'), grid(table)] : null,
     review ? [el('h3', {}, 'Cells to check'), reviewGrid(review)] : null,
   ];
+}
+
+/** pdfexorcist charts result: values are estimates, so no vote counts */
+export function chartsOutcome(res, job, seconds) {
+  const s = res.summary;
+  if (s.error) return refused(s);
+  return [
+    el('p', { className: 'say' }, el('b', { className: 'ok' }, fmt(s.points)), ` points from ${plural(s.charts, 'chart')}.`),
+    el('p', { className: 'sub' },
+      'Each value is read from where the line is drawn, so it is an estimate: ± gives how far off it can be. ',
+      'The engines do not vote on these.',
+      job.pages ? ` Pages ${job.pages},` : '', ` ${seconds.toFixed(1)} s.`),
+    s.skipped.length
+      ? el('div', { className: 'alert' },
+          el('b', {}, 'Charts left out. '),
+          el('ul', {}, s.skipped.map((k) => el('li', {}, `Page ${k.page}, chart ${k.chart}: ${k.reason}`))))
+      : null,
+    el('div', { className: 'actions' }, button('button', () => download(named(s.outputs[0]), res.table), 'Download CSV')),
+    chartTables(res.table),
+  ];
+}
+
+/** one table per chart, laid out as the chart: a row per series, a column per category */
+function chartTables(csv) {
+  const [head, ...rows] = parseCsv(csv);
+  const points = rows.map((r) => Object.fromEntries(head.map((h, i) => [h, r[i]])));
+  return [...Map.groupBy(points, (p) => `${p.page} ${p.chart}`).values()].map((chart) => {
+    const pm = Number(chart[0].pm);
+    const digits = Math.max(0, Math.min(20, 1 - Math.floor(Math.log10(pm)))); // as charts._round
+    const { format } = new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits });
+    const cats = [...new Set(chart.map((p) => p.category))];
+    const series = [...Map.groupBy(chart, (p) => p.series)].map(([name, pts]) => [name, new Map(pts.map((p) => [p.category, p.value]))]);
+    return [
+      el('h3', {}, chart[0].title || 'Untitled chart'),
+      el('p', { className: 'sub' }, `Page ${chart[0].page}. Each value ± ${format(pm.toPrecision(2))}.`),
+      capped(['Series', ...cats], series, ([name, values]) =>
+        el('tr', {}, el('td', { className: 'key' }, name),
+          cats.map((c) => el('td', {}, values.has(c) ? format(values.get(c)) : null)))),
+    ];
+  });
 }
 
 /** custom parsers may have no page column */

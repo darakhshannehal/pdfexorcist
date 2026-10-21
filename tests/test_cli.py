@@ -48,6 +48,7 @@ def test_version():
         ["recipe", "new"],
         ["recipe", "check"],
         ["recipe", "show"],
+        ["charts"],
     ],
 )
 def test_help_examples(cmd):

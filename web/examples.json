@@ -32,6 +32,14 @@
     "recipe": "mmis_malaria"
   },
   {
+    "id": "ncvbdc-charts",
+    "kicker": "NCVBDC | Monthly malaria situation | August 2026",
+    "title": "Line charts with no values printed",
+    "blurb": "Tested, Positive, TPR and PF by month for Category III, Mizoram, Odisha and Tripura, read from where each line is drawn, each value with a ±.",
+    "pdf": "tests/fixtures/ncvbdc/malaria_2026_08_cat3_charts.pdf",
+    "charts": true
+  },
+  {
     "id": "imi-ces-2018",
     "kicker": "MoHFW | IMI CES 2018 | Annexure A",
     "title": "Immunization coverage in 190 districts",

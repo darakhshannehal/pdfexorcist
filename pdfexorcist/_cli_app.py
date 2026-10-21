@@ -50,7 +50,7 @@ recipe_app = typer.Typer(
 )
 app.add_typer(recipe_app, name="recipe")
 
-COMMANDS = {"extract", "inspect", "engines", "doctor", "recipe", "show", "compare"}
+COMMANDS = {"extract", "inspect", "engines", "doctor", "recipe", "show", "compare", "charts"}
 OUT_PANEL, ENG_PANEL, ADV_PANEL = "Output", "Engines and pages", "Advanced"
 
 Force = Annotated[

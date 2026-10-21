@@ -189,6 +189,7 @@ async function cli({ py, glue }, cmd, doc, argv, recipe, progress) {
 
 /** engines: names to run, or undefined for the defaults */
 const only = (engines) => (engines ? ['--engines', engines.join(',')] : []);
+const pagesArg = (pages) => (pages ? ['--pages', pages] : []);
 
 /** the CLI's show view of one page: every voted cell boxed, as self-contained HTML */
 export async function show(ctx, { doc, page, recipe, engines }) {
@@ -198,11 +199,19 @@ export async function show(ctx, { doc, page, recipe, engines }) {
   return { html: ctx.py.FS.readFile(out, { encoding: 'utf8' }) };
 }
 
+/** pdfexorcist charts; returns the summary and the CSV text */
+export async function charts(ctx, { doc, pages }) {
+  const out = '/work/out/charts.csv';
+  const [, stdout] = await cli(ctx, 'charts', doc, ['-o', out, '--json', '--force', ...pagesArg(pages)]);
+  const summary = JSON.parse(stdout);
+  return { summary, table: summary.outputs && ctx.py.FS.readFile(out, { encoding: 'utf8' }) };
+}
+
 /** recipe: a shipped recipe's short name; returns the summary, and the table and review as text */
 export async function extract(ctx, { doc, recipe, pages, engines, progress }) {
   const { py } = ctx;
   for (const f of ls(py.FS, '/work/out')) py.FS.unlink(`/work/out/${f}`);
-  const argv = ['-o', '/work/out/', '--json', '-q', '--force', ...(pages ? ['--pages', pages] : []), ...only(engines)];
+  const argv = ['-o', '/work/out/', '--json', '-q', '--force', ...pagesArg(pages), ...only(engines)];
   const [, stdout] = await cli(ctx, 'extract', doc, argv, recipe, progress);
   const summary = JSON.parse(stdout);
   const text = (path) => path && py.FS.readFile(path, { encoding: 'utf8' });

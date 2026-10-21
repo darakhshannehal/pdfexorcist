@@ -1,4 +1,4 @@
-// each engine's lines on every fixture, Pyodide vs native
+// each engine's lines, and pdfexorcist charts, on every fixture: Pyodide vs native
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -57,4 +57,28 @@ for (const k of Object.keys(native)) {
 const n = Object.keys(native).length;
 console.log(`${n - bad - drifted} of ${n} engine readings identical, ${drifted} identical in text`
   + ` with x off by at most ${drift.toFixed(3)} pt, ${bad} differ in text`);
-process.exit(bad ? 1 : 0);
+
+// charts read paths, not engine lines: the CSV must match byte for byte
+const CHARTS = join(ROOT, 'web/test/dump_charts.py');
+const nativeCharts = JSON.parse((await promisify(execFile)('uv', ['run', 'python', CHARTS, ROOT], { cwd: ROOT, maxBuffer: 1 << 28 })).stdout);
+py.FS.writeFile('/tmp/dump_charts.py', readFileSync(CHARTS));
+const webCharts = JSON.parse(
+  await py.runPythonAsync(`
+import contextlib, io, runpy, sys
+sys.argv = ['dump_charts.py', '/repo']
+buf = io.StringIO()
+with contextlib.redirect_stdout(buf):
+    runpy.run_path('/tmp/dump_charts.py', run_name='__main__')
+buf.getvalue()`),
+);
+let chartsBad = 0;
+for (const k of new Set([...Object.keys(nativeCharts), ...Object.keys(webCharts)])) {
+  if (JSON.stringify(nativeCharts[k]) === JSON.stringify(webCharts[k])) continue;
+  chartsBad++;
+  const [a, b] = [nativeCharts[k], webCharts[k]].map((v) => (v ? v[0].split('\n') : []));
+  const i = a.findIndex((l, j) => l !== b[j]);
+  console.log('CHARTS DIFFER', k, `\n  native ${a[i]}\n  web    ${b[i]}`);
+}
+const m = Object.keys(nativeCharts).length;
+console.log(`${m - chartsBad} of ${m} fixtures with charts read identically`);
+process.exit(bad || chartsBad ? 1 : 0);

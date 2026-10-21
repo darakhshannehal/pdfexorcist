@@ -2,7 +2,7 @@
 
 import { Client } from './client.js';
 import { bytes, get, kept, keptWasm, manifest } from './net.js';
-import { outcome } from './results.js';
+import { chartsOutcome, outcome } from './results.js';
 import { button, draw, el, failure, fill, fmt, minutes, plural } from './ui.js';
 
 const $ = (id) => document.getElementById(id);
@@ -119,7 +119,7 @@ function addExample(ex) {
   let pdf;
   const load = () => (pdf ??= bytes(`samples/${name}`));
   const thumb = el('span', { className: 'thumb' });
-  const open = async () => run({ id: ex.id, kicker: ex.kicker, title: ex.title, pdf: await load(), name, recipe: ex.recipe });
+  const open = async () => run({ id: ex.id, kicker: ex.kicker, title: ex.title, pdf: await load(), name, recipe: ex.recipe, charts: ex.charts });
   openers.set(ex.id, open);
   const card = el('li', {}, button('example', open,
     thumb,
@@ -151,10 +151,18 @@ examples
 
 // the examples' recipes by their cards, then every other shipped recipe by its own name
 Promise.all([examples, get('recipes.json').then((r) => r.json())]).then(([list, recipes]) => {
-  const named = new Map(list.map((ex) => [ex.recipe, `${ex.kicker}: ${ex.title}`]));
+  const named = new Map(list.filter((ex) => ex.recipe).map((ex) => [ex.recipe, `${ex.kicker}: ${ex.title}`]));
   for (const [path, label] of named) $('recipe').append(el('option', { value: path }, label));
   for (const [path, name] of recipes) if (!named.has(path)) $('recipe').append(el('option', { value: path }, name));
 });
+
+// charts mode runs no engines and no recipe
+function modeChanged() {
+  const charts = $('mode').value === 'charts';
+  $('recipe').disabled = charts;
+  $('engine-picks').closest('fieldset').disabled = charts;
+}
+$('mode').onchange = modeChanged;
 
 const file = $('file');
 file.onchange = () => file.files[0] && openFile(file.files[0]);
@@ -176,13 +184,15 @@ async function openFile(f) {
     $('engine-status').textContent = `${f.name} is ${mb(f.size)} MB. The limit here is ${mb(MAX_BYTES)} MB; the command-line tool has none.`;
     return;
   }
-  const chosen = engines.ready ? picked() : undefined;
+  const charts = $('mode').value === 'charts';
+  const chosen = engines.ready && !charts ? picked() : undefined;
   if (chosen?.length === 0) { // an empty --engines would run the defaults
     $('engine-status').textContent = 'Pick the engines to run under Options.';
     return;
   }
   const pdf = new Uint8Array(await f.arrayBuffer());
   run({
+    charts,
     kicker: 'Your PDF',
     title: f.name,
     pdf,
@@ -221,9 +231,12 @@ async function run(job) {
   show('work');
   $('doc-kicker').textContent = job.kicker;
   $('doc-title').textContent = job.title;
-  $('reuse').hidden = !job.id; // every example has a recipe
+  $('reuse').hidden = !job.id; // every example has a recipe or reads charts
+  $('reuse').textContent = job.charts ? 'Read the charts in your PDF' : 'Use this recipe on your PDF';
   $('reuse').onclick = () => {
-    $('recipe').value = job.recipe;
+    $('mode').value = job.charts ? 'charts' : 'tables';
+    modeChanged();
+    $('recipe').value = job.recipe ?? '';
     history.pushState(null, '', './');
     show('home');
     file.click();
@@ -240,7 +253,7 @@ async function run(job) {
   if (signal.aborted) return;
   job = { ...job, count, doc: workerCopy(job, signal) };
   pane.pick = (page) => read({ ...job, pages: String(page), sample: false }, pane, signal);
-  if (job.pages || count <= LONG) return read(job, pane, signal);
+  if (job.pages || job.charts || count <= LONG) return read(job, pane, signal); // charts need no engines: fast
   const pick = (pages) => read({ ...job, pages, sample: Boolean(pages) }, pane, signal);
   const own = el('input', { placeholder: 'e.g. 12-15', ariaLabel: 'Pages to read', inputMode: 'numeric' });
   fill($('result'),
@@ -286,6 +299,11 @@ async function read(job, pane, signal) {
   };
   try {
     const doc = await job.doc();
+    if (job.charts) {
+      const res = await worker.ask({ charts: doc, pages: job.pages }, { signal: AbortSignal.any([signal, stop.signal]) });
+      if (!res.cancelled) fill(result, chartsOutcome(res, job, (performance.now() - started) / 1000));
+      return;
+    }
     const res = await worker.ask({ doc, recipe: job.recipe, pages: job.pages, engines: job.engines }, { signal: AbortSignal.any([signal, stop.signal]), progress });
     if (res.cancelled) return;
     const pagesRead = res.summary.pages?.length || job.count;

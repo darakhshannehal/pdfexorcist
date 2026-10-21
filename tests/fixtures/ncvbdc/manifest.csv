@@ -1,0 +1,3 @@
+fixture,source_url,report_date,source_pages,note
+malaria_2026_08_p3_p4_p17.pdf,https://ncvbdc.mohfw.gov.in/WriteReadData/l892s/79655972491790753257.pdf,2026-08,"3,4,17","Monthly Malaria Situation report, August 2026, 19 pages. Pages 3-4: the four India line charts (Tested, Positive, TPR, Pf) with no values printed. Page 17: Category O, whose Positive chart has tick labels rounded to 0 and 1."
+malaria_2026_08_cat3_charts.pdf,https://ncvbdc.mohfw.gov.in/WriteReadData/l892s/36403234541790767725.pdf,2026-08,"3-4,7-12","Monthly Malaria Situation report for Category III States/UTs, August 2026, 13 pages. Its 16 line charts: Category III, Mizoram, Odisha and Tripura, each with Tested, Positive, TPR and Pf."

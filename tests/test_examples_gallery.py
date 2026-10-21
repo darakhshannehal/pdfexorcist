@@ -148,7 +148,8 @@ HIDDEN = {"mybmc_lakes", "nta_toppers", "settings"}
 
 def test_home_page_lists_every_example():
     listed = json.loads((ROOT / "web" / "examples.json").read_text())
-    for ex in listed:
-        assert (ROOT / ex["pdf"]).exists() and find_shipped(ex["recipe"]), ex["id"]
+    for ex in listed:  # an example names a recipe, or reads charts (pdfexorcist charts)
+        assert (ROOT / ex["pdf"]).exists() and ex.get("charts", "recipe" in ex), ex["id"]
+        assert "recipe" not in ex or find_shipped(ex["recipe"]), ex["id"]
     dirs = {p.name for p in EXAMPLES.iterdir() if p.is_dir() and p.name != "__pycache__"}
-    assert dirs - HIDDEN == {ex["recipe"].split("/")[0] for ex in listed}
+    assert dirs - HIDDEN == {ex["recipe"].split("/")[0] for ex in listed if "recipe" in ex}

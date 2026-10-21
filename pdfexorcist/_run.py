@@ -26,6 +26,19 @@ EXT = {"csv": ".csv", "xlsx": ".xlsx", "parquet": ".parquet", "json": ".json"}
 FORMAT_DEPS = {"xlsx": [("openpyxl",)], "parquet": [("pyarrow",), ("fastparquet",)]}
 
 
+def need_format(fmt: str) -> None:
+    """Raise when the package that writes fmt is not installed."""
+    for mod_sets in FORMAT_DEPS.get(fmt, []):
+        if all(importlib.util.find_spec(m) for m in mod_sets):
+            return
+    if fmt in FORMAT_DEPS:
+        need_mod = FORMAT_DEPS[fmt][0][0]
+        raise CliError(
+            f"Writing {fmt} needs the {need_mod} package.",
+            f"pip install {need_mod}   (or use --format csv)",
+        )
+
+
 @dataclass
 class Plan:
     """Resolved extraction settings before engines start."""
@@ -253,16 +266,7 @@ def make_plan(
 
     layout = layout_opt or rec.layout or "table"
     main, fmt_final, review = _paths(src, output, fmt or (None if output else rec.format), layout)
-    for mod_sets in FORMAT_DEPS.get(fmt_final, []):
-        if all(importlib.util.find_spec(m) for m in mod_sets):
-            break
-    else:
-        if fmt_final in FORMAT_DEPS:
-            need_mod = FORMAT_DEPS[fmt_final][0][0]
-            raise CliError(
-                f"Writing {fmt_final} needs the {need_mod} package.",
-                f"pip install {need_mod}   (or use --format csv)",
-            )
+    need_format(fmt_final)
     refuse_overwrite((main, review), force)
     return Plan(
         src,
