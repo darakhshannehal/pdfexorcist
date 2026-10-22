@@ -16,6 +16,8 @@ from .rows import Page, group_words
 
 logger = logging.getLogger(__name__)
 
+UPRIGHT = "pdfexorcist, upright images"  # the producer of a PDF of pages that need no levelling
+
 
 @register("tesseract", default=False)
 def tesseract_(pdf: Path) -> Iterator[Page]:
@@ -56,7 +58,8 @@ def render_page(page: Any, dpi: int | None = None, text_dpi: int = OCR_DPI) -> R
         dpi, photo = (native, True) if native else (text_dpi, False)
     pix = page.get_pixmap(dpi=dpi)
     img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-    angle = _skew(img) if photo else 0.0
+    level = photo and page.parent.metadata.get("producer") != UPRIGHT  # our own pages are level
+    angle = _skew(img) if level else 0.0
     return Rendered(_level(img, angle), 72 / dpi, angle, img.size, dpi)
 
 
@@ -125,8 +128,8 @@ def _images(pdf: Path) -> Iterator[tuple]:
 
 
 @register("ocrmac", default=False)
-def ocrmac_(pdf: Path) -> Iterator[Page]:
-    """Run Apple Vision OCR through ocrmac."""
+def ocrmac_(pdf: Path, tries: int = 3) -> Iterator[Page]:
+    """Run Apple Vision OCR through ocrmac; tries: readings of a page that comes back empty."""
     import io
     import json
     import sys
@@ -134,7 +137,7 @@ def ocrmac_(pdf: Path) -> Iterator[Page]:
 
     import ocrmac  # noqa: F401  # ImportError here, so extract() skips the engine
 
-    cmd = [sys.executable, "-m", "pdfexorcist._vision_worker"]
+    cmd = [sys.executable, "-m", "pdfexorcist._vision_worker", str(tries)]
     with tempfile.TemporaryFile() as log:
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log)
         assert proc.stdin is not None and proc.stdout is not None

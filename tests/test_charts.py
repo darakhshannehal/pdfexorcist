@@ -115,7 +115,8 @@ def test_cli_matches_the_library(tmp_path: Path) -> None:
     """The CSV the CLI and the web page write is read_charts as CSV."""
     out = tmp_path / "c.csv"
     assert run(["charts", str(CAT3), "-o", str(out)]).exit_code == 0
-    assert out.read_text() == read_charts(CAT3).to_csv(index=False)
+    # read_text turns the file's line ends into "\n"; to_csv gives the platform's
+    assert out.read_text() == read_charts(CAT3).to_csv(index=False, lineterminator="\n")
 
 
 def test_title_in_the_box() -> None:

@@ -7,7 +7,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from ._recipe_error import RecipeError
+from ._chart_settings import SCHEMA as CHARTS
+from ._chart_settings import charts_section
+from ._recipe_error import RecipeError, _line  # _line: re-exported
 from ._recipe_model import FORMATS, LAYOUTS, OPS, PARSERS, Recipe, TotalRule, parse_rule
 from .extractors import EXTRACTORS
 from .pages import parse_pages
@@ -76,26 +78,8 @@ SCHEMA: dict[str, dict[str, tuple[tuple, str]]] = {
     },
     "postprocess": {"function": _TEXT},
     "output": {"layout": _TEXT, "columns": _TEXT, "rows": _TEXTS, "format": _TEXT},
+    "charts": CHARTS,
 }
-
-
-def _line(text: str, section: str, key: str | None = None, index: int = 0) -> int | None:
-    """Return a key's 1-based line, or its section header's line."""
-    current, seen, header = "", -1, None
-    for i, raw in enumerate(text.splitlines(), start=1):
-        line = raw.strip()
-        if h := re.match(r"^\[\[?\s*([\w.-]+)\s*\]\]?", line):
-            current = h.group(1)
-            if current == section:
-                seen += 1
-                if seen == index:
-                    header = i
-            continue
-        name = re.escape(key or "")
-        is_key = bool(key) and bool(re.match(rf'^"?{name}"?\s*=', line))
-        if current == section and (not section or seen == index) and is_key:
-            return i
-    return header
 
 
 def load(path: Path) -> Recipe:
@@ -171,7 +155,7 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
             raise err(f"{k} should be a section: [{k}]", "", k)
     top = {k: v for k, v in data.items() if k not in SCHEMA}
     check_keys(top, "")
-    for section in ("pages", "engines", "normalize", "parser", "postprocess", "output"):
+    for section in ("pages", "engines", "normalize", "parser", "postprocess", "output", "charts"):
         check_keys(data.get(section, {}), section)
     checks_raw = data.get("checks", [])
     if not isinstance(checks_raw, list):
@@ -323,6 +307,7 @@ def _recipe(data: dict[str, Any], path: Path | None, text: str) -> Recipe:
         columns=out.get("columns"),
         rows=tuple(out["rows"]) if "rows" in out else None,
         format=out.get("format"),
+        charts=charts_section(data, path, err),
     )
 
 

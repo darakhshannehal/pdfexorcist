@@ -2,13 +2,14 @@ import json
 import sys
 from pathlib import Path
 
+from pdfexorcist._chart_settings import ChartSettings
 from pdfexorcist.charts import read_charts
 
 
 def main(root: Path) -> None:
     out = {}
     for pdf in sorted((root / "tests" / "fixtures").rglob("*.pdf")):
-        df = read_charts(pdf)
+        df = read_charts(pdf, settings=ChartSettings(kind="vector"))  # Pyodide has no OCR
         if len(df) or df.attrs["skipped"]:
             out[str(pdf.relative_to(root))] = [df.to_csv(index=False), df.attrs["skipped"]]
     json.dump(out, sys.stdout, sort_keys=True)

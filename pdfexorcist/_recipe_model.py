@@ -101,6 +101,7 @@ class Recipe:
     columns: str | None = None
     rows: tuple[str, ...] | None = None
     format: str | None = None
+    charts: Any = None  # ChartSettings from [charts], for pdfexorcist charts
 
     @property
     def base_dir(self) -> Path:

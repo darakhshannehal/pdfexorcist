@@ -71,8 +71,8 @@ export function chartsOutcome(res, job, seconds) {
   return [
     el('p', { className: 'say' }, el('b', { className: 'ok' }, fmt(s.points)), ` points from ${plural(s.charts, 'chart')}.`),
     el('p', { className: 'sub' },
-      'Each value is read from where the line is drawn, so it is an estimate: ± gives how far off it can be. ',
-      'The engines do not vote on these.',
+      s.status?.estimated ? 'Values of drawn charts are read from where the line is drawn: ± gives how far off each can be. ' : '',
+      s.status?.verified || s.status?.unresolved ? 'Values printed in chart pictures are read by OCR engines and voted; a blank cell had no agreement. ' : '',
       job.pages ? ` Pages ${job.pages},` : '', ` ${seconds.toFixed(1)} s.`),
     s.skipped.length
       ? el('div', { className: 'alert' },
@@ -89,17 +89,17 @@ function chartTables(csv) {
   const [head, ...rows] = parseCsv(csv);
   const points = rows.map((r) => Object.fromEntries(head.map((h, i) => [h, r[i]])));
   return [...Map.groupBy(points, (p) => `${p.page} ${p.chart}`).values()].map((chart) => {
-    const pm = Number(chart[0].pm);
-    const digits = Math.max(0, Math.min(20, 1 - Math.floor(Math.log10(pm)))); // as charts._round
+    const pm = Number(chart[0].pm); // NaN for a chart picture: its values are voted
+    const digits = pm > 0 ? Math.max(0, Math.min(20, 1 - Math.floor(Math.log10(pm)))) : 20; // as charts._round
     const { format } = new Intl.NumberFormat('en-IN', { maximumFractionDigits: digits });
     const cats = [...new Set(chart.map((p) => p.category))];
     const series = [...Map.groupBy(chart, (p) => p.series)].map(([name, pts]) => [name, new Map(pts.map((p) => [p.category, p.value]))]);
     return [
       el('h3', {}, chart[0].title || 'Untitled chart'),
-      el('p', { className: 'sub' }, `Page ${chart[0].page}. Each value ± ${format(pm.toPrecision(2))}.`),
+      el('p', { className: 'sub' }, `Page ${chart[0].page}.`, pm > 0 ? ` Each value ± ${format(pm.toPrecision(2))}.` : ' Voted by OCR engines.'),
       capped(['Series', ...cats], series, ([name, values]) =>
         el('tr', {}, el('td', { className: 'key' }, name),
-          cats.map((c) => el('td', {}, values.has(c) ? format(values.get(c)) : null)))),
+          cats.map((c) => el('td', {}, values.get(c) ? format(values.get(c)) : null)))), // blank: unresolved
     ];
   });
 }

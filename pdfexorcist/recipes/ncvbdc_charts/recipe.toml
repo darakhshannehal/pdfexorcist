@@ -1,0 +1,30 @@
+# pdfexorcist recipe: the chart pictures of NCVBDC's Monthly Malaria Situation (MMIS) report
+#
+# The December 2020 e-booklets paste each trend graph (BSE, TPC, TPR, PF) as a picture, with
+# each month's value printed in a box of the series color. OCR engines read every box and vote;
+# each value is then checked against where its line is drawn. Try it on a whole report:
+#
+#   pdfexorcist charts "https://ncvbdc.mohfw.gov.in/Doc/MMIS/December/e%20booklet%20Monthly%20Malaria%20Situation%20%20Cat%201%20StateUTs%20%20Dec%202020.pdf" --recipe ncvbdc_charts
+#
+# On the fixture (Category 1 and Chandigarh, from December 2020):
+#
+#   pdfexorcist charts tests/fixtures/ncvbdc/mmis_cat1_2020-12_p3-4_7-8.pdf --recipe ncvbdc_charts
+
+name = "NCVBDC monthly malaria charts"
+description = "Month-wise BSE, TPC, TPR and PF by State/UT, read by OCR from the chart pictures (NCVBDC)"
+sample = "../../../tests/fixtures/ncvbdc/mmis_cat1_2020-12_p3-4_7-8.pdf"
+
+# three OCR engines (Apple Vision, tesseract, Indra); two must agree
+[engines]
+min_agree = 2
+
+[charts]
+kind = "image"
+title = 'GRAPH \d+: MONTH WISE TREND'
+names = ["Current Year", "Average 3 years"]  # an OCR reading snaps to the nearest
+
+[[checks]]
+function = "charts_checks.py:tpr"
+
+[[checks]]
+function = "charts_checks.py:pf_within_tpc"

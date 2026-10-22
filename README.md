@@ -251,10 +251,11 @@ pdfexorcist compare report.pdf --page 3               # opens on the engines sid
 pdfexorcist charts report.pdf                         # writes report.charts.csv
 ```
 
-`charts` reads the points of line charts that are vector paths, for example Excel charts in
-a Word document. A value comes from the position of its line. Thus, each value has a `pm`
-(plus or minus) and the status `estimated`. The engines do not vote on these values. Refer to
-the [NCVBDC line charts](https://pdfexorcist.in/cli/examples/ncvbdc_charts.html) example.
+`charts` reads the points of line charts, for example Excel charts in a Word document. For
+a chart that is vector paths, a value comes from the position of its line. Thus, each value has
+a `pm` (plus or minus) and the status `estimated`. For a chart that is a picture, OCR engines
+read and vote on the value printed in each box (`--recipe ncvbdc_charts`). Refer to the
+[NCVBDC line charts](https://pdfexorcist.in/cli/examples/ncvbdc_charts.html) example.
 
 ## Plug-in points
 

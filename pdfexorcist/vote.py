@@ -10,6 +10,7 @@ from typing import Any, Literal, overload
 import pandas as pd
 
 from ._clean import clean_pdf, cut
+from ._families import _family, _family_vote, default_min_agree
 from ._prepare import _pages, as_pdf, fit_page_boxes
 from ._registry import IN_PROCESS, lab_families
 from .checks import Check, lossy, validate
@@ -21,28 +22,13 @@ from .rows import KEY, Page, parse_rows
 logger = logging.getLogger(__name__)
 
 __all__ = ["_pages", "extract", "fit_page_boxes", "vote"]
+__all__ += ["_family", "_family_vote", "default_min_agree"]  # moved to _families
 
 Parser = Callable[[Iterable[Page]], Iterator[dict]]
 
 
 class TooFewReadings(RuntimeError):
     """Fewer independent readings produced output than min_agree needs."""
-
-
-def _family(families: dict[str, list[str]]) -> Callable[[str], str]:
-    """Map each engine to its family or itself."""
-    family = {m: f for f, ms in families.items() for m in ms}
-    return lambda m: family.get(m, m)
-
-
-def _family_vote(df: pd.DataFrame, key: list[str], families: dict[str, list[str]]) -> pd.DataFrame:
-    """Replace each family with its unambiguous vote."""
-    df = df.assign(method=df.method.map(_family(families)))
-    n = df.groupby([*key, "method", "value"], sort=False).size().rename("n").reset_index()
-    top = n[n.n == n.groupby([*key, "method"]).n.transform("max")]
-    top = top[top.groupby([*key, "method"]).value.transform("size") == 1]
-    first = df.drop_duplicates([*key, "method", "value"])
-    return top[[*key, "method", "value"]].merge(first, on=[*key, "method", "value"])
 
 
 def vote(
@@ -83,7 +69,7 @@ def vote(
     methods = sorted(df["method"].unique())
     listed = sorted({*methods, *(m for said in both.values() for m in said)})
     if min_agree is None:
-        min_agree = max(2 if families else 3, len(methods) // 2 + 1)
+        min_agree = default_min_agree(len(methods), bool(families))
     extra = [c for c in df.columns if c not in (*key, "method", "value")]
     rows = []
     for k, g in df.groupby(key, sort=False):

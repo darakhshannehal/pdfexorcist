@@ -183,23 +183,27 @@ It takes the same options as `show`.
 
 ## charts
 
-`charts` reads the points of line charts that are vector paths, for example Excel charts in a Word document. It writes one row for each point: `page`, `chart`, `title`, `series`, `category`, `value`, `pm` and `status`.
+`charts` reads the points of line charts, for example Excel charts in a Word document. It writes one row for each point: `page`, `chart`, `title`, `series`, `category`, `value` and `status`.
 
 ```bash
 pdfexorcist charts report.pdf                        # writes report.charts.csv
 pdfexorcist charts report.pdf -p 3,4 -o out.json
+pdfexorcist charts report.pdf --recipe ncvbdc_charts   # charts in pictures
 ```
 
 | Option | Description |
 | --- | --- |
-| `-p`, `--pages` | Pages to read, for example `"3"` or `"1-3,7"` or `"10-"`. Default: all. |
+| `-p`, `--pages` | Pages to read, for example `"3"` or `"1-3,7"` or `"10-"`. Default: the recipe's pages, or all. |
+| `-r`, `--recipe` | A recipe with a `[charts]` section, or the name of a shipped recipe. See [Charts](recipes.md#charts). |
 | `-o`, `--output` | `.csv`, `.json` or `.parquet`. Default: `<name>.charts.csv`. |
-| `--json` | Print a summary as JSON: `outputs`, `points`, `charts`, `skipped`. |
+| `--json` | Print a summary as JSON: `outputs`, `points`, `charts`, `status`, `failed_checks`, `skipped`, `notes`. |
 | `--force`, `--debug` | As for `extract`. |
 
-A value comes from a position. Thus, it is an approximate value. `pm` gives the maximum error, and `status` is always `estimated`. The engines do not vote on chart values.
+A chart that is vector paths gives each value from a position. Thus, the value is approximate. `pm` gives the maximum error, and `status` is `estimated`.
 
-If pdfexorcist cannot find the axis or the points of a chart, it does not read that chart. The output gives the chart and the cause. If the command finds no chart, the exit code is 1. Refer to [NCVBDC line charts](examples/ncvbdc_charts.md) for an example.
+A chart that is a picture needs OCR engines. The engines read the value printed in each box and vote. `status` is `verified` or `unresolved`, and `votes` shows what each engine read. `line_value` is the value of the series line at that category. If the two values do not agree, the `failed` column shows "value off its line".
+
+If pdfexorcist cannot read a chart, it does not read that chart. The output gives the chart and the cause. If the command finds no chart, or a value fails a check, the exit code is 1. Refer to [NCVBDC line charts](examples/ncvbdc_charts.md) for examples.
 
 
 ## recipe

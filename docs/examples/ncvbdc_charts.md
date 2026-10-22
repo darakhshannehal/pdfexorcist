@@ -69,3 +69,65 @@ pdfexorcist also does not read weekly lines below month labels.
 The site shows this report as an example. To read a different PDF in the same mode, select **What to read: Line charts**.
 
 The page shows one table for each chart. Each table has a row for each series and a column for each month. The page also shows the `pm` of each chart. Its CSV file is the same as the CSV file from the command line.
+
+## Charts in pictures
+
+Some reports paste each chart as a picture. The [December 2020 Category 1 report](https://ncvbdc.mohfw.gov.in/Doc/MMIS/December/e%20booklet%20Monthly%20Malaria%20Situation%20%20Cat%201%20StateUTs%20%20Dec%202020.pdf) has 37 pages. Each value is printed in a box of the series color. A picture has no text layer, so OCR engines must read the values.
+
+The shipped recipe `ncvbdc_charts` reads these charts. The fixture contains pages 3-4 (Category 1) and 7-8 (Chandigarh). It is in `tests/fixtures/ncvbdc/`.
+
+```toml
+name = "NCVBDC monthly malaria charts"
+
+# three OCR engines (Apple Vision, tesseract, Indra); two must agree
+[engines]
+min_agree = 2
+
+[charts]
+kind = "image"
+title = 'GRAPH \d+: MONTH WISE TREND'
+names = ["Current Year", "Average 3 years"]
+
+[[checks]]
+function = "charts_checks.py:tpr"
+
+[[checks]]
+function = "charts_checks.py:pf_within_tpc"
+```
+
+```bash
+pdfexorcist charts tests/fixtures/ncvbdc/mmis_cat1_2020-12_p3-4_7-8.pdf --recipe ncvbdc_charts -o charts.csv
+```
+
+```
+Wrote 128 points from 7 charts (90 verified, 38 unresolved) to charts.csv.
+10 values failed a check: see the failed column.
+```
+
+```
+page,chart,title,series,category,value,status,votes,line_value,failed
+1,1,GRAPH 1: MONTH WISE TREND OF BSE IN CATEGORY- 1 STATES,BSE Current Year,Jan,928282.0,verified,928282×3,926824.5598569321,
+1,1,GRAPH 1: MONTH WISE TREND OF BSE IN CATEGORY- 1 STATES,BSE Current Year,Feb,,unresolved,111164×1 | 1111648×1,1094153.9499094852,
+...
+1,2,GRAPH 2: MONTH WISE TREND OF TPC IN CATEGORY- 1 STATES,TPC Average 3 years,Sep,578.0,verified,578×3,1000.3602466414178,value off its line
+...
+```
+
+### How pdfexorcist reads a chart picture
+
+1. One OCR engine reads the words of the picture: the title, the category labels, the y-axis labels and the legend.
+2. In each legend row, a horizontal run of one color is a line sample. The words after it are the name of its series. The recipe gives the two names. Thus, an OCR reading such as "TPCAverage 3 years" gets the nearest name.
+3. A solid block of a series color, with the size of a value box, is a value box. Sometimes the boxes of a series do not have the color of its line. Then that series gets the most frequent fill that no other series has.
+4. Each OCR engine reads all the value boxes. The engines vote on each number. In this recipe, two of the three engines must agree.
+5. Each number gets the nearest category label, in order from left to right.
+6. pdfexorcist also finds the series line at each category, and gets its value from the y axis. This value is in the `line_value` column. If a number is far from its line, the `failed` column shows "value off its line".
+
+The status of a number is `verified` (the engines agree) or `unresolved`. The `votes` column shows what each engine read.
+
+### What the checks found
+
+In each TPC chart, the boxes of the 3-year average do not agree with its line. For September in Category 1, the box shows 578, but the line is at 1000. The line check marks these values. The boxes of the current year agree with their line.
+
+The TPR check calculates TPC / BSE × 100 for each month and compares it with the TPR chart. The PF check makes sure that PF is not more than TPC. A value that fails a check gives the exit code 1.
+
+The browser cannot read chart pictures, because it has no OCR engines. Use the command line.

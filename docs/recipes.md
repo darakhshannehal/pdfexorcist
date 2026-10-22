@@ -403,6 +403,18 @@ function = "my_checks.py:rules"  # your own check, a list of checks, or a functi
 [postprocess]
 function = "my_parser.py:name_states"  # after the vote: (cells, pdf) -> cells, e.g. add a State column
 
+[charts]                         # pdfexorcist charts only; see Charts below
+kind = "image"                   # "auto" (default): drawn charts, else chart pictures; "vector"; "image"
+title = 'GRAPH \d+: MONTH WISE'   # only charts whose title matches
+categories = ["Q1", "Q2", "Q3"]  # the x labels, left to right (default: the months)
+series = { "Current Year" = "#ffc000" }  # each series and its color (default: from the legend)
+names = ["Current Year", "Average 3 years"]  # the series names; an OCR reading gets the nearest
+crop = { tesseract = "binary" }  # how each OCR engine gets a value box: "color" or "binary"
+color_distance = 70              # how near to a series color a pixel must be
+box_height = [12, 60]            # the pixel heights of a value box
+line_tolerance = 0.05            # the largest difference from the line, as a part of the axis
+cells = "my_chart.py:cells"      # your own: where the values are printed (below)
+
 [output]
 layout = "table"                 # "table": a grid of agreed values (default); "cells": one row per cell
 columns = "col"                  # the column spread across the grid (default "col")
@@ -440,11 +452,24 @@ Values that break a rule are kept, named in the `failed` column and listed for r
 | `[parser] function` | `(page_no, lines)` pairs `->` dicts with the key columns and `value`. See [Write a parser](library.md#write-a-parser). |
 | `[[checks]] function` | Agreed cells `->` a boolean Series, `True` where a row fails. |
 | `[postprocess] function` | `(cells, pdf) -> cells`. `pdf` holds only the recipe's pages, numbered from 1. |
+| `[charts] cells` | `(image, words, settings) ->` `(series, category, box)` tuples. See [Charts](#charts). |
 
 Page numbers in the output are the original ones.
 
 A custom parser should key printed labels with `pdfexorcist.rows.label_key()`. It drops
 spacing, so pdfium's `1st(lowest 20% of population)` votes with `1st (lowest 20% of population)`.
+
+### Charts
+
+`pdfexorcist charts --recipe` uses the `[charts]` section. `extract` does not use it. For a chart picture, `[engines] use` gives the OCR engines, and `[engines] min_agree` gives how many must agree. The `[[checks]]` run on the values. Their columns are `page`, `chart`, `title`, `series`, `category` and `value`.
+
+`cells = "my_chart.py:cells"` gives the place of each value in a chart picture, for a chart that the built-in reader cannot read: a bar chart, or values printed without boxes. The function gets three arguments:
+
+* the picture, as a PIL image
+* the words that OCR found in the picture, each with `x0`, `y0`, `x1`, `y1` (in pixels) and `text`
+* the settings
+
+It returns one `(series, category, (x0, y0, x1, y1))` for each value. If `category` is `None`, the value gets the nearest category label. pdfexorcist crops each box, the OCR engines read it, and they vote. Thus, a value that your function finds is still checked.
 
 ### Where each setting is used
 
@@ -468,6 +493,7 @@ Every example recipe runs on a fixture in `tests/fixtures/`.
 | `[parser] type = "custom"`, `function`, `key` | every [gallery](examples/index.md) document except Crime in India |
 | `[[checks]] rule`, `by`, `where` | [Crime in India](#example-a-text-table) |
 | `[[checks]] total`, `parts`, `op`, `missing`, `name` | [Crime in India 1A.4](examples/settings.md#rows-or-columns-and-a-total-column) |
+| `[charts] kind`, `title`; `[engines] min_agree` for OCR | [NCVBDC charts in pictures](examples/ncvbdc_charts.md#charts-in-pictures) |
 | `[[checks]] tolerance` | [Crime in India population](examples/settings.md#a-rounded-total) |
 | `[[checks]] abs_tolerance` | [Population projections](examples/census-projections.md) |
 | `[[checks]] function` | [SRS](examples/srs.md), [NFHS-6](examples/nfhs6-factsheets.md#the-recipe) |

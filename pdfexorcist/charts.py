@@ -2,6 +2,7 @@ import math
 import re
 import statistics
 from collections import defaultdict
+from collections.abc import Sequence
 from itertools import pairwise
 from pathlib import Path
 from typing import Any, NamedTuple
@@ -51,6 +52,11 @@ class Series(NamedTuple):
 
 def _number(text: str) -> float | None:
     return float(text.replace(",", "").rstrip("%")) if NUMBER.fullmatch(text) else None
+
+
+def has_letters(text: str) -> bool:
+    """Whether text holds a word (two letters running): a title, label or legend name."""
+    return bool(re.search(r"[A-Za-z]{2}", text))
 
 
 def _hex(rgb: tuple) -> str:
@@ -180,6 +186,19 @@ def _nice_axis(ys: list[float], vs: list[float], decimals: int) -> tuple[float, 
     return a, b
 
 
+def heading(words: list[Word], box: Any, others: Sequence = ()) -> str:
+    """The line just over the box and within its width, unless it belongs to another box."""
+    above = [
+        w
+        for w in words
+        if box.y0 - 40 < w.y1 <= box.y0 + 1
+        and w.x1 > box.x0  # a title may start left of a picture
+        and w.x0 < box.x1
+        and not any(_contains(o, w) for o in others)
+    ]
+    return " ".join(w.text for w in _rows(above)[-1]) if above else ""
+
+
 def _chart(
     box: Any, series: list[Series], flat: list[Rule], words: list[Word], others: list
 ) -> list[list]:
@@ -220,18 +239,9 @@ def _chart(
             if cat in values[name]:
                 raise ChartError(f"series {name!r} has two points at {cat!r}")
             values[name][cat] = a + b * pt.y
-    heading = [  # the line over the box, unless it belongs to the chart above
-        w
-        for w in words
-        if box.y0 - 40 < w.y1 <= box.y0 + 1
-        and box.x0 - 1 <= w.x0
-        and w.x1 <= box.x1 + 1
-        and not any(_contains(o, w) for o in others)
-    ]
     top = min(min(w.y0 for w in ticks), min(s.rect.y0 for s in series))
     own = [w for w in inside if w.y1 <= top]  # Excel's own title, in the box over the plot
-    title = " ".join(w.text for w in _rows(heading)[-1]) if heading else ""
-    title = title or (" ".join(w.text for w in _rows(own)[0]) if own else "")
+    title = heading(words, box, others) or (" ".join(w.text for w in _rows(own)[0]) if own else "")
     pm = abs(b) * COORD_PT
     return [
         [title, name, cat, _round(vals[cat], pm), pm]
@@ -245,50 +255,82 @@ def _round(v: float, pm: float) -> float:
     return round(v, max(0, 1 - math.floor(math.log10(pm)))) if pm > 0 else v
 
 
-def read_charts(pdf: str | Path, pages: list[int] | None = None) -> pd.DataFrame:
-    """One row per point of each line chart on the pages (1-based; default all), with pm.
+def _vector_page(doc: Any, no: int, title: str | None) -> tuple[list, list, int]:
+    """Rows and skipped charts of the vector charts on one page, and how many charts it has."""
+    import pymupdf
 
-    A chart whose axis or points cannot be placed is left out and listed in attrs["skipped"] as
-    (page, chart, reason).
+    page = doc[no - 1]
+    area = page.rect.width * page.rect.height
+    boxes: list = []
+    series: list[Series] = []
+    flat: list[Rule] = []
+    for d in page.get_drawings():
+        r = d["rect"]
+        if r.width > 100 and r.height > 60 and r.width * r.height < 0.9 * area:
+            boxes.append(r)
+        seg = _segments(d) if d.get("color") and "s" in d["type"] else []
+        if _is_series(seg):
+            series.append(Series(r, seg, _hex(d["color"])))
+        else:
+            flat += [Rule(p, q, _hex(d["color"])) for p, q in seg if abs(p.y - q.y) < 0.5]
+    if not series:
+        return [], [], 0  # words are the slow part
+    words = [Word(*w[:5]) for w in page.get_text("words")]
+    numbers = [w for w in words if _number(w.text) is not None]
+    boxes.sort(key=lambda b: b.width * b.height)
+    charts: dict[tuple, list[Series]] = defaultdict(list)
+    for s in series:
+        box = _frame(s.rect, boxes, numbers)
+        if box is not None:
+            charts[tuple(box)].append(s)
+    rows, skipped = [], []
+    for n, (key, members) in enumerate(sorted(charts.items(), key=lambda kv: kv[0][1]), 1):
+        try:
+            others = [pymupdf.Rect(k) for k in charts if k != key]
+            points = _chart(pymupdf.Rect(key), members, flat, words, others)
+        except ChartError as e:  # skip the chart, keep the page
+            skipped.append((no, n, str(e)))
+            continue
+        if title and points and not re.search(title, points[0][0]):
+            continue
+        rows += [[no, n, *p] for p in points]
+    return rows, skipped, len(charts)
+
+
+def read_charts(
+    pdf: str | Path, pages: list[int] | None = None, settings: Any = None
+) -> pd.DataFrame:
+    """One row per point of each line chart on the pages (1-based; default all).
+
+    Vector values carry a pm and the status estimated; values in pictures are voted by OCR engines.
+    settings is a ChartSettings; skipped charts are in attrs["skipped"] as (page, chart, reason),
+    and what kept pictures unread in attrs["notes"].
     """
     import pymupdf
 
+    from ._chart_settings import ChartSettings
+
+    settings = settings or ChartSettings()
     rows: list[list] = []
     skipped: list[tuple[int, int, str]] = []
+    notes: list[str] = []
     with pymupdf.open(pdf) as doc:
-        for no in pages or range(1, doc.page_count + 1):
-            page = doc[no - 1]
-            area = page.rect.width * page.rect.height
-            boxes: list = []
-            series: list[Series] = []
-            flat: list[Rule] = []
-            for d in page.get_drawings():
-                r = d["rect"]
-                if r.width > 100 and r.height > 60 and r.width * r.height < 0.9 * area:
-                    boxes.append(r)
-                seg = _segments(d) if d.get("color") and "s" in d["type"] else []
-                if _is_series(seg):
-                    series.append(Series(r, seg, _hex(d["color"])))
-                else:
-                    flat += [Rule(p, q, _hex(d["color"])) for p, q in seg if abs(p.y - q.y) < 0.5]
-            if not series:
-                continue  # words are the slow part
-            words = [Word(*w[:5]) for w in page.get_text("words")]
-            numbers = [w for w in words if _number(w.text) is not None]
-            boxes.sort(key=lambda b: b.width * b.height)
-            charts: dict[tuple, list[Series]] = defaultdict(list)
-            for s in series:
-                box = _frame(s.rect, boxes, numbers)
-                if box is not None:
-                    charts[tuple(box)].append(s)
-            for n, (key, members) in enumerate(sorted(charts.items(), key=lambda kv: kv[0][1]), 1):
-                try:
-                    others = [pymupdf.Rect(k) for k in charts if k != key]
-                    points = _chart(pymupdf.Rect(key), members, flat, words, others)
-                except ChartError as e:  # skip the chart, keep the page
-                    skipped.append((no, n, str(e)))
-                    continue
-                rows += [[no, n, *p] for p in points]
-    df = pd.DataFrame(rows, columns=COLUMNS[:-1]).assign(status="estimated")
+        numbers = list(pages or range(1, doc.page_count + 1))
+        drawn: dict[int, int] = {}  # page -> its vector charts
+        if settings.kind != "image":
+            for no in numbers:
+                got, left, drawn[no] = _vector_page(doc, no, settings.title)
+                rows += got
+                skipped += left
+        df = pd.DataFrame(rows, columns=COLUMNS[:-1]).assign(status="estimated")
+        if settings.kind == "image" or (settings.kind == "auto" and not rows):  # one kind a report
+            from ._chart_image import image_charts
+
+            plain = [no for no in numbers if not drawn.get(no)]
+            got, left, notes = image_charts(doc, plain, settings)
+            skipped += left
+            if got:
+                df = pd.DataFrame(got)
+    df.attrs["notes"] = notes
     df.attrs["skipped"] = skipped
     return df
