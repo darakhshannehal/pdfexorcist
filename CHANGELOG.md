@@ -9,11 +9,16 @@ workflow moves those entries into a dated section.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-22
+
 ### Added
 
-- Opt-in OCR engine `indra` (Datalab's Indra OCR on onnxruntime, CPU; extra `indra`, also in `.[all]`); the model weights have a separate licence
-- `indra` and `chandra` come from one lab, Datalab; `--ocr` runs only `indra` when both are installed, and `--engines chandra,indra` gives them one vote, as the family `datalab`
-- `indra` runs on an NVIDIA GPU when `onnxruntime-gpu` is installed
+- `pdfexorcist charts FILE` can now read line chartsa; charts pasted as pictures are read by the OCR engines
+- `charts --recipe`: a recipe's `[charts]` section (`kind`, `title`, `categories`, `series`, `names`, `crop`, `cells` and more), its `[engines]` and its `[[checks]]` set how charts are read
+- `[charts] cells = "file.py:cells"` tells where the values are printed in a chart picture (bar charts, values without boxes); pdfexorcist still reads and votes on each value
+- Example recipe `ncvbdc_charts`: NCVBDC's Monthly Malaria Situation charts in pictures, with TPR and PF checks
+- Web: "What to read: Line charts" reads the drawn charts of a PDF, with a demo of NCVBDC's August 2026 Category III report
+- Opt-in OCR engine `indra` (Datalab's Indra OCR on onnxruntime, CPU; extra `indra`, also in `.[all]`); the model weights have a separate licence; `indra` runs on an NVIDIA GPU when `onnxruntime-gpu` is installed
 
 ## [0.2.0] - 2026-10-19
 
@@ -81,7 +86,8 @@ Initial release:
 - pdfexorcist also runs in the browser (`web/`) with pyodide at <https://pdfexorcist.in/>
 - pdfexorcist is a new package for extracting tables from pdfs (text and scanned)
 
-[Unreleased]: https://github.com/saketkc/pdfexorcist/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/saketkc/pdfexorcist/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/saketkc/pdfexorcist/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/saketkc/pdfexorcist/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/saketkc/pdfexorcist/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/saketkc/pdfexorcist/releases/tag/v0.1.1
