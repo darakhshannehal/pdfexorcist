@@ -1,6 +1,20 @@
 import { button, el, fmt, minutes, plural } from './ui.js';
 
 const named = (path) => path.split('/').pop(); // the names the CLI wrote
+const quote = (a) => (/^[\w@%+=:,./-]+$/.test(a) ? a : `'${a.replaceAll("'", `'\\''`)}'`);
+
+/** the same run on the command line; the site's default engines differ from the CLI's, so they are named */
+function command(args, more) {
+  const line = ['pdfexorcist', ...args].map(quote).join(' ');
+  return el('div', { className: 'cli' },
+    el('p', { className: 'sub' }, 'Run this on your computer to get the same result:'),
+    el('pre', {}, el('code', {}, line)),
+    button('button quiet', (e) => navigator.clipboard?.writeText(line).then(() => (e.target.textContent = 'Copied')), 'Copy'),
+    el('p', { className: 'sub' }, 'Other options:'),
+    el('ul', {}, more.map(([flag, what]) => el('li', {}, el('code', {}, flag), ` ${what}`))));
+}
+const opt = (flag, value) => (value ? [flag, value] : []);
+
 const refused = (s) => [el('p', { className: 'say' }, s.error), s.hint ? el('p', { className: 'sub' }, s.hint) : null];
 
 export function outcome(res, job, seconds, pane, again, openGrid) {
@@ -59,6 +73,15 @@ export function outcome(res, job, seconds, pane, again, openGrid) {
       : null,
     el('ul', { className: 'voters', ariaLabel: 'Engines' },
       Object.entries(used).map(([n, readings]) => el('li', {}, el('b', {}, n), ` ${fmt(readings)} readings`))),
+    command(['extract', job.name, '-o', 'out/', ...opt('--pages', job.pages),
+      ...opt('--engines', Object.keys({ ...used, ...skipped }).join(',')), ...opt('--recipe', job.recipe)], [
+      ['-o tables.xlsx', 'writes Excel; .parquet and .json work too.'],
+      ['--layout cells', 'writes one row per cell, with each engine’s reading.'],
+      ['--ocr', 'also reads the page images, for scans.'],
+      ['-k N', 'sets how many engines must agree on a value.'],
+      ['-j N', 'runs up to N engines at the same time.'],
+      [`pdfexorcist show ${quote(job.name)} --page N`, 'draws a box on each voted cell of page N.'],
+    ]),
     table ? [el('h3', {}, 'Table'), grid(table)] : null,
     review ? [el('h3', {}, 'Cells to check'), reviewGrid(review)] : null,
   ];
@@ -80,6 +103,10 @@ export function chartsOutcome(res, job, seconds) {
           el('ul', {}, s.skipped.map((k) => el('li', {}, `Page ${k.page}, chart ${k.chart}: ${k.reason}`))))
       : null,
     el('div', { className: 'actions' }, button('button', () => download(named(s.outputs[0]), res.table), 'Download CSV')),
+    command(['charts', job.name, '-o', named(s.outputs[0]), ...opt('--pages', job.pages)], [
+      ['-o points.json', 'writes JSON; .parquet works too.'],
+      ['--recipe NAME', 'reads chart pictures with the settings in a recipe’s [charts] section.'],
+    ]),
     chartTables(res.table),
   ];
 }
